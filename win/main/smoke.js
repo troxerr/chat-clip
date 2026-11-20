@@ -46,6 +46,8 @@ async function waitFor(check, ms, label) {
 
 async function run({ win, services, dir, send }) {
   const result = { steps: [], ok: false, node: process.versions.node, electron: process.versions.electron, execPath: process.execPath, dir };
+  const relaunch = process.env.HIGHLIGHT_DESK_SMOKE_RELAUNCH === "1";
+  const resultFile = path.join(dir, relaunch ? "relaunch.json" : "result.json");
   const shots = path.join(dir, "screenshots");
   fs.mkdirSync(shots, { recursive: true });
   const step = (name, detail) => { result.steps.push({ name, detail: detail || "" }); console.log(`[smoke] ${name}${detail ? `: ${detail}` : ""}`); };
@@ -65,7 +67,7 @@ async function run({ win, services, dir, send }) {
     clearTimeout(watchdog);
     if (error) { result.error = String(error.stack || error.message || error); console.error("[smoke] FAILED", result.error); }
     else result.ok = true;
-    try { fs.writeFileSync(path.join(dir, "result.json"), JSON.stringify(result, null, 2)); } catch {}
+    try { fs.writeFileSync(resultFile, JSON.stringify(result, null, 2)); } catch {}
     try { await services.core.shutdown(); } catch {}
     app.exit(result.ok ? 0 : 1);
   }
@@ -74,6 +76,22 @@ async function run({ win, services, dir, send }) {
     await new Promise((resolve) => (win.webContents.isLoading() ? win.webContents.once("did-finish-load", resolve) : resolve()));
     step("window loaded", win.getTitle());
     if (Number(process.versions.node.split(".")[0]) < 22) throw new Error(`Node ${process.versions.node} is too old for the recorder (needs 22+)`);
+    if (relaunch) {
+      const previous = JSON.parse(fs.readFileSync(path.join(dir, "result.json"), "utf8"));
+      if (!previous.ok || !previous.clip?.path) throw new Error("The first run did not save a clip.");
+      const savedClip = services.core.clips.list().find((clip) => clip.localPath === previous.clip.path && clip.available);
+      if (!savedClip) throw new Error("The saved clip is missing from the library after relaunch.");
+      await page("clips");
+      await waitFor(() => win.webContents.executeJavaScript(`
+        Array.from(document.querySelectorAll('#page-clips .clip-actions button'))
+          .some((button) => button.textContent === 'Open' && !button.disabled)
+      `), 10000, "an openable clip in the relaunched window");
+      result.clip = { path: savedClip.localPath, ...await verifyClip(savedClip.localPath) };
+      step("saved clip listed and decoded after relaunch");
+      await shot("clips-after-relaunch");
+      await finish();
+      return;
+    }
     if (!process.env.HIGHLIGHT_DESK_INPUT || !fs.existsSync(process.env.HIGHLIGHT_DESK_INPUT)) throw new Error("HIGHLIGHT_DESK_INPUT must point at a test video");
 
     await shot("capture-idle");
