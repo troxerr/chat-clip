@@ -57,6 +57,7 @@ function reduce(state, event) {
     case "clip-saved":
       next.clipsSaved += 1;
       next.lastClipPath = event.path || next.lastClipPath;
+      if (next.phase !== "error") next.lastError = "";
       if (next.phase === "exporting") next.phase = "watching";
       break;
     case "clip-failed":
