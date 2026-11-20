@@ -62,6 +62,8 @@ test("reframe filter is unchanged without a watermark and branches with one", ()
   const marked = buildReframeFilter({ ...base, watermark: { file: "/tmp/hd/watermark.png" } });
   assert.match(marked, /null\[vm\];movie=\/tmp\/hd\/watermark\.png/);
   assert.match(marked, /\[vm\]\[wm\]overlay=.*format=yuv420p\[v\]$/);
+  const windowsMarked = buildReframeFilter({ ...base, watermark: { file: String.raw`C:\Users\RUNNER~1\App Data\watermark.pam` } });
+  assert.ok(windowsMarked.includes(String.raw`movie=C\\:/Users/RUNNER~1/App Data/watermark.pam,scale=`));
   assert.match(buildReframeFilter({ ...base, layout: "split", watermark: { file: "/tmp/hd/w.png" } }), /vstack=inputs=2,null\[vm\]/);
   assert.throws(() => buildReframeFilter({ ...base, watermark: { file: "/tmp/has space/w.png" } }), /Unsafe watermark/);
 });
