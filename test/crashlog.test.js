@@ -20,7 +20,10 @@ test("writes a readable crash report with the stack and context", () => {
     assert.match(report.error.stack, /boom/);
     assert.equal(report.context.channel, "someone");
     assert.equal(report.appVersion, "3.0.0");
-    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    // Windows does not expose POSIX owner, group, and other permission bits.
+    if (process.platform !== "win32") {
+      assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    }
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

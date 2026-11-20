@@ -222,7 +222,7 @@ jobs:
           if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
           if ($p.ExitCode -ne 0) { Write-Host "::error::smoke test exit code $($p.ExitCode)"; exit 1 }
 
-      - name: Silent install, smoke test the installed app, silent uninstall
+      - name: Install, test capture and relaunch, then uninstall
         shell: pwsh
         run: |
           $setup = (Get-ChildItem win\dist -Filter "ChatClip-*-x64-unsigned.exe").FullName
@@ -239,6 +239,12 @@ jobs:
           $p = Start-Process -FilePath $exe -PassThru -Wait
           if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
           $failed = $p.ExitCode -ne 0
+          if (-not $failed) {
+            $env:HIGHLIGHT_DESK_SMOKE_RELAUNCH = "1"
+            $relaunch = Start-Process -FilePath $exe -PassThru -Wait
+            if (Test-Path "$out\relaunch.json") { Get-Content "$out\relaunch.json" }
+            $failed = $relaunch.ExitCode -ne 0 -or -not (Test-Path "$out\relaunch.json")
+          }
           $uninstall = Join-Path $dir "Uninstall ChatClip.exe"
           if (Test-Path $uninstall) { Start-Process -FilePath $uninstall -ArgumentList "/S" -Wait }
           # The uninstaller hands off to a copy of itself, so wait for the folder to go.
@@ -262,6 +268,7 @@ jobs:
             $src = "$env:RUNNER_TEMP\smoke\$name"
             if (Test-Path "$src\screenshots") { Copy-Item "$src\screenshots" "$env:RUNNER_TEMP\upload\screenshots\$name" -Recurse }
             if (Test-Path "$src\result.json") { Copy-Item "$src\result.json" "$env:RUNNER_TEMP\upload\screenshots\$name-result.json" }
+            if (Test-Path "$src\relaunch.json") { Copy-Item "$src\relaunch.json" "$env:RUNNER_TEMP\upload\screenshots\$name-relaunch.json" }
           }
 
       - uses: actions/upload-artifact@v4

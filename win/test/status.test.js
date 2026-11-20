@@ -45,6 +45,20 @@ test("a failed clip reports the reason and keeps recording", () => {
   assert.match(s.lastError, /Not enough contiguous video/);
 });
 
+test("a successful retry clears the previous manual save warning", () => {
+  const s = run([
+    { type: "ready" },
+    { type: "status", recording: true, joined: true, mediaTime: 20 },
+    { type: "error", message: "Highlight not ready yet." },
+    { type: "status", exporting: true }
+  ]);
+  assert.equal(s.lastError, "Highlight not ready yet.");
+  const saved = reduce(s, { type: "clip-saved", path: "manual-9x16.mp4" });
+  assert.equal(saved.lastError, "");
+  assert.equal(saved.phase, "watching");
+  assert.equal(saved.lastClipPath, "manual-9x16.mp4");
+});
+
 test("a fatal event is an error state with the engine's message", () => {
   const s = run([{ type: "ready" }, { type: "fatal", message: "Missing streamlink." }]);
   assert.equal(s.phase, "error");
