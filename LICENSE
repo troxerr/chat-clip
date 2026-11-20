@@ -1,0 +1,47 @@
+ChatClip Source-Available License
+
+Copyright (c) 2026 troxerr. All rights reserved.
+
+This source code is made available so that you can read it, audit it and
+learn from it. It is not open-source software. Except for the limited
+permissions below, no license to use, copy, modify, distribute or sell it is
+granted.
+
+1. What you may do
+   a. View and read the source code.
+   b. Download a copy and build it for your own personal, non-commercial
+      evaluation, for example to check what it does before trusting it.
+   c. Report security problems and suggest changes through the project's
+      issue tracker. By submitting a suggestion or contribution you grant the
+      copyright holder a perpetual, worldwide, royalty-free license to use it
+      in the project.
+
+2. What you may not do without written permission from the copyright holder
+   a. Use the software or any part of it in a product or service, whether free
+      or paid.
+   b. Distribute, sublicense, sell, rent or host the software or any part of
+      it, in source or compiled form, including modified versions.
+   c. Remove or alter copyright, license or attribution notices.
+   d. Use the names "ChatClip" or "Highlight Desk", or the project's logos, to
+      identify another product or to suggest endorsement.
+
+3. Official builds
+   Compiled installers published by the copyright holder are licensed to you
+   under the end-user license that accompanies them, not under this file.
+
+4. Third-party components
+   This repository and the official builds include or download third-party
+   software, for example FFmpeg, Streamlink and Electron, each under its own
+   license. Those licenses are not changed by this file. See
+   docs/THIRD_PARTY_NOTICES.md. Nothing here limits your rights under them.
+
+5. No warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+   PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT
+   HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
+   USE OF THE SOFTWARE.
+
+6. Termination
+   These permissions end automatically if you break any of the conditions
+   above.
