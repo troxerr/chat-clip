@@ -1,0 +1,21 @@
+{
+  "_comment": "Pins for the Windows runtime bundled with the app, taken from the CI discovery run (hashes were computed on the runner from the release downloads). To update: empty tag/asset/sha256, run tools/fetch-runtime-win.ps1 -Discover in CI, review what it found, and pin the new values. The ffmpeg tag must be a dated autobuild-* tag, never the rolling 'latest'.",
+  "ffmpeg": {
+    "repo": "BtbN/FFmpeg-Builds",
+    "assetPattern": "-win64-lgpl-7\\.1\\.zip$",
+    "excludeTags": [
+      "latest"
+    ],
+    "tag": "autobuild-2026-07-31-14-10",
+    "asset": "ffmpeg-n7.1.5-12-g1fdbca85aa-win64-lgpl-7.1.zip",
+    "sha256": "b7c1c846dacca68ee4ebf5c390742c973b3d5d14a6d44b061f500d8e4ac74fc0"
+  },
+  "streamlink": {
+    "repo": "streamlink/windows-builds",
+    "assetPattern": "x86_64\\.zip$",
+    "excludeTags": [],
+    "tag": "8.6.3-1",
+    "asset": "streamlink-8.6.3-1-py315-x86_64.zip",
+    "sha256": "3b1f1470d4b135080a8107ca2917379ca3ff5acadbcdc215568b79eea1450497"
+  }
+}

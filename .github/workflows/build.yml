@@ -1,0 +1,290 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.arch }} macOS build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15-intel
+            arch: x86_64
+          - os: macos-15
+            arch: arm64
+    env:
+      PYTHON: python3
+      HIGHLIGHT_DESK_KEYCHAIN: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test media tools
+        run: brew install ffmpeg
+
+      - name: Fetch Sparkle
+        run: ./tools/fetch-sparkle.sh
+
+      - name: Build bundled LGPL FFmpeg + Streamlink
+        run: ./tools/build-runtime.sh
+
+      - name: Tests with bundled runtime
+        run: |
+          PATH="$PWD/mac/runtime/$(uname -m)/bin:$PATH" npm test
+          npm run check
+
+      - name: Build app
+        run: ./mac/build.sh
+
+      - name: Verify app
+        run: |
+          codesign --verify --deep --strict "mac/build/Chatclip.app"
+          test -x "mac/build/Chatclip.app/Contents/Resources/runtime/bin/ffmpeg"
+          test -x "mac/build/Chatclip.app/Contents/Resources/runtime/bin/streamlink"
+          test -d "mac/build/Chatclip.app/Contents/Frameworks/Sparkle.framework"
+
+      - name: Package unsigned artifact
+        run: |
+          mkdir -p mac/build/artifact
+          ditto -c -k --keepParent "mac/build/Chatclip.app" "mac/build/artifact/Chatclip-${RUNNER_ARCH}.zip"
+          hdiutil create -volname "Chatclip" -srcfolder "mac/build/Chatclip.app" -ov -format UDZO "mac/build/artifact/Chatclip-${RUNNER_ARCH}.dmg"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chatclip-${{ matrix.arch }}-unsigned
+          path: mac/build/artifact/
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    name: Windows engine tests
+    runs-on: windows-latest
+    env:
+      HIGHLIGHT_DESK_KEYCHAIN: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # The same pinned, hash-verified LGPL FFmpeg the app ships. (Chocolatey's
+      # package feed returned 503 once and "succeeded" with nothing installed,
+      # which silently skipped every test that needs FFmpeg.)
+      - name: Fetch the pinned LGPL FFmpeg and Streamlink
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./tools/fetch-runtime-win.ps1
+          Add-Content -Path $env:GITHUB_PATH -Value "$PWD\runtime\bin"
+          Add-Content -Path $env:GITHUB_PATH -Value "$PWD\runtime\streamlink\bin"
+
+      # Several tests skip when FFmpeg is missing, so a broken setup would
+      # otherwise look green. Fail the job instead.
+      - name: Fail if FFmpeg or ffprobe is missing
+        shell: pwsh
+        run: |
+          # Capture first: piping a native command into Select-Object -First 1
+          # closes the pipe early, which makes PowerShell report a failure.
+          $ffmpegVersion = ffmpeg -version
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $ffmpegVersion | Select-Object -First 1
+          $ffprobeVersion = ffprobe -version
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $ffprobeVersion | Select-Object -First 1
+      - name: Tests
+        run: npm test
+      - name: Syntax check
+        run: npm run check
+
+  windows-runtime:
+    name: Windows bundled runtime
+    runs-on: windows-latest
+    env:
+      HIGHLIGHT_DESK_KEYCHAIN: "0"
+      HIGHLIGHT_DESK_E2E: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Pins live in tools/runtime-win.json. While they are empty this step
+      # discovers and prints them (see the job summary) so they can be committed,
+      # and the last step of the job fails until they are.
+      - name: Fetch the LGPL FFmpeg and portable Streamlink
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $pins = Get-Content -Raw tools/runtime-win.json | ConvertFrom-Json
+          $pinned = [bool]($pins.ffmpeg.sha256 -and $pins.streamlink.sha256)
+          "RUNTIME_PINNED=$pinned" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          if ($pinned) { ./tools/fetch-runtime-win.ps1 } else { ./tools/fetch-runtime-win.ps1 -Discover }
+
+      # PATH is cut down to the bundled binaries, Node and Windows itself, so no
+      # system FFmpeg or Streamlink can be picked up by mistake.
+      - name: Verify and test with only the bundled runtime
+        shell: pwsh
+        run: |
+          $node = Split-Path (Get-Command node).Source
+          $env:PATH = "$PWD\runtime\bin;$PWD\runtime\streamlink\bin;$node;C:\Windows\System32;C:\Windows;C:\Windows\System32\WindowsPowerShell\v1.0"
+          "ffmpeg   : $((Get-Command ffmpeg).Source)"
+          "streamlink: $((Get-Command streamlink).Source)"
+          # Also proves the configure line quoted in the third-party notice is the real one.
+          node tools/verify-runtime.js --notice docs/THIRD_PARTY_NOTICES.md
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          node tools/run-tests.js test/e2e-clip.test.js test/windows-priority.test.js
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+          # The software encoder a Windows "N" edition (no Media Foundation) would fall
+          # back to: force it and make the same real clip, so it is proven, not assumed.
+          $env:HIGHLIGHT_DESK_ENCODER = "libopenh264"
+          node tools/run-tests.js test/e2e-clip.test.js
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Require pinned downloads
+        if: env.RUNTIME_PINNED != 'True'
+        shell: pwsh
+        run: |
+          Write-Host "::error::The runtime is not pinned. Copy the tag, asset and sha256 from the job summary into tools/runtime-win.json."
+          exit 1
+
+  # Signed/notarized releases are intentionally manual until Apple, OAuth,
+  # Lemon Squeezy, and Sparkle release credentials are configured.
+  windows-app:
+    name: Windows app (Electron installer)
+    runs-on: windows-latest
+    env:
+      HIGHLIGHT_DESK_KEYCHAIN: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fetch the pinned LGPL FFmpeg and portable Streamlink
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./tools/fetch-runtime-win.ps1
+
+      - name: Unit tests (engine and app logic)
+        run: node tools/run-tests.js
+
+      - name: Install Electron and electron-builder
+        working-directory: win
+        run: npm ci --no-audit --no-fund
+
+      # Unsigned on purpose (no certificate yet). Output: win/dist/ChatClip-<version>-x64-unsigned.exe
+      - name: Build the installer
+        working-directory: win
+        run: npm run pack
+
+      - name: Make a test video with the bundled FFmpeg
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\smoke" | Out-Null
+          & "$PWD\runtime\bin\ffmpeg.exe" -hide_banner -loglevel error -y -f lavfi -i "testsrc=size=1280x720:rate=30" -f lavfi -i "sine=frequency=440:sample_rate=48000" -t 45 -c:v libopenh264 -b:v 3M -pix_fmt yuv420p -g 30 -c:a aac -f mpegts "$env:RUNNER_TEMP\smoke\input.ts"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      # Runs the real window and verifies the automatic clip from a simulated chat
+      # spike. PATH is cut down so only the bundled
+      # FFmpeg and Streamlink can be found.
+      - name: Smoke test the unpacked app
+        shell: pwsh
+        run: |
+          $exe = (Get-ChildItem win\dist\win-unpacked -Filter "ChatClip.exe").FullName
+          "app: $exe"
+          $out = "$env:RUNNER_TEMP\smoke\unpacked"
+          $env:PATH = "C:\Windows\System32;C:\Windows"
+          $env:HIGHLIGHT_DESK_SMOKE = $out
+          $env:HIGHLIGHT_DESK_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
+          $p = Start-Process -FilePath $exe -PassThru -Wait
+          if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
+          if ($p.ExitCode -ne 0) { Write-Host "::error::smoke test exit code $($p.ExitCode)"; exit 1 }
+
+      - name: Silent install, smoke test the installed app, silent uninstall
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem win\dist -Filter "ChatClip-*-x64-unsigned.exe").FullName
+          $dir = "$env:RUNNER_TEMP\smoke\ChatClip"
+          $install = Start-Process -FilePath $setup -ArgumentList "/S /D=$dir" -PassThru -Wait
+          if ($install.ExitCode -ne 0) { exit $install.ExitCode }
+          $exe = Join-Path $dir "ChatClip.exe"
+          if (-not (Test-Path $exe)) { Write-Host "::error::not installed at $dir"; exit 1 }
+          "installed: $exe"
+          $out = "$env:RUNNER_TEMP\smoke\installed"
+          $env:PATH = "C:\Windows\System32;C:\Windows"
+          $env:HIGHLIGHT_DESK_SMOKE = $out
+          $env:HIGHLIGHT_DESK_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
+          $p = Start-Process -FilePath $exe -PassThru -Wait
+          if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
+          $failed = $p.ExitCode -ne 0
+          $uninstall = Join-Path $dir "Uninstall ChatClip.exe"
+          if (Test-Path $uninstall) { Start-Process -FilePath $uninstall -ArgumentList "/S" -Wait }
+          # The uninstaller hands off to a copy of itself, so wait for the folder to go.
+          for ($i = 0; $i -lt 60 -and (Test-Path $exe); $i++) { Start-Sleep -Seconds 1 }
+          if (Test-Path $exe) { Write-Host "::error::uninstall left the app behind"; $failed = $true }
+          if (-not $failed) {
+            $result = Get-Content "$out\result.json" -Raw | ConvertFrom-Json
+            if (-not $result.ok -or -not $result.clip.path -or -not (Test-Path -LiteralPath $result.clip.path -PathType Leaf)) {
+              Write-Host "::error::the saved highlight was missing after uninstall"
+              $failed = $true
+            }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Collect screenshots
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\upload\screenshots" | Out-Null
+          foreach ($name in "unpacked", "installed") {
+            $src = "$env:RUNNER_TEMP\smoke\$name"
+            if (Test-Path "$src\screenshots") { Copy-Item "$src\screenshots" "$env:RUNNER_TEMP\upload\screenshots\$name" -Recurse }
+            if (Test-Path "$src\result.json") { Copy-Item "$src\result.json" "$env:RUNNER_TEMP\upload\screenshots\$name-result.json" }
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatClip-windows-installer-unsigned
+          path: win/dist/ChatClip-*-x64-unsigned.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ChatClip-windows-screenshots
+          path: ${{ runner.temp }}/upload/screenshots
+          if-no-files-found: warn
+          retention-days: 14
+
+  preflight:
+    name: Release preflight docs
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show release gate
+        run: |
+          echo "Signed release is manual: ./mac/release.sh --check then ./mac/release.sh"
+          echo "See docs/RELEASE.md and docs/UPDATE.md."

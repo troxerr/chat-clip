@@ -1,0 +1,31 @@
+# Packaging for the Windows installer. `npm run pack` first stages a folder that
+# mirrors the repo layout (so the engine's relative requires work unchanged),
+# then builds from it. No asar: the recorder runs as a separate Node process.
+appId: com.highlightdesk.app
+productName: ChatClip
+electronVersion: 45.3.4
+directories:
+  app: stage
+  output: dist
+# The recorder imports these modules from resources/app/dist. A separate
+# FileSet keeps the output-directory exclusion from dropping them.
+files:
+  - "**/*"
+  - from: dist
+    to: dist
+    filter:
+      - "**/*"
+asar: false
+npmRebuild: false
+icon: stage/icon.png
+win:
+  target:
+    - target: nsis
+      arch: x64
+  artifactName: ChatClip-${version}-x64-unsigned.exe
+  signAndEditExecutable: false
+nsis:
+  oneClick: true
+  perMachine: false
+  runAfterFinish: false
+  deleteAppDataOnUninstall: false
