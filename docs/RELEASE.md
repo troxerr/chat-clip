@@ -46,18 +46,20 @@ STREAMLINK_BIN=/path/to/self-contained-streamlink \
 ```sh
 npm ci
 npm test
+# build with the vendor configuration from the Runtime section (licensing, OAuth, SU_FEED_URL, SU_PUBLIC_ED_KEY)
 npm run build:mac
 DEVELOPER_ID_APPLICATION="Developer ID Application: Your Name (TEAMID)" \
 NOTARY_PROFILE="highlightdesk-notary" \
-./mac/release.sh --check   # must pass before shipping
+./mac/release.sh --check    # before signing; must pass
 DEVELOPER_ID_APPLICATION="Developer ID Application: Your Name (TEAMID)" \
 NOTARY_PROFILE="highlightdesk-notary" \
-./mac/release.sh
+./mac/release.sh            # sign, notarize, staple
+./mac/release.sh --verify   # after notarizing; must pass
 ```
 
-`--check` verifies the signing identity, notary credentials, bundled runtime, Sparkle, appcast public key, license product/checkout, and OAuth client IDs without signing anything. Unsigned CI artifacts are built by [docs/CI.md](CI.md).
+`--check` runs before anything is signed. It verifies the signing identity, notary credentials, bundled runtime, Sparkle, a public HTTPS `SUFeedURL`, `SUPublicEDKey`, license enforcement, product ID, checkout URL, and the Dropbox and Google OAuth client ID and secret in the built `Info.plist`. Any missing value fails it, so run it in every release pipeline, including CI. `--verify [DMG]` runs after notarization: it checks the stapled ticket and that Gatekeeper accepts the DMG and the app inside it. Unsigned CI artifacts are built by [docs/CI.md](CI.md).
 
-`mac/release.sh` signs nested Node/FFmpeg/Streamlink binaries and frameworks, signs the app with hardened runtime and `mac/Chatclip.entitlements`, builds a DMG, submits it to `notarytool`, staples it, and verifies Gatekeeper.
+`mac/release.sh` signs nested Node/FFmpeg/Streamlink binaries, then Sparkle's helper bundles (`Updater.app`, XPC services) and the framework inside-out, signs the app with hardened runtime and `mac/Chatclip.entitlements`, builds a DMG, submits it to `notarytool`, staples it, and verifies Gatekeeper.
 
 Before release, confirm:
 
@@ -69,8 +71,8 @@ Before release, confirm:
 ## Updates
 
 - Sparkle 2.10.1 is integrated conditionally; see [docs/UPDATE.md](UPDATE.md).
-- Set `SUFeedURL` and `SUPublicEDKey` in the release build.
-- Sign each release DMG/appcast item with Sparkle’s `sign_update`.
+- Set `SU_FEED_URL` and `SU_PUBLIC_ED_KEY` when running `npm run build:mac` (they become `SUFeedURL` and `SUPublicEDKey`).
+- Sign each release DMG/appcast item with Sparkle’s `sign_update` (`ARCH=arm64|x86_64 ./tools/make-appcast.sh`, which fetch-sparkle.sh makes available).
 - Host the appcast and DMG on the product domain over HTTPS.
 - Test update from the previous version, including while a capture is running.
 
@@ -85,11 +87,12 @@ A release is not complete without:
 
 ## Current blockers
 
-- No Apple signing identity is installed in this environment; `spctl` rejects the ad-hoc app.
-- The in-app Connect flows exist, but the vendor OAuth client IDs/secrets and production app review are still external.
-- The license/trial layer exists, but the Lemon Squeezy product/checkout and Sparkle update feed are not configured yet.
-- The arm64 LGPL FFmpeg/Streamlink runtime is bundled; x86_64 still needs a matching build.
+- The signed release path has not been exercised end to end: no tag has been cut and the release workflow has not run. Do a dry run with a throwaway tag on both architectures first.
+- The signing changes for Sparkle's helper bundles are untested against Apple's notary service; confirm notarization accepts a build and that an update installs.
+- Vendor OAuth client IDs/secrets, production app review, the Lemon Squeezy product/checkout and the Sparkle feed must be configured; `--check` fails until they are.
+- Release builds are produced for arm64 and x86_64 by the release workflow; each architecture's runtime and DMG still needs a real launch test on matching hardware.
 - Legal docs and pilot evidence are not present.
+- The Windows installer is unsigned, has no updater and no licensing configuration; it is not part of this release path.
 
 Do not sell until these are resolved and the pilot gate in the commercial plan passes.
 
@@ -97,7 +100,9 @@ Do not sell until these are resolved and the pilot gate in the commercial plan p
 
 The release workflow lives in the separate public repo [troxerr/chatclip-release](https://github.com/troxerr/chatclip-release), which holds no source and exists only to get free macOS minutes. Tag the release here (`git tag v3.1.0 && git push origin v3.1.0`), then run **Actions → release → Run workflow** there with `ref = v3.1.0`. It checks out this private repo with a read-only deploy key (`SOURCE_DEPLOY_KEY`) and runs on arm64 and x86_64 runners (one at a time). It tests, imports the Developer ID certificate into a temporary keychain, builds with licensing enabled, signs with Hardened Runtime, notarizes with an App Store Connect API key, staples, uploads the DMG to R2, and merges a signed item into `appcast.xml`. It never creates a GitHub Release or workflow artifact (both are public in a public repo). The ref must equal `CFBundleShortVersionString` in `mac/Info.plist`; bump `CFBundleVersion` for every release.
 
-**Secrets (set in chatclip-release, not here):** `SOURCE_DEPLOY_KEY`, `MACOS_CERT_P12` (base64 .p12), `MACOS_CERT_PASSWORD`, `APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`, `SPARKLE_PRIVATE_KEY` (contents of `generate_keys -x`), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, and `GOOGLE_CLIENT_SECRET`.
+The release workflow must run `./mac/release.sh --check` after building and before signing, and `./mac/release.sh --verify` after notarizing, so a build missing any required value or a rejected DMG cannot be uploaded. It must pass `ARCH` to `tools/make-appcast.sh`.
+
+**Secrets (set in chatclip-release, not here); all of these are required for a sellable build:** `SOURCE_DEPLOY_KEY`, `MACOS_CERT_P12` (base64 .p12), `MACOS_CERT_PASSWORD`, `APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`, `SPARKLE_PRIVATE_KEY` (contents of `generate_keys -x`), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, and `GOOGLE_CLIENT_SECRET`.
 **Variables:** `R2_PUBLIC_BASE_URL` (custom domain of the bucket, no trailing slash), `SU_PUBLIC_ED_KEY`, `LEMON_PRODUCT_ID`, `CHECKOUT_URL`, `TRIAL_DAYS`, `DROPBOX_APP_KEY`, `GOOGLE_CLIENT_ID`.
 
 R2 setup: create a bucket, attach a custom domain, and create an R2 API token scoped to that bucket. The app reads `${R2_PUBLIC_BASE_URL}/appcast.xml`, so objects must be readable over HTTPS without credentials: anyone with the DMG link can download it, and the license key is what protects the product. There is no `ExportOptions.plist` because the app is not built with `xcodebuild`; `mac/release.sh` does the Developer ID signing.

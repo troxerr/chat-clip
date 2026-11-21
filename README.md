@@ -359,9 +359,9 @@ npm run build:mac
 Generate a signed appcast after notarizing the DMG:
 
 ```sh
-VERSION=3.1.0 BUILD=5 \
+ARCH=arm64 VERSION=3.1.0 BUILD=5 \
 DOWNLOAD_URL="https://your-domain.example/Chatclip-3.1.0-arm64.dmg" \
-DMG="mac/build/Chatclip-arm64.dmg" \
+DMG="mac/build/Chatclip-3.1.0-arm64.dmg" \
 OUTPUT=site/appcast.xml \
 ./tools/make-appcast.sh
 ```
