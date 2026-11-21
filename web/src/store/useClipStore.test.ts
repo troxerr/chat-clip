@@ -7,7 +7,7 @@ const initial = useClipStore.getState()
 describe('useClipStore', () => {
   beforeEach(() => useClipStore.setState(initial, true))
 
-  it('starts with mock highlights including jasontheween', () => {
+  it('starts with mock highlights including Jynxzi', () => {
     const clips = useClipStore.getState().clips
     expect(clips.length).toBeGreaterThan(5)
     expect(clips.some((c) => c.streamer === FEATURED_STREAMER)).toBe(true)
