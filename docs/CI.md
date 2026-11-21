@@ -26,4 +26,4 @@ The signed/notarized release is deliberately manual. Use `./mac/release.sh --che
 
 ## Release workflow
 
-The signed release workflow lives in the public runner repo [troxerr/chatclip-release](https://github.com/troxerr/chatclip-release) (manual dispatch with a tag; it checks out this private repo with a read-only deploy key) and uploads signed, notarized builds to private R2 storage. See [RELEASE.md](RELEASE.md) for secrets and setup. `build.yml` remains the unsigned QA build.
+The signed release workflow lives in the public runner repo [troxerr/chatclip-release](https://github.com/troxerr/chatclip-release) (manual dispatch with a tag; it checks out this public repo) and uploads signed, notarized builds to private R2 storage. See [RELEASE.md](RELEASE.md) for secrets and setup. `build.yml` remains the unsigned QA build.
