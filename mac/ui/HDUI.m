@@ -1,5 +1,6 @@
 #import "HDUI.h"
 #import "HDSymbols.h"
+#import "../migration/HDMigration.h"
 #import <QuartzCore/QuartzCore.h>
 #import <AVKit/AVKit.h>
 #import <AVFoundation/AVFoundation.h>
@@ -839,7 +840,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
                                                  styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable | NSWindowStyleMaskFullSizeContentView
                                                    backing:NSBackingStoreBuffered
                                                      defer:NO];
-  window.title = @"Chatclip";
+  window.title = @"ChatClip";
   window.titleVisibility = NSWindowTitleHidden;
   window.titlebarAppearsTransparent = YES;
   window.movableByWindowBackground = NO;
@@ -934,7 +935,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   [icon.widthAnchor constraintEqualToConstant:28].active = YES;
   [icon.heightAnchor constraintEqualToConstant:28].active = YES;
   [brand addArrangedSubview:icon];
-  [brand addArrangedSubview:HDLabel(@"Chatclip", 13, NSFontWeightSemibold, NSColor.labelColor)];
+  [brand addArrangedSubview:HDLabel(@"ChatClip", 13, NSFontWeightSemibold, NSColor.labelColor)];
   [stack addArrangedSubview:brand]; [stack setCustomSpacing:24 afterView:brand];
   NSArray *items = @[
     @[@"Capture", @(HDSymbolRoleCapture), @(HDPageCapture)],
@@ -1239,7 +1240,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   sessionText.alignment = NSLayoutAttributeLeading;
   sessionText.spacing = 4;
   self.captureHeroTitle = HDLabel(@"Ready to start", 16, NSFontWeightSemibold, NSColor.labelColor);
-  self.captureHeroSubtitle = HDLabel(@"Start capture and keep Chatclip running while the stream is live.", 12, NSFontWeightRegular, NSColor.secondaryLabelColor);
+  self.captureHeroSubtitle = HDLabel(@"Start capture and keep ChatClip running while the stream is live.", 12, NSFontWeightRegular, NSColor.secondaryLabelColor);
   [sessionText addArrangedSubview:self.captureHeroTitle];
   [sessionText addArrangedSubview:self.captureHeroSubtitle];
   [self.captureHeroSubtitle.widthAnchor constraintEqualToAnchor:sessionText.widthAnchor].active = YES;
@@ -1841,7 +1842,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   folderRow.spacing = 10;
   [folderRow addArrangedSubview:HDSymbolImageView(HDSymbolRoleFolder, 12, NSColor.secondaryLabelColor, @"Remote folder")];
   [folderRow addArrangedSubview:HDLabel(@"Remote folder", 12, NSFontWeightSemibold, NSColor.secondaryLabelColor)];
-  self.storageFolder = [NSTextField textFieldWithString:@"/Highlight Desk"];
+  self.storageFolder = [NSTextField textFieldWithString:@"/ChatClip"];
   self.storageFolder.font = HDMono(12);
   self.storageFolder.translatesAutoresizingMaskIntoConstraints = NO;
   [self.storageFolder.widthAnchor constraintGreaterThanOrEqualToConstant:260].active = YES;
@@ -1867,7 +1868,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   [self.localOutputBox addArrangedSubview:HDLabel(@"Save folder", 12, NSFontWeightMedium, NSColor.labelColor)];
   self.localOutputPathLabel = HDCaption(@"");
   self.localOutputPathLabel.font = HDMono(11);
-  [self setLocalOutputPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"HDOutputRoot"] ?: [NSHomeDirectory() stringByAppendingPathComponent:@"Movies/Highlight Desk"]];
+  [self setLocalOutputPath:[[NSUserDefaults standardUserDefaults] stringForKey:@"HDOutputRoot"] ?: [HDMigration defaultOutputPath]];
   [self.localOutputBox addArrangedSubview:self.localOutputPathLabel];
   self.localOutputPathLabel.maximumNumberOfLines = 1;
   self.localOutputPathLabel.lineBreakMode = NSLineBreakByTruncatingMiddle;
@@ -2158,7 +2159,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   [self.advancedOptions addArrangedSubview:HDButton(@"Open App Data Folder", self.target, @selector(openStateFolder:), NO)];
   [self.advancedOptions addArrangedSubview:HDButton(@"Open Web Dashboard", self.target, @selector(site:), NO)];
   [stack addArrangedSubview:self.advancedOptions]; self.advancedOptions.hidden = YES;
-  [stack addArrangedSubview:HDCaption([NSString stringWithFormat:@"Chatclip %@", NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"] ?: @"3.0.0"])];
+  [stack addArrangedSubview:HDCaption([NSString stringWithFormat:@"ChatClip %@", NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"] ?: @"3.0.0"])];
 }
 
 - (void)advancedChanged:(NSButton *)sender { self.advancedOptions.hidden = sender.state != NSControlStateValueOn; }
@@ -2221,7 +2222,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   NSColor *color = NSColor.secondaryLabelColor;
   NSString *label = @"Idle";
   NSString *heroTitle = self.channelField.stringValue.length ? [NSString stringWithFormat:@"Ready to capture %@", self.channelField.stringValue] : @"Enter a channel to begin";
-  NSString *heroSubtitle = @"Start capture and keep Chatclip running while the stream is live.";
+  NSString *heroSubtitle = @"Start capture and keep ChatClip running while the stream is live.";
   switch (state) {
     case HDSessionStateLive:
       role = HDSymbolRoleStatusLive; color = HDLive(); label = @"Capturing";
@@ -2250,7 +2251,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   if (self.vodMode && !self.liveRunning) {
     if (state == HDSessionStateReady) {
       heroTitle = self.vodRunning ? @"Finding highlights" : @"Find highlights in a VOD";
-      heroSubtitle = status.length ? status : @"Paste a past broadcast link. Chatclip reads the chat replay and saves the moments chat reacted to.";
+      heroSubtitle = status.length ? status : @"Paste a past broadcast link. ChatClip reads the chat replay and saves the moments chat reacted to.";
     } else if (state == HDSessionStateLive) {
       label = @"Scanning VOD";
       heroTitle = @"Finding highlights";

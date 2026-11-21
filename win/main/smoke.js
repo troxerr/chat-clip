@@ -1,6 +1,6 @@
 "use strict";
 
-// Scripted self-test of the real window, used by CI (HIGHLIGHT_DESK_SMOKE=<dir>).
+// Scripted self-test of the real window, used by CI (CHATCLIP_SMOKE=<dir>).
 // It feeds a local video and deterministic chat spike to the packaged recorder,
 // verifies the automatic highlight, and writes screenshots and <dir>/result.json.
 // Exit code 0 means every step passed.
@@ -74,7 +74,7 @@ async function run({ win, services, dir, send }) {
     await new Promise((resolve) => (win.webContents.isLoading() ? win.webContents.once("did-finish-load", resolve) : resolve()));
     step("window loaded", win.getTitle());
     if (Number(process.versions.node.split(".")[0]) < 22) throw new Error(`Node ${process.versions.node} is too old for the recorder (needs 22+)`);
-    if (!process.env.HIGHLIGHT_DESK_INPUT || !fs.existsSync(process.env.HIGHLIGHT_DESK_INPUT)) throw new Error("HIGHLIGHT_DESK_INPUT must point at a test video");
+    if (!process.env.CHATCLIP_INPUT || !fs.existsSync(process.env.CHATCLIP_INPUT)) throw new Error("CHATCLIP_INPUT must point at a test video");
 
     await shot("capture-idle");
     await page("clips"); await shot("clips-empty");

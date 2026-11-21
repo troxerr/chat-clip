@@ -13,7 +13,7 @@ test("default config has reframe and dropbox sections", () => {
   assert.equal(template.reframe.camHeightRatio, 0.35);
   assert.equal(template.reframe.facecamCorner, "bottom-left");
   assert.equal(template.dropbox.deleteAfterUpload, true);
-  assert.equal(template.dropbox.folder, "/Highlight Desk");
+  assert.equal(template.dropbox.folder, "/ChatClip");
   assert.equal(template.storage.mode, "local");
   assert.equal(template.googleDrive.clientId, "");
   assert.deepEqual(template.reframe, config.defaultConfig().reframe);
@@ -43,12 +43,12 @@ test("readConfig handles missing, valid, and invalid files", () => {
   }
 });
 
-test("readConfig honors HIGHLIGHT_DESK_CONFIG", () => {
+test("readConfig honors CHATCLIP_CONFIG", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "chatclip-config-"));
   try {
     const file = path.join(dir, "custom.json");
     fs.writeFileSync(file, JSON.stringify({ reframe: { blur: 33 } }));
-    const result = config.readConfig({ env: { HIGHLIGHT_DESK_CONFIG: file } });
+    const result = config.readConfig({ env: { CHATCLIP_CONFIG: file } });
     assert.equal(result.path, file);
     assert.equal(result.config.reframe.blur, 33);
   } finally {
@@ -104,7 +104,7 @@ test("reframeSettings clamps and defaults", () => {
 
   assert.equal(config.reframeSettings({ reframe: { priority: "belowNormal" } }, {}).priority, "belowNormal");
   assert.equal(config.reframeSettings({ reframe: { priority: "normal" } }, {}).priority, "normal");
-  assert.equal(config.reframeSettings({ reframe: { priority: "nope" } }, { HIGHLIGHT_DESK_PRIORITY: "belowNormal" }).priority, "belowNormal");
+  assert.equal(config.reframeSettings({ reframe: { priority: "nope" } }, { CHATCLIP_PRIORITY: "belowNormal" }).priority, "belowNormal");
 
   const invalidSplit = config.reframeSettings({
     reframe: { layout: "unknown", camHeightRatio: 0.05, facecamCorner: "center" }
@@ -115,7 +115,7 @@ test("reframeSettings clamps and defaults", () => {
 
   const env = config.reframeSettings(
     { reframe: { enabled: true, layout: "blur" } },
-    { HIGHLIGHT_DESK_REFRAME: "0", HIGHLIGHT_DESK_REFRAME_LAYOUT: "split" }
+    { CHATCLIP_REFRAME: "0", CHATCLIP_REFRAME_LAYOUT: "split" }
   );
   assert.equal(env.enabled, false);
   assert.equal(env.layout, "split");
@@ -149,7 +149,7 @@ test("storage defaults to local and preserves legacy Dropbox configuration", () 
   assert.equal(explicit.keepLocalCopy, true);
   assert.equal(explicit.keepRaw, true);
 
-  const env = config.storageSettings({}, { HIGHLIGHT_DESK_STORAGE: "local" });
+  const env = config.storageSettings({}, { CHATCLIP_STORAGE: "local" });
   assert.equal(env.mode, "local");
 
   const invalid = config.storageSettings({ storage: { mode: "nope" } }, {});
@@ -213,7 +213,7 @@ test("dropboxSettings reads config, applies env precedence, and detects configur
 
   const unconfigured = config.dropboxSettings({ dropbox: { enabled: true } }, {});
   assert.equal(unconfigured.configured, false);
-  assert.equal(unconfigured.folder, "/Highlight Desk");
+  assert.equal(unconfigured.folder, "/ChatClip");
   assert.equal(unconfigured.deleteAfterUpload, true);
 });
 

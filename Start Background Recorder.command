@@ -6,7 +6,7 @@ for tool in node streamlink ffmpeg; do
   if ! command -v "$tool" >/dev/null; then echo "Install $tool before starting."; read -k 1; exit 1; fi
 done
 if ! node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'; then
-  echo "Chatclip requires Node 22 or newer (found $(node --version))."
+  echo "ChatClip requires Node 22 or newer (found $(node --version))."
   read -k 1
   exit 1
 fi

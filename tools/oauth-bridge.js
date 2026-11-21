@@ -79,7 +79,7 @@ function serveCallback({ provider, port, state, timeoutMs = 300000 }) {
       const returnedState = url.searchParams.get("state");
       const code = url.searchParams.get("code");
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      response.end("<!doctype html><meta charset=utf-8><title>Chatclip</title><body style='font:16px system-ui;padding:32px'><h1>Storage connected</h1><p>You can close this tab and return to Chatclip.</p></body>");
+      response.end("<!doctype html><meta charset=utf-8><title>ChatClip</title><body style='font:16px system-ui;padding:32px'><h1>Storage connected</h1><p>You can close this tab and return to ChatClip.</p></body>");
       server.close();
       if (error) return reject(new Error(error));
       if (returnedState !== state) return reject(new Error("OAuth state did not match."));

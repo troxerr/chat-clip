@@ -114,7 +114,7 @@ def main():
         atomic(args.output_dir / 'status.json', json.dumps(summary, indent=2) + '\n')
         share = 100 * reaction_sum / max(1, participant_sum)
         lines = [
-            '# Chatclip — full session observation', '',
+            '# ChatClip — full session observation', '',
             f'Updated: {summary["updatedAt"]}. Status: **{status}**.', '',
             f'Channel: **{channel}**. Capture started: {session_start}. '
             f'Observer checks every {args.interval:g} seconds and stops when the original app process closes. '
@@ -280,7 +280,7 @@ def main():
             if missing >= 2:
                 status = 'completed-app-closed'
                 active = False
-                incident('app-closed', 'Original Chatclip process no longer exists; observer stopped.')
+                incident('app-closed', 'Original ChatClip process no longer exists; observer stopped.')
                 report(True)
                 break
             if time.monotonic() - last_report >= 30:

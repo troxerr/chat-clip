@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 "use strict";
 
-// Chatclip VOD mode: paste a Twitch VOD link, download its chat replay,
+require("./lib/migrate.js").runMigration();
+
+// ChatClip VOD mode: paste a Twitch VOD link, download its chat replay,
 // find the moments chat reacted to, and save each one as a 9:16 clip.
 //
 //   node vod.cjs <vod link> [--top 15] [--start 1:00:00] [--end 2:30:00]
 //                           [--scan-only] [--full] [--sensitivity 1] [--gap 300]
 //                           [--hook] [--hook-text "TEXT"] [--captions]
 //
-// With HIGHLIGHT_DESK_EVENTS=1 it writes the same JSONL event protocol as the
+// With CHATCLIP_EVENTS=1 it writes the same JSONL event protocol as the
 // live recorder so the macOS app can drive it.
 
 const { spawn, spawnSync } = require("node:child_process");
@@ -29,7 +31,7 @@ const feedback = require("./lib/feedback.js");
 const freeTier = require("./lib/freetier.js");
 
 const VERSION = "3.0.0";
-const EVENTS = process.env.HIGHLIGHT_DESK_EVENTS === "1";
+const EVENTS = process.env.CHATCLIP_EVENTS === "1";
 const round = (value) => Math.round((Number(value) || 0) * 100) / 100;
 const children = new Set();
 let feedbackSession = null;

@@ -2,7 +2,7 @@
 
 // Electron entry point: wires the window, menu and Windows services to the
 // app logic in app.js. Kept thin on purpose; the rules are unit-tested there.
-// Setting HIGHLIGHT_DESK_SMOKE=<folder> runs a scripted self-test (see smoke.js).
+// Setting CHATCLIP_SMOKE=<folder> runs a scripted self-test (see smoke.js).
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -20,23 +20,25 @@ const { createSettings } = require("./settings.js");
 const { createClips } = require("./clips.js");
 const { createApp } = require("./app.js");
 
-const SMOKE = process.env.HIGHLIGHT_DESK_SMOKE || "";
+require("../../lib/legacy.js").mirrorLegacyEnv();
+const SMOKE = process.env.CHATCLIP_SMOKE || "";
+// Moves a pre-rename "Highlight Desk" profile (state and Electron userData share one folder) before it is used.
+if (!SMOKE) require("../../lib/migrate.js").runMigration();
 const ROOT = path.join(__dirname, "..", "..");
 const INDEX = path.join(__dirname, "..", "renderer", "index.html");
 
-// Keep the Electron profile across the product rename.
-const userData = SMOKE ? path.join(SMOKE, "electron") : path.join(app.getPath("appData"), "Highlight Desk");
+const userData = SMOKE ? path.join(SMOKE, "electron") : path.join(app.getPath("appData"), "ChatClip");
 fs.mkdirSync(userData, { recursive: true });
 app.setPath("userData", userData);
 
 if (SMOKE) {
   // Self-test runs keep everything inside the given folder and need no GPU.
   fs.mkdirSync(SMOKE, { recursive: true });
-  process.env.HIGHLIGHT_DESK_STATE = process.env.HIGHLIGHT_DESK_STATE || path.join(SMOKE, "state");
-  process.env.HIGHLIGHT_DESK_OUTPUT = process.env.HIGHLIGHT_DESK_OUTPUT || path.join(SMOKE, "clips");
-  process.env.HIGHLIGHT_DESK_CONFIG = process.env.HIGHLIGHT_DESK_CONFIG || path.join(SMOKE, "config.json");
-  process.env.HIGHLIGHT_DESK_NOTIFICATIONS = "0";
-  process.env.HIGHLIGHT_DESK_KEYCHAIN = "0";
+  process.env.CHATCLIP_STATE = process.env.CHATCLIP_STATE || path.join(SMOKE, "state");
+  process.env.CHATCLIP_OUTPUT = process.env.CHATCLIP_OUTPUT || path.join(SMOKE, "clips");
+  process.env.CHATCLIP_CONFIG = process.env.CHATCLIP_CONFIG || path.join(SMOKE, "config.json");
+  process.env.CHATCLIP_NOTIFICATIONS = "0";
+  process.env.CHATCLIP_KEYCHAIN = "0";
   app.disableHardwareAcceleration();
 }
 

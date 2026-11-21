@@ -40,7 +40,7 @@ test("documented environment variables exist in the code", () => {
     }
   }
   const code = sources.join("\n");
-  const names = [...doc.matchAll(/`(HIGHLIGHT_DESK_[A-Z_]+)(?:=[^`]*)?`/g)].map((m) => m[1]);
+  const names = [...doc.matchAll(/`(CHATCLIP_[A-Z_]+)(?:=[^`]*)?`/g)].map((m) => m[1]);
   assert.ok(names.length >= 6);
   for (const name of names) assert.ok(code.includes(name), `${name} is documented but not used in the code`);
 });

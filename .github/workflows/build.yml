@@ -27,7 +27,7 @@ jobs:
             arch: arm64
     env:
       PYTHON: python3
-      HIGHLIGHT_DESK_KEYCHAIN: "0"
+      CHATCLIP_KEYCHAIN: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,21 +56,21 @@ jobs:
 
       - name: Verify app
         run: |
-          codesign --verify --deep --strict "mac/build/Chatclip.app"
-          test -x "mac/build/Chatclip.app/Contents/Resources/runtime/bin/ffmpeg"
-          test -x "mac/build/Chatclip.app/Contents/Resources/runtime/bin/streamlink"
-          test -d "mac/build/Chatclip.app/Contents/Frameworks/Sparkle.framework"
+          codesign --verify --deep --strict "mac/build/ChatClip.app"
+          test -x "mac/build/ChatClip.app/Contents/Resources/runtime/bin/ffmpeg"
+          test -x "mac/build/ChatClip.app/Contents/Resources/runtime/bin/streamlink"
+          test -d "mac/build/ChatClip.app/Contents/Frameworks/Sparkle.framework"
 
       - name: Package unsigned artifact
         run: |
           mkdir -p mac/build/artifact
-          ditto -c -k --keepParent "mac/build/Chatclip.app" "mac/build/artifact/Chatclip-${RUNNER_ARCH}.zip"
-          hdiutil create -volname "Chatclip" -srcfolder "mac/build/Chatclip.app" -ov -format UDZO "mac/build/artifact/Chatclip-${RUNNER_ARCH}.dmg"
+          ditto -c -k --keepParent "mac/build/ChatClip.app" "mac/build/artifact/ChatClip-${RUNNER_ARCH}.zip"
+          hdiutil create -volname "ChatClip" -srcfolder "mac/build/ChatClip.app" -ov -format UDZO "mac/build/artifact/ChatClip-${RUNNER_ARCH}.dmg"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Chatclip-${{ matrix.arch }}-unsigned
+          name: ChatClip-${{ matrix.arch }}-unsigned
           path: mac/build/artifact/
           if-no-files-found: error
           retention-days: 14
@@ -79,7 +79,7 @@ jobs:
     name: Windows engine tests
     runs-on: windows-latest
     env:
-      HIGHLIGHT_DESK_KEYCHAIN: "0"
+      CHATCLIP_KEYCHAIN: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -119,8 +119,8 @@ jobs:
     name: Windows bundled runtime
     runs-on: windows-latest
     env:
-      HIGHLIGHT_DESK_KEYCHAIN: "0"
-      HIGHLIGHT_DESK_E2E: "1"
+      CHATCLIP_KEYCHAIN: "0"
+      CHATCLIP_E2E: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -157,7 +157,7 @@ jobs:
 
           # The software encoder a Windows "N" edition (no Media Foundation) would fall
           # back to: force it and make the same real clip, so it is proven, not assumed.
-          $env:HIGHLIGHT_DESK_ENCODER = "libopenh264"
+          $env:CHATCLIP_ENCODER = "libopenh264"
           node tools/run-tests.js test/e2e-clip.test.js
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
@@ -174,7 +174,7 @@ jobs:
     name: Windows app (Electron installer)
     runs-on: windows-latest
     env:
-      HIGHLIGHT_DESK_KEYCHAIN: "0"
+      CHATCLIP_KEYCHAIN: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -216,8 +216,8 @@ jobs:
           "app: $exe"
           $out = "$env:RUNNER_TEMP\smoke\unpacked"
           $env:PATH = "C:\Windows\System32;C:\Windows"
-          $env:HIGHLIGHT_DESK_SMOKE = $out
-          $env:HIGHLIGHT_DESK_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
+          $env:CHATCLIP_SMOKE = $out
+          $env:CHATCLIP_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
           $p = Start-Process -FilePath $exe -PassThru -Wait
           if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
           if ($p.ExitCode -ne 0) { Write-Host "::error::smoke test exit code $($p.ExitCode)"; exit 1 }
@@ -234,8 +234,8 @@ jobs:
           "installed: $exe"
           $out = "$env:RUNNER_TEMP\smoke\installed"
           $env:PATH = "C:\Windows\System32;C:\Windows"
-          $env:HIGHLIGHT_DESK_SMOKE = $out
-          $env:HIGHLIGHT_DESK_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
+          $env:CHATCLIP_SMOKE = $out
+          $env:CHATCLIP_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
           $p = Start-Process -FilePath $exe -PassThru -Wait
           if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
           $failed = $p.ExitCode -ne 0

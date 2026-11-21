@@ -1,4 +1,4 @@
-# Chatclip website
+# ChatClip website
 
 Static site for the macOS app. No build step.
 

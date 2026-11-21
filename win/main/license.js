@@ -32,8 +32,8 @@ function createLicenseManager({
   const KEY = "license.key";
   const required = build.licenseRequired === true;
   const trialDays = (() => {
-    const fromEnv = Number(env.HIGHLIGHT_DESK_TRIAL_DAYS);
-    if (Number.isFinite(fromEnv) && env.HIGHLIGHT_DESK_TRIAL_DAYS !== undefined && env.HIGHLIGHT_DESK_TRIAL_DAYS !== "") return Math.max(0, Math.floor(fromEnv));
+    const fromEnv = Number(env.CHATCLIP_TRIAL_DAYS);
+    if (Number.isFinite(fromEnv) && env.CHATCLIP_TRIAL_DAYS !== undefined && env.CHATCLIP_TRIAL_DAYS !== "") return Math.max(0, Math.floor(fromEnv));
     return Number(build.trialDays) > 0 ? Math.floor(Number(build.trialDays)) : 7;
   })();
 
