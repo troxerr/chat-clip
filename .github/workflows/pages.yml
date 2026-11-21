@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "web/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -26,8 +27,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build web app (served under /chat-clip/app/)
+        working-directory: web
+        env:
+          VITE_BASE: /chat-clip/app/
+        run: |
+          npm ci
+          npm run build
+      - name: Assemble site
+        run: |
+          mkdir _site
+          cp -R site/. _site/
+          cp -R web/dist _site/app
+          # Pages only serves the root 404.html; it redirects deep links into the SPA
+          cp web/dist/404.html _site/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

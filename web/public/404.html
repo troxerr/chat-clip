@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ChatClip</title>
+    <script>
+      // GitHub Pages only serves the root 404.html. Redirect deep links under
+      // /chat-clip/app/ to the SPA entry point with the route in the query.
+      var l = window.location
+      if (l.pathname.indexOf('/chat-clip/app/') === 0) {
+        l.replace(
+          l.protocol + '//' + l.host + '/chat-clip/app/?/' +
+            l.pathname.slice('/chat-clip/app/'.length).replace(/&/g, '~and~') +
+            (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+            l.hash,
+        )
+      } else {
+        l.replace('/chat-clip/')
+      }
+    </script>
+  </head>
+</html>
