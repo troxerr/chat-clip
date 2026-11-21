@@ -3,8 +3,7 @@
 // Trial and license state for the Windows app. Port of the Mac app's rules:
 //   - a development build (licenseRequired false) is always unlocked;
 //   - otherwise a trial starts on first run (7 days by default);
-//   - a license is a key plus an activation instance, validated against Lemon
-//     Squeezy; it counts as fresh for 14 days after the last good validation
+//   - a license is a key plus an activation instance, validated by the provider; it counts as fresh for 14 days after the last good validation
 //     (offline grace) and is re-checked in the background when stale.
 // The key is a secret and lives in the credential store; dates and the instance
 // id are not secret and live in the config's "license" section.
@@ -22,7 +21,7 @@ function looksOffline(error) {
 function createLicenseManager({
   readConfig,       // () => config object
   writeConfig,      // (config) => void
-  store,            // { get(name), set(name, value), delete(name), writable() }
+  store,            // { get(name), set(name, value), prepareSet(name, value), delete(name) }
   request,          // (action, options) => result, as tools/license.js licenseRequest
   now = () => new Date(),
   build = {},       // { licenseRequired, trialDays, productId, checkoutUrl }
@@ -94,14 +93,40 @@ function createLicenseManager({
       message, email: s.email || "", productName: s.productName || "", checkoutUrl: build.checkoutUrl || "" };
   }
 
+  let activationPending = false;
   async function activate(rawKey) {
     const licenseKey = String(rawKey || "").trim();
     if (!licenseKey) throw new Error("Enter your license key.");
-    const result = await request("activate", { licenseKey, instanceName: `ClipSpike (${deviceName})`, productId: build.productId || "", ...providerOptions });
-    if (!result || !result.valid || !result.instanceId) throw new Error("That license key could not be activated.");
-    store.set(KEY, licenseKey);
-    save({ instance: result.instanceId, email: result.customerEmail || "", productName: result.productName || "", lastValidatedAt: now().toISOString() });
-    return state();
+    if (activationPending) throw new Error("License activation is already in progress.");
+    activationPending = true;
+    try {
+      const previousKey = store.get(KEY);
+      const previousInstance = section().instance;
+      const commitKey = store.prepareSet(KEY, licenseKey);
+      const options = { licenseKey, productId: build.productId || "", ...providerOptions };
+      const result = await request("activate", { ...options, instanceName: `ClipSpike (${deviceName})` });
+      if (!result || !result.valid || !result.instanceId) throw new Error("That license key could not be activated.");
+      let keySaved = false;
+      try {
+        commitKey();
+        keySaved = true;
+        save({ instance: result.instanceId, email: result.customerEmail || "", productName: result.productName || "", lastValidatedAt: now().toISOString() });
+      } catch (error) {
+        if (keySaved && previousKey !== licenseKey) {
+          try {
+            if (previousKey) store.set(KEY, previousKey);
+            else store.delete(KEY);
+          } catch {}
+        }
+        if (result.instanceId !== previousInstance) {
+          try { await request("deactivate", { ...options, instanceId: result.instanceId }); } catch {}
+        }
+        throw error;
+      }
+      return state();
+    } finally {
+      activationPending = false;
+    }
   }
 
   // Re-checks the license. Returns the new state. Never throws for network
