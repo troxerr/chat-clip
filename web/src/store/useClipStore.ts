@@ -1,22 +1,17 @@
 import { create } from 'zustand'
+import { mockClips, type Clip } from '../data/clips'
 
-export interface Clip {
-  id: number
-  title: string
-}
+export type { Clip }
 
 interface ClipState {
   clips: Clip[]
-  addClip: (title: string) => void
+  toggleFavorite: (id: number) => void
   removeClip: (id: number) => void
 }
 
 export const useClipStore = create<ClipState>((set) => ({
-  clips: [
-    { id: 1, title: 'Sample clip one' },
-    { id: 2, title: 'Sample clip two' },
-  ],
-  addClip: (title) =>
-    set((s) => ({ clips: [...s.clips, { id: Date.now(), title }] })),
+  clips: mockClips,
+  toggleFavorite: (id) =>
+    set((s) => ({ clips: s.clips.map((c) => (c.id === id ? { ...c, favorite: !c.favorite } : c)) })),
   removeClip: (id) => set((s) => ({ clips: s.clips.filter((c) => c.id !== id) })),
 }))

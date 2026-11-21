@@ -20,22 +20,34 @@ describe('routing', () => {
 
   it('renders Home at /', () => {
     renderAt('/')
-    expect(screen.getByRole('heading', { name: 'Welcome' })).toBeInTheDocument()
-    expect(screen.getByText(/You have 2 clips/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Never miss the moment/ })).toBeInTheDocument()
+    expect(screen.getByText('Top highlights')).toBeInTheDocument()
   })
 
-  it('renders Clips at /clips and supports add/remove', async () => {
+  it('filters clips by streamer and sort on /clips', async () => {
     const user = userEvent.setup()
     renderAt('/clips')
-    expect(screen.getByRole('heading', { name: 'Clips' })).toBeInTheDocument()
-    expect(screen.getByText(/Sample clip one/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Highlights' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('10 highlights')
+    await user.selectOptions(screen.getByLabelText('Streamer'), 'jasontheween')
+    expect(screen.getByRole('status')).toHaveTextContent('4 highlights')
+    await user.type(screen.getByLabelText('Search clips'), 'zzz')
+    expect(screen.getByText('No highlights match your filters.')).toBeInTheDocument()
+  })
 
-    await user.type(screen.getByPlaceholderText('New clip title'), '  Fresh  ')
-    await user.click(screen.getByRole('button', { name: 'Add' }))
-    expect(screen.getByText(/Fresh/)).toBeInTheDocument()
+  it('opens a clip detail and dismisses it', async () => {
+    const user = userEvent.setup()
+    renderAt('/clips')
+    await user.click(screen.getByRole('link', { name: /Chat explodes after the 1v4 ace/ }))
+    expect(screen.getByRole('heading', { name: /1v4 ace/ })).toBeInTheDocument()
+    expect(screen.getByText('2:05:22')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(screen.getByRole('status')).toHaveTextContent('9 highlights')
+  })
 
-    await user.click(screen.getAllByRole('button', { name: 'Remove' })[0])
-    expect(screen.queryByText(/Sample clip one/)).not.toBeInTheDocument()
+  it('shows not found for an unknown clip', () => {
+    renderAt('/clips/999')
+    expect(screen.getByRole('heading', { name: 'Clip not found' })).toBeInTheDocument()
   })
 
   it('renders About at /about', () => {
@@ -55,6 +67,6 @@ describe('routing', () => {
     await user.click(screen.getByRole('link', { name: 'About' }))
     expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Home' }))
-    expect(screen.getByRole('heading', { name: 'Welcome' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Never miss/ })).toBeInTheDocument()
   })
 })
