@@ -176,6 +176,13 @@ function main() {
     buildMenu();
     createWindow();
     app.on("second-instance", () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+    if (!SMOKE) {
+      try {
+        require("./updater.js").startAutoUpdate({
+          app, autoUpdater: require("electron-updater").autoUpdater, resourcesPath: process.resourcesPath, log: (m) => console.log(`[updater] ${m}`)
+        });
+      } catch (error) { console.log(`[updater] disabled: ${error.message}`); }
+    }
     if (SMOKE) require("./smoke.js").run({ win, services, dir: SMOKE, send });
   });
 

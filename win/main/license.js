@@ -14,8 +14,9 @@ const DAY_MS = 86400000;
 const GRACE_DAYS = 14;
 
 function looksOffline(error) {
+  if (error && error.transient === true) return true;
   const text = `${error && error.name} ${error && error.message}`;
-  return /TypeError|TimeoutError|AbortError|fetch failed|ENOTFOUND|ECONN|ETIMEDOUT|EAI_AGAIN|network|timed out|License service failed \(5\d\d\)/i.test(text);
+  return /TypeError|TimeoutError|AbortError|fetch failed|ENOTFOUND|ECONN|ETIMEDOUT|EAI_AGAIN|network|timed out|License service (failed|unavailable) \((5\d\d|429)\)/i.test(text);
 }
 
 function createLicenseManager({
