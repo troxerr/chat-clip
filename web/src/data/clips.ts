@@ -1,7 +1,7 @@
-export type Signal = 'Chat spike' | 'Audio peak' | 'Clutch play' | 'Funny moment' | 'Hype train'
+export type Signal = 'Chat spike' | 'Audio peak' | 'Clutch play' | 'Funny moment' | 'Hype train' | 'Twitch clip'
 
 export interface Clip {
-  id: number
+  id: number | string
   title: string
   streamer: string
   game: string
@@ -14,6 +14,8 @@ export interface Clip {
   chatRate: number
   hue: number
   favorite: boolean
+  url?: string
+  thumbnailUrl?: string
 }
 
 export const FEATURED_STREAMER = 'Jynxzi'

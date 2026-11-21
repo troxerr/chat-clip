@@ -9,8 +9,16 @@ const links = [
   { to: '/about', label: 'About' },
 ]
 
+const REFRESH_MS = 60_000
+
 export default function Layout() {
   const advance = useClipStore((s) => s.advanceMockStatus)
+  const refresh = useClipStore((s) => s.refreshData)
+  useEffect(() => {
+    void refresh()
+    const id = setInterval(() => void refresh(), REFRESH_MS)
+    return () => clearInterval(id)
+  }, [refresh])
   useEffect(() => {
     const id = setInterval(advance, 8000)
     return () => clearInterval(id)
