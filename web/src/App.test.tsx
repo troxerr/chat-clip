@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -68,5 +68,19 @@ describe('routing', () => {
     expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Home' }))
     expect(screen.getByRole('heading', { name: /Never miss/ })).toBeInTheDocument()
+  })
+})
+
+describe('backup streamer', () => {
+  beforeEach(() => useClipStore.setState(initial, true))
+
+  it('switches to a backup when the featured streamer goes offline and back', () => {
+    renderAt('/')
+    expect(screen.getByLabelText('Current streamer')).toHaveTextContent('jasontheween')
+    act(() => useClipStore.getState().advanceMockStatus())
+    expect(screen.getByLabelText('Current streamer')).toHaveTextContent('kaicenat')
+    expect(screen.getByText(/Switched to backup/)).toBeInTheDocument()
+    act(() => useClipStore.getState().setStreamStatus({ jasontheween: 'live' }))
+    expect(screen.queryByText(/Switched to backup/)).not.toBeInTheDocument()
   })
 })

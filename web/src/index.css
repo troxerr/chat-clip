@@ -67,3 +67,7 @@ input:focus, select:focus, .btn:focus-visible, a:focus-visible { outline: 2px so
   .following { display: none; }
   .main { overflow: visible; }
 }
+.status-pill { font-size: .75rem; font-weight: 700; }
+.status-pill.on { color: #ff4d4d; }
+.status-pill.off { color: var(--muted); }
+.backup-note { font-size: .75rem; color: #f5c451; margin-top: .25rem; }

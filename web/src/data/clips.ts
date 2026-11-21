@@ -48,3 +48,14 @@ export const mockClips: Clip[] = [
   clip(9, 'Sub goal smashed in 90 seconds', 'driftwoodtv', 'Fortnite', 85, 'Hype train', '2026-11-19T22:00:00Z', 6400, 40, 7800, 201),
   clip(10, 'Mic peaks on the final zone', 'driftwoodtv', 'Fortnite', 58, 'Audio peak', '2026-11-16T20:50:00Z', 9100, 22, 2100, 74),
 ]
+
+// Ordered by priority; the first live one is used when the featured streamer goes offline.
+export const BACKUP_STREAMERS = ['xqc', 'kaicenat', 'pokimane']
+
+// Mock status timeline (no Twitch API); the store steps through it on a timer.
+export const MOCK_STATUS_TIMELINE: Record<string, 'live' | 'offline'>[] = [
+  { jasontheween: 'live', xqc: 'live', kaicenat: 'offline', pokimane: 'live' },
+  { jasontheween: 'offline', xqc: 'offline', kaicenat: 'live', pokimane: 'live' },
+  { jasontheween: 'offline', xqc: 'offline', kaicenat: 'offline', pokimane: 'live' },
+  { jasontheween: 'live', xqc: 'live', kaicenat: 'offline', pokimane: 'live' },
+]

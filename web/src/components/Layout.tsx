@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { FEATURED_STREAMER } from '../data/clips'
+import { useEffect } from 'react'
+import { useClipStore } from '../store/useClipStore'
+import StreamerStatus from './StreamerStatus'
 
 const links = [
   { to: '/', label: 'Home', end: true },
@@ -8,6 +10,11 @@ const links = [
 ]
 
 export default function Layout() {
+  const advance = useClipStore((s) => s.advanceMockStatus)
+  useEffect(() => {
+    const id = setInterval(advance, 8000)
+    return () => clearInterval(id)
+  }, [advance])
   return (
     <div className="layout">
       <aside className="sidebar">
@@ -19,10 +26,7 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="following">
-          <span className="meta">Featured streamer</span>
-          <span className="streamer">{FEATURED_STREAMER}</span>
-        </div>
+        <StreamerStatus />
       </aside>
       <main className="main">
         <div className="content">
