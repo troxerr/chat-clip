@@ -54,7 +54,7 @@ if [[ "${1:-}" == "--check" ]]; then
   [[ "$(plist SUFeedURL)" == https://* && "$(plist SUFeedURL)" != *localhost* && "$(plist SUFeedURL)" != *127.0.0.1* ]] && pass "SUFeedURL is a public HTTPS URL" || fail "SUFeedURL missing, not HTTPS, or local"
   [[ -n "$(plist SUPublicEDKey)" ]] && pass "SUPublicEDKey configured" || fail "SUPublicEDKey missing"
   [[ "$(plist HDLicenseRequired)" == "true" ]] && pass "license enforcement enabled" || fail "HDLicenseRequired is not true"
-  [[ -n "$(plist HDProductId)" ]] && pass "Lemon product ID configured" || fail "HDProductId missing"
+  [[ -n "$(plist HDProductId)" ]] && pass "license product ID configured" || fail "HDProductId missing"
   [[ -n "$(plist HDCheckoutURL)" ]] && pass "checkout URL configured" || fail "HDCheckoutURL missing"
   [[ -n "$(plist HDDropboxAppKey)" ]] && pass "Dropbox OAuth client configured" || fail "HDDropboxAppKey missing"
   [[ -n "$(plist HDGoogleClientId)" ]] && pass "Google OAuth client ID configured" || fail "HDGoogleClientId missing"

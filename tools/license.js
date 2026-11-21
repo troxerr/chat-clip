@@ -4,6 +4,8 @@
 const { getSecret } = require("../lib/credentials.js");
 
 const DEFAULT_API_BASE = "https://api.lemonsqueezy.com";
+const POLAR_API_BASE = "https://api.polar.sh";
+const POLAR_SANDBOX_API_BASE = "https://sandbox-api.polar.sh";
 
 function parseArgs(argv) {
   const args = {};
@@ -55,7 +57,7 @@ function transientError(message) {
   return error;
 }
 
-async function licenseRequest(action, {
+async function lemonRequest(action, {
   licenseKey,
   instanceName = "",
   instanceId = "",
@@ -110,6 +112,123 @@ async function licenseRequest(action, {
   return normalize(data, action, productId);
 }
 
+// ---------------------------------------------------------------------------
+// Polar (https://docs.polar.sh/docs/benefits/license-keys). The customer-portal
+// endpoints need no secret and are meant for desktop apps. The app passes one
+// "product ID" setting, so for Polar it is ORGANIZATION_ID or
+// ORGANIZATION_ID:BENEFIT_ID (the license-key benefit, to reject keys from other
+// products). The result is normalised to the same shape the app already reads.
+function detectProvider(apiBase = "", provider = "") {
+  const named = String(provider || "").trim().toLowerCase();
+  if (named === "polar" || named === "lemon") return named;
+  return /(^|\.)polar\.sh(\/|:|$)/i.test(String(apiBase).replace(/^https?:\/\//i, "")) ? "polar" : "lemon";
+}
+
+function parsePolarProduct(productId = "") {
+  const [orgId = "", benefitId = ""] = String(productId).split(":").map((part) => part.trim());
+  return { orgId, benefitId };
+}
+
+function polarErrorMessage(data, fallback) {
+  const detail = data && (data.detail || data.message || data.error);
+  return typeof detail === "string" && detail ? detail : fallback;
+}
+
+function normalizePolar(data, action, { benefitId = "", instanceId = "" } = {}) {
+  data = data || {};
+  const license = action === "activate" ? (data.license_key || {}) : data;
+  const productId = license.benefit_id ? String(license.benefit_id) : "";
+  if (action !== "deactivate" && benefitId && productId !== benefitId) {
+    throw new Error(productId
+      ? `This license belongs to a different product (${productId}).`
+      : "This license could not be matched to Chatclip.");
+  }
+  const status = action === "deactivate" ? "" : (license.status === "granted" ? "active" : String(license.status || ""));
+  const activation = action === "activate" ? data : (data.activation || {});
+  const valid = action !== "deactivate" && status === "active";
+  return {
+    ok: action === "deactivate" ? true : valid,
+    valid,
+    action,
+    status,
+    instanceId: (activation && activation.id) || instanceId || "",
+    productId,
+    productName: "",
+    customerEmail: (license.customer && license.customer.email) || "",
+    expiresAt: license.expires_at || null,
+    activationLimit: license.limit_activations || null,
+    activationUsage: null // Polar's `usage` is a usage-quota counter, not the number of activations
+  };
+}
+
+async function polarRequest(action, {
+  licenseKey,
+  instanceName = "",
+  instanceId = "",
+  productId = "",
+  apiBase = POLAR_API_BASE,
+  fetchImpl = fetch
+}) {
+  if (!licenseKey) throw new Error("A license key is required.");
+  const paths = {
+    activate: "/v1/customer-portal/license-keys/activate",
+    validate: "/v1/customer-portal/license-keys/validate",
+    deactivate: "/v1/customer-portal/license-keys/deactivate"
+  };
+  if (!paths[action]) throw new Error(`Unknown license action: ${action}`);
+  const { orgId, benefitId } = parsePolarProduct(productId);
+  if (!orgId) throw new Error("Polar licensing needs an organization ID: set the product ID to ORG_ID or ORG_ID:BENEFIT_ID.");
+  const body = { key: licenseKey, organization_id: orgId };
+  if (action === "activate") body.label = instanceName || "Chatclip";
+  if (action === "validate" || action === "deactivate") {
+    if (!instanceId) throw new Error("An instance ID is required.");
+    body.activation_id = instanceId;
+  }
+  let response;
+  try {
+    response = await fetchImpl(`${String(apiBase || POLAR_API_BASE).replace(/\/$/, "")}${paths[action]}`, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30000)
+    });
+  } catch (cause) {
+    throw transientError("Could not reach the license service. Check your connection.");
+  }
+  let data = {};
+  try { data = await response.json(); } catch { data = {}; }
+  if (!response.ok) {
+    if (response.status >= 500 || response.status === 429) {
+      throw transientError(polarErrorMessage(data, `License service unavailable (${response.status}).`));
+    }
+    if (response.status === 404) {
+      throw new Error(action === "deactivate" ? "The activation could not be found." : "The license key is not valid, or has been revoked or expired.");
+    }
+    if (response.status === 403) {
+      throw new Error(polarErrorMessage(data, "This license cannot be activated (it may be revoked, expired, or at its activation limit)."));
+    }
+    throw new Error(polarErrorMessage(data, `License service failed (${response.status}).`));
+  }
+  try {
+    return normalizePolar(data, action, { benefitId, instanceId });
+  } catch (error) {
+    // Polar has already created the activation by now. A key from another product must not
+    // keep one of the buyer's activation slots, so release it (best effort) before failing.
+    if (action === "activate" && data && data.id) {
+      try {
+        await polarRequest("deactivate", { licenseKey, instanceId: data.id, productId, apiBase, fetchImpl });
+      } catch {}
+    }
+    throw error;
+  }
+}
+
+async function licenseRequest(action, options = {}) {
+  const provider = detectProvider(options.apiBase, options.provider);
+  if (provider === "polar") return polarRequest(action, options);
+  return lemonRequest(action, options);
+}
+
 // Order: --license-key, LEMON_LICENSE_KEY, then the credential store
 // (Windows DPAPI). The store is only read when the first two are empty.
 function resolveLicenseKey(args = {}, env = process.env, secret = getSecret) {
@@ -123,8 +242,10 @@ async function main() {
   const instanceName = String(args["instance-name"] || process.env.LEMON_INSTANCE_NAME || "Chatclip").trim();
   const instanceId = String(args["instance-id"] || process.env.LEMON_INSTANCE_ID || "").trim();
   const productId = String(args["product-id"] || process.env.LEMON_PRODUCT_ID || "").trim();
-  const apiBase = String(args["api-base"] || process.env.LEMON_API_BASE || DEFAULT_API_BASE).trim();
-  const result = await licenseRequest(action, { licenseKey, instanceName, instanceId, productId, apiBase });
+  const provider = String(args.provider || process.env.LICENSE_PROVIDER || "").trim();
+  const apiBase = String(args["api-base"] || process.env.LEMON_API_BASE || "").trim()
+    || (detectProvider("", provider) === "polar" ? POLAR_API_BASE : DEFAULT_API_BASE);
+  const result = await licenseRequest(action, { licenseKey, instanceName, instanceId, productId, apiBase, provider });
   process.stdout.write(JSON.stringify(result) + "\n");
 }
 
@@ -137,6 +258,13 @@ if (require.main === module) {
 
 module.exports = {
   DEFAULT_API_BASE,
+  POLAR_API_BASE,
+  POLAR_SANDBOX_API_BASE,
+  detectProvider,
+  parsePolarProduct,
+  normalizePolar,
+  polarRequest,
+  lemonRequest,
   parseArgs,
   normalize,
   licenseRequest,
