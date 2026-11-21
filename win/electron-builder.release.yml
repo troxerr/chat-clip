@@ -1,0 +1,12 @@
+# Release packaging: same as electron-builder.yml, but code-signed and with an
+# update feed. Signing activates only when CSC_LINK / CSC_KEY_PASSWORD (a .pfx
+# certificate) are set in the environment; see docs/WINDOWS_RELEASE.md.
+extends: electron-builder.yml
+win:
+  signAndEditExecutable: true
+  artifactName: ChatClip-${version}-x64.exe
+# Writes latest.yml next to the installer for a generic update feed.
+# WIN_UPDATE_URL is the public folder that will host both files.
+publish:
+  provider: generic
+  url: ${env.WIN_UPDATE_URL}
