@@ -388,6 +388,20 @@ Open **License…** in the app menu to see trial days, enter a key, activate, de
 - offline grace: 14 days after the last successful validation
 - instance limit: controlled by the Lemon Squeezy product (the UI recommends two Macs)
 
+### Using Polar instead of Lemon Squeezy
+
+`tools/license.js` also speaks to [Polar](https://docs.polar.sh/docs/benefits/license-keys), using the customer-portal license-key endpoints, which need no secret and are meant for desktop apps. The app code is unchanged; it reads the same result. Lemon Squeezy remains the default. Select Polar by pointing the API base at Polar (or set `LICENSE_PROVIDER=polar`):
+
+```sh
+LICENSE_REQUIRED=1 \
+LEMON_API_BASE=https://sandbox-api.polar.sh \          # https://api.polar.sh in production
+LEMON_PRODUCT_ID=<organization-id>:<license-key-benefit-id> \
+CHECKOUT_URL=https://buy.polar.sh/... \
+npm run build:mac
+```
+
+The product ID setting holds the Polar organization ID, optionally followed by `:` and the license-key benefit ID. With the benefit ID set, keys from any other product are rejected. Set the benefit's activation limit in the Polar dashboard (two Macs). Test in the sandbox first.
+
 Set `LEMON_API_BASE` only for testing or a proxy. A license is required to start a new capture after the trial ends; an already-running capture is not interrupted.
 
 ## Commercial release
