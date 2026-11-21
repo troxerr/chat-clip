@@ -5,7 +5,17 @@ import { formatOffset, formatViews, scoreTier } from '../lib/clips'
 export default function ClipCard({ clip }: { clip: Clip }) {
   return (
     <Link to={`/clips/${clip.id}`} className="card">
-      <div className="thumb" style={{ ['--hue' as string]: clip.hue }}>
+      <div
+        className="thumb"
+        style={{
+          ['--hue' as string]: clip.hue,
+          ...(clip.thumbnailUrl && {
+            backgroundImage: `url(${clip.thumbnailUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }),
+        }}
+      >
         <span className={`score score-${scoreTier(clip.score)}`} title="Highlight score">
           {clip.score}
         </span>

@@ -5,7 +5,7 @@ import { useClipStore } from '../store/useClipStore'
 export default function ClipDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const clip = useClipStore((s) => s.clips.find((c) => c.id === Number(id)))
+  const clip = useClipStore((s) => s.clips.find((c) => String(c.id) === id))
   const { toggleFavorite, removeClip } = useClipStore()
 
   if (!clip) {
@@ -33,10 +33,15 @@ export default function ClipDetail() {
         <div><dt>Detected signal</dt><dd>{clip.signal}</dd></div>
         <div><dt>VOD timestamp</dt><dd>{formatOffset(clip.vodOffset)}</dd></div>
         <div><dt>Length</dt><dd>{clip.duration}s</dd></div>
-        <div><dt>Chat rate</dt><dd>{clip.chatRate} msg/min</dd></div>
+        {clip.chatRate > 0 && <div><dt>Chat rate</dt><dd>{clip.chatRate} msg/min</dd></div>}
         <div><dt>Views</dt><dd>{formatViews(clip.views)}</dd></div>
       </dl>
       <div className="row">
+        {clip.url && (
+          <a className="btn" href={clip.url} target="_blank" rel="noreferrer">
+            Watch on Twitch
+          </a>
+        )}
         <button className="btn" onClick={() => toggleFavorite(clip.id)} aria-pressed={clip.favorite}>
           {clip.favorite ? '★ Saved' : '☆ Save'}
         </button>
