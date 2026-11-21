@@ -5,19 +5,19 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleDisplayName</key>
-  <string>ChatClip</string>
+  <string>ClipSpike</string>
   <key>CFBundleExecutable</key>
-  <string>ChatClip</string>
+  <string>ClipSpike</string>
   <key>CFBundleIconName</key>
   <string>AppIcon</string>
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
-  <string>com.chatclip.app</string>
+  <string>com.clipspike.app</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>ChatClip</string>
+  <string>ClipSpike</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

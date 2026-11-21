@@ -101,7 +101,7 @@ NSImage *HDSymbolImage(HDSymbolRole role, CGFloat pointSize, NSFontWeight weight
   if (!name.length) return nil;
   NSImage *image = [NSImage imageWithSystemSymbolName:name accessibilityDescription:accessibility];
   if (!image) {
-    NSLog(@"ChatClip: missing SF Symbol %@", name);
+    NSLog(@"ClipSpike: missing SF Symbol %@", name);
     return nil;
   }
   NSImageSymbolConfiguration *config = [NSImageSymbolConfiguration configurationWithPointSize:pointSize weight:weight];
@@ -115,7 +115,7 @@ NSImage *HDSymbolSelectedImage(HDSymbolRole role, CGFloat pointSize, NSFontWeigh
   if (!name.length) return nil;
   NSImage *image = [NSImage imageWithSystemSymbolName:name accessibilityDescription:accessibility];
   if (!image) {
-    NSLog(@"ChatClip: missing SF Symbol %@", name);
+    NSLog(@"ClipSpike: missing SF Symbol %@", name);
     return nil;
   }
   NSImageSymbolConfiguration *config = [NSImageSymbolConfiguration configurationWithPointSize:pointSize weight:weight];

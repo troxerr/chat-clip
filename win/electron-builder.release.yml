@@ -4,7 +4,7 @@
 extends: electron-builder.yml
 win:
   signAndEditExecutable: true
-  artifactName: ChatClip-${version}-x64.exe
+  artifactName: ClipSpike-${version}-x64.exe
 # Writes latest.yml next to the installer for a generic update feed.
 # WIN_UPDATE_URL is the public folder that will host both files.
 publish:

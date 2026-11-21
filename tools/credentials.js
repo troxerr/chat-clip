@@ -79,7 +79,7 @@ async function main(argv, store = createCredentialStore({ respectDisableFlag: fa
   const [command, account] = argv;
   if (!store.canWrite && command !== "list") {
     console.error(store.backend === "keychain"
-      ? "On macOS, use the ChatClip app to connect accounts; it saves tokens in Keychain."
+      ? "On macOS, use the ClipSpike app to connect accounts; it saves tokens in Keychain."
       : "This platform has no credential store.");
     return 2;
   }

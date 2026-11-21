@@ -18,7 +18,7 @@ jobs:
     name: Build Windows release installer
     runs-on: windows-latest
     env:
-      CHATCLIP_KEYCHAIN: "0"
+      CLIPSPIKE_KEYCHAIN: "0"
       RUNTIME_MIRROR_URL: ${{ vars.RUNTIME_MIRROR_URL }}
       WIN_UPDATE_URL: ${{ vars.WIN_UPDATE_URL }}
       # electron-builder signs automatically when these are set.
@@ -81,7 +81,7 @@ jobs:
         if: env.SIGNED == 'true'
         shell: pwsh
         run: |
-          $exe = Get-ChildItem win\dist -Filter "ChatClip-*-x64.exe" | Select-Object -First 1
+          $exe = Get-ChildItem win\dist -Filter "ClipSpike-*-x64.exe" | Select-Object -First 1
           $sig = Get-AuthenticodeSignature $exe.FullName
           $sig.Status
           if ($sig.Status -ne "Valid") { Write-Host "::error::Installer signature is $($sig.Status)"; exit 1 }
@@ -95,9 +95,9 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ChatClip-windows-release
+          name: ClipSpike-windows-release
           path: |
-            win/dist/ChatClip-*-x64.exe
+            win/dist/ClipSpike-*-x64.exe
             win/dist/latest.yml
           if-no-files-found: error
 
@@ -107,7 +107,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $files = @(Get-ChildItem win\dist -Filter "ChatClip-*-x64.exe") + @(Get-ChildItem win\dist -Filter latest.yml -ErrorAction SilentlyContinue)
+          $files = @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64.exe") + @(Get-ChildItem win\dist -Filter latest.yml -ErrorAction SilentlyContinue)
           $notes = "Windows build"
           if ($env:SIGNED -ne "true") {
             $notes = "Windows build. **UNSIGNED**: no code-signing certificate was configured, so Windows SmartScreen will show an 'unknown publisher' warning (More info, then Run anyway)."
@@ -131,7 +131,7 @@ jobs:
           }
           $endpoint = "https://$($env:R2_ACCOUNT_ID).r2.cloudflarestorage.com"
           $prefix = $env:WIN_R2_PREFIX.Trim("/")
-          $exe = Get-ChildItem win\dist -Filter "ChatClip-*-x64.exe" | Select-Object -First 1
+          $exe = Get-ChildItem win\dist -Filter "ClipSpike-*-x64.exe" | Select-Object -First 1
           aws s3 cp $exe.FullName "s3://$($env:R2_BUCKET)/$prefix/$($exe.Name)" --endpoint-url $endpoint
           if ($LASTEXITCODE -ne 0) { exit 1 }
           aws s3 cp win\dist\latest.yml "s3://$($env:R2_BUCKET)/$prefix/latest.yml" --endpoint-url $endpoint --cache-control "no-cache"

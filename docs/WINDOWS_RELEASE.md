@@ -47,7 +47,7 @@ files yourself. The upload uses the AWS CLI against R2's S3 endpoint.
 ## Auto-update
 `win/main/updater.js` uses `electron-updater`. It checks at startup and installs on quit,
 only for a packaged app whose `app-update.yml` exists (so dev, smoke and the CI installer never update).
-Set `CHATCLIP_NO_UPDATE=1` to disable. **You must host** the installer and `latest.yml`
+Set `CLIPSPIKE_NO_UPDATE=1` to disable. **You must host** the installer and `latest.yml`
 at `WIN_UPDATE_URL` (the workflow uploads to R2 for tag builds when configured, see above;
 otherwise copy them from the draft release or the workflow artifact). Unsigned builds update only if you do not set a publisher name.
 

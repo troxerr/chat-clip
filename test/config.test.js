@@ -41,7 +41,7 @@ test("loadSettings and saveSettings round-trip through a storage shim", () => {
   const loaded = config.loadSettings(storage);
   assert.equal(loaded.sensitivity, 1.5);
 
-  storage.setItem("chatclip.settings", "{bad json");
+  storage.setItem("clipspike.settings", "{bad json");
   assert.deepEqual(config.loadSettings(storage), {});
 });
 

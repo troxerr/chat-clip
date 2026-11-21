@@ -32,28 +32,28 @@ const SETTINGS = {
   appSecret: "secret",
   refreshToken: "refresh",
   accessToken: "",
-  folder: "/ChatClip",
+  folder: "/ClipSpike",
   deleteAfterUpload: true
 };
 
 function tempFile(contents = "hello world") {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "chatclip-dropbox-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-dropbox-"));
   const file = path.join(dir, "clip.mp4");
   fs.writeFileSync(file, contents);
   return { dir, file, size: Buffer.byteLength(contents) };
 }
 
 test("path helpers produce absolute Dropbox paths", () => {
-  assert.equal(joinDropboxPath("/ChatClip", "lacy", "clip.mp4"), "/ChatClip/lacy/clip.mp4");
+  assert.equal(joinDropboxPath("/ClipSpike", "lacy", "clip.mp4"), "/ClipSpike/lacy/clip.mp4");
   assert.equal(joinDropboxPath("/", "lacy"), "/lacy");
-  assert.equal(joinDropboxPath("ChatClip", "", "clip.mp4"), "/ChatClip/clip.mp4");
+  assert.equal(joinDropboxPath("ClipSpike", "", "clip.mp4"), "/ClipSpike/clip.mp4");
   assert.equal(joinDropboxPath("/"), "/");
 });
 
 test("asciiJson escapes non-ASCII header content", () => {
-  const encoded = asciiJson({ path: "/ChatClip/é" });
+  const encoded = asciiJson({ path: "/ClipSpike/é" });
   assert.match(encoded, /^[\x00-\x7f]*$/);
-  assert.equal(JSON.parse(encoded).path, "/ChatClip/é");
+  assert.equal(JSON.parse(encoded).path, "/ClipSpike/é");
 });
 
 test("requires credentials", () => {
@@ -81,7 +81,7 @@ test("refreshes a token, creates folders, and uploads a size-confirmed file", as
       assert.equal(options.headers.Authorization, "Bearer tok");
       assert.ok(Buffer.isBuffer(options.body));
       const arg = JSON.parse(options.headers["Dropbox-API-Arg"]);
-      assert.equal(arg.path, "/ChatClip/chan/clip.mp4");
+      assert.equal(arg.path, "/ClipSpike/chan/clip.mp4");
       assert.equal(arg.mode[".tag"], "add");
       assert.equal(arg.autorename, true);
       return response({ path_display: arg.path, id: "id-1", size: options.body.length });
@@ -90,13 +90,13 @@ test("refreshes a token, creates folders, and uploads a size-confirmed file", as
   };
 
   const client = createDropboxClient(SETTINGS, { fetchImpl, sleep: async () => {} });
-  const result = await client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" });
+  const result = await client.uploadClip(file.file, { folder: "/ClipSpike", channel: "chan" });
   assert.equal(result.ok, true);
-  assert.equal(result.path, "/ChatClip/chan/clip.mp4");
+  assert.equal(result.path, "/ClipSpike/chan/clip.mp4");
   assert.equal(result.fileId, "id-1");
   assert.equal(result.size, file.size);
   assert.equal(calls.token, 1);
-  assert.deepEqual(calls.folders, ["/ChatClip", "/ChatClip/chan"]);
+  assert.deepEqual(calls.folders, ["/ClipSpike", "/ClipSpike/chan"]);
   assert.equal(calls.uploads, 1);
 
   fs.rmSync(file.dir, { recursive: true, force: true });
@@ -113,7 +113,7 @@ test("direct access tokens skip the refresh endpoint", async () => {
     if (url.endsWith("/2/files/create_folder_v2")) return response({ metadata: {} });
     if (url.endsWith("/2/files/upload")) {
       assert.equal(options.headers.Authorization, "Bearer direct-token");
-      return response({ path_display: "/ChatClip/chan/clip.mp4", id: "id-2", size: file.size });
+      return response({ path_display: "/ClipSpike/chan/clip.mp4", id: "id-2", size: file.size });
     }
     throw new Error(`unexpected URL ${url}`);
   };
@@ -122,7 +122,7 @@ test("direct access tokens skip the refresh endpoint", async () => {
     { ...SETTINGS, accessToken: "direct-token", refreshToken: "", appKey: "", appSecret: "" },
     { fetchImpl, sleep: async () => {} }
   );
-  const result = await client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" });
+  const result = await client.uploadClip(file.file, { folder: "/ClipSpike", channel: "chan" });
   assert.equal(result.ok, true);
   assert.equal(tokenCalls, 0);
   fs.rmSync(file.dir, { recursive: true, force: true });
@@ -142,7 +142,7 @@ test("treats an existing folder as success", async () => {
     throw new Error(`unexpected URL ${url}`);
   };
   const client = createDropboxClient(SETTINGS, { fetchImpl, sleep: async () => {} });
-  const result = await client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" });
+  const result = await client.uploadClip(file.file, { folder: "/ClipSpike", channel: "chan" });
   assert.equal(result.ok, true);
   fs.rmSync(file.dir, { recursive: true, force: true });
 });
@@ -153,13 +153,13 @@ test("rejects an upload whose remote size does not match", async () => {
     if (url.endsWith("/oauth2/token")) return response({ access_token: "tok", expires_in: 3600 });
     if (url.endsWith("/2/files/create_folder_v2")) return response({ metadata: {} });
     if (url.endsWith("/2/files/upload")) {
-      return response({ path_display: "/ChatClip/chan/clip.mp4", id: "id-4", size: file.size + 1 });
+      return response({ path_display: "/ClipSpike/chan/clip.mp4", id: "id-4", size: file.size + 1 });
     }
     throw new Error(`unexpected URL ${url}`);
   };
   const client = createDropboxClient(SETTINGS, { fetchImpl, sleep: async () => {} });
   await assert.rejects(
-    () => client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" }),
+    () => client.uploadClip(file.file, { folder: "/ClipSpike", channel: "chan" }),
     /size mismatch/
   );
   fs.rmSync(file.dir, { recursive: true, force: true });
@@ -180,7 +180,7 @@ test("retries a 429 upload before failing", async () => {
     throw new Error(`unexpected URL ${url}`);
   };
   const client = createDropboxClient(SETTINGS, { fetchImpl, sleep: async () => {}, maxAttempts: 3 });
-  const result = await client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" });
+  const result = await client.uploadClip(file.file, { folder: "/ClipSpike", channel: "chan" });
   assert.equal(result.ok, true);
   assert.equal(uploads, 2);
   fs.rmSync(file.dir, { recursive: true, force: true });
@@ -198,12 +198,12 @@ test("refreshes a public PKCE token without a client secret", async () => {
     if (url.endsWith("/2/files/create_folder_v2")) return response({ metadata: {} });
     if (url.endsWith("/2/files/upload")) {
       assert.equal(options.headers.Authorization, "Bearer pkce-token");
-      return response({ path_display: "/ChatClip/chan/clip.mp4", id: "pkce", size: options.body.length });
+      return response({ path_display: "/ClipSpike/chan/clip.mp4", id: "pkce", size: options.body.length });
     }
     throw new Error(`unexpected URL ${url}`);
   };
   const client = createDropboxClient({ ...SETTINGS, appSecret: "" }, { fetchImpl, sleep: async () => {} });
-  const result = await client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" });
+  const result = await client.uploadClip(file.file, { folder: "/ClipSpike", channel: "chan" });
   assert.equal(result.ok, true);
   assert.equal(tokenBody.get("client_id"), SETTINGS.appKey);
   assert.equal(tokenBody.get("client_secret"), null);

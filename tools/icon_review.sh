@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ICTOOL="$(xcode-select -p)/../Applications/Icon Composer.app/Contents/Executables/ictool"
-OUT="${1:-/private/tmp/chatclip-icon}"
+OUT="${1:-/private/tmp/clipspike-icon}"
 mkdir -p "$OUT"
 for look in Default Dark TintedLight ClearLight; do
   "$ICTOOL" "$ROOT/Icon/AppIcon.icon" --export-image --output-file "$OUT/$look.png" \

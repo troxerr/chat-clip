@@ -2,7 +2,7 @@
 #import "HDKeychain.h"
 #import <IOKit/IOKitLib.h>
 
-static NSString *const kLicenseService = @"com.chatclip.app.license";
+static NSString *const kLicenseService = @"com.clipspike.app.license";
 static NSString *const kAccountKey = @"license_key";
 static NSString *const kAccountInstance = @"instance_id";
 static NSString *const kAccountValidated = @"last_validated_timestamp";
@@ -42,7 +42,7 @@ const NSTimeInterval HDLicenseGraceInterval = 14 * 24 * 60 * 60;
 + (NSString *)instanceName {
   NSString *host = [[NSHost currentHost] localizedName] ?: @"Mac";
   NSString *uuid = [self hardwareUUID];
-  return uuid.length ? [NSString stringWithFormat:@"%@ - %@", host, uuid] : [NSString stringWithFormat:@"%@ - ChatClip", host];
+  return uuid.length ? [NSString stringWithFormat:@"%@ - %@", host, uuid] : [NSString stringWithFormat:@"%@ - ClipSpike", host];
 }
 
 #pragma mark - Storage

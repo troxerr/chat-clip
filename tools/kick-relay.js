@@ -21,7 +21,7 @@ let setup;
 
 function saveKeychain(account, secret) {
   if (process.platform !== "darwin") throw new Error("Use environment credentials on non-macOS systems.");
-  const result = spawnSync("/usr/bin/security", ["add-generic-password", "-U", "-s", "com.chatclip.app.credentials", "-a", account, "-w", secret], { stdio: "ignore", timeout: 10000 });
+  const result = spawnSync("/usr/bin/security", ["add-generic-password", "-U", "-s", "com.clipspike.app.credentials", "-a", account, "-w", secret], { stdio: "ignore", timeout: 10000 });
   if (result.status !== 0) throw new Error("Could not save Kick credentials to Keychain.");
 }
 function listen(server, port) {
@@ -41,7 +41,7 @@ async function start(clientSecret, token) {
 }
 async function main() {
   const secret = process.env.KICK_CLIENT_SECRET || keychainToken("kick.clientSecret");
-  const token = process.env.CHATCLIP_KICK_RELAY_TOKEN || keychainToken("kick.relayToken");
+  const token = process.env.CLIPSPIKE_KICK_RELAY_TOKEN || keychainToken("kick.relayToken");
   if (secret && token) return start(secret, token);
   let busy = false;
   const setupPath = `/setup/${setupNonce}`;
@@ -50,7 +50,7 @@ async function main() {
     if (req.headers.host !== `127.0.0.1:${controlPort}` || req.headers["x-forwarded-for"] || req.url !== setupPath) return reply(res, 404, { error: "Not found" });
     if (req.method === "GET") {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'" });
-      return res.end(`<!doctype html><html><meta charset="utf-8"><title>Pair Kick with ChatClip</title><style>body{font:17px system-ui;max-width:620px;margin:70px auto;padding:25px;background:#fafafa;color:#222}label,input,button{display:block}input{box-sizing:border-box;width:100%;padding:12px;margin:12px 0 24px}button{padding:12px 20px;background:#176a40;color:white;border:0;border-radius:6px}small{line-height:1.6}</style><h1>Pair Kick with ChatClip</h1><p>Save your Kick developer app secret in this Mac’s Keychain and test API access.</p><p>Application: <b>HighlightDesk</b></p><form method="post"><label>Client secret<input name="secret" type="password" required autocomplete="off" maxlength="512"></label><button>Save to Keychain and connect</button></form><p><small>The secret goes only to this local relay and Kick’s authentication endpoint. It is never included in the Mac app bundle or chat logs. A separate local pairing token is also saved to Keychain.</small></p></html>`);
+      return res.end(`<!doctype html><html><meta charset="utf-8"><title>Pair Kick with ClipSpike</title><style>body{font:17px system-ui;max-width:620px;margin:70px auto;padding:25px;background:#fafafa;color:#222}label,input,button{display:block}input{box-sizing:border-box;width:100%;padding:12px;margin:12px 0 24px}button{padding:12px 20px;background:#176a40;color:white;border:0;border-radius:6px}small{line-height:1.6}</style><h1>Pair Kick with ClipSpike</h1><p>Save your Kick developer app secret in this Mac’s Keychain and test API access.</p><p>Application: <b>HighlightDesk</b></p><form method="post"><label>Client secret<input name="secret" type="password" required autocomplete="off" maxlength="512"></label><button>Save to Keychain and connect</button></form><p><small>The secret goes only to this local relay and Kick’s authentication endpoint. It is never included in the Mac app bundle or chat logs. A separate local pairing token is also saved to Keychain.</small></p></html>`);
     }
     if (req.method !== "POST" || req.headers.origin !== origin) return reply(res, 403, { error: "Forbidden" });
     if (busy) return reply(res, 409, { error: "Setup already in progress" });

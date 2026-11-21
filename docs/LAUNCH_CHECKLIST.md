@@ -4,7 +4,7 @@ The remaining launch steps need your own accounts and machines. Work through the
 
 Order matters: 1–3 need nothing from the release pipeline; 4–7 produce the keys, profiles and hosting the pipeline needs; 8 exercises everything.
 
-- [ ] 1. Mac migration from Highlight Desk
+- [ ] 1. Mac migration from ChatClip or Highlight Desk
 - [ ] 2. Live Kick test
 - [ ] 3. Polar sandbox pass
 - [ ] 4. Sparkle key and appcast
@@ -15,51 +15,51 @@ Order matters: 1–3 need nothing from the release pipeline; 4–7 produce the k
 
 ---
 
-## 1. Test the Mac migration from an old Highlight Desk install
+## 1. Test the Mac migration from an old ChatClip or Highlight Desk install
 
-Use a Mac (or a macOS user account) that has run a Highlight Desk build (`com.highlightdesk.app`) and has not run ChatClip. If you no longer have one, build the old version from git history before the rename (`git show 3b63108:mac/build.sh` is the last pre-rename commit; check it out in a separate worktree) and launch it once so it creates config, a Keychain entry and a license.
+Use a Mac (or a macOS user account) that has run a Highlight Desk build (`com.highlightdesk.app`) or a ChatClip build (`com.chatclip.app`) and has not run ClipSpike. Repeat the steps for each, and once with both present (ChatClip data wins on conflicts). If you no longer have one, build the old version from git history before the rename (`git show 3b63108:mac/build.sh` is the last pre-rename commit; check it out in a separate worktree) and launch it once so it creates config, a Keychain entry and a license.
 
 ### Set up
 
 Confirm the old data exists:
 
 ```sh
-ls -la ~/.highlight-desk.json "$HOME/Library/Application Support/Highlight Desk" ~/Movies/"Highlight Desk"
-security find-generic-password -s com.highlightdesk.app.credentials
-security find-generic-password -s com.highlightdesk.app.license
-defaults read com.highlightdesk.app
+ls -la ~/.chatclip.json ~/.highlight-desk.json "$HOME/Library/Application Support/ChatClip" "$HOME/Library/Application Support/Highlight Desk" ~/Movies/ChatClip ~/Movies/"Highlight Desk"
+security find-generic-password -s com.chatclip.app.credentials   # or com.highlightdesk.app.credentials
+security find-generic-password -s com.chatclip.app.license
+defaults read com.chatclip.app                                    # or com.highlightdesk.app
 ```
 
-Make sure no `~/.chatclip.json`, `~/Library/Application Support/ChatClip` or `~/Movies/ChatClip` exists yet, and that the migration flag is unset:
+Make sure no `~/.clipspike.json`, `~/Library/Application Support/ClipSpike` or `~/Movies/ClipSpike` exists yet, and that the migration flag is unset:
 
 ```sh
-defaults delete com.chatclip.app HDLegacyMigrationV1 2>/dev/null; echo ok
+defaults delete com.clipspike.app HDLegacyMigrationV1 2>/dev/null; echo ok
 ```
 
-Quit Highlight Desk. Build and launch ChatClip (`npm run build:mac`, then open `mac/build/ChatClip.app`), or use the notarized DMG from step 8.
+Quit the old app. Build and launch ClipSpike (`npm run build:mac`, then open `mac/build/ClipSpike.app`), or use the notarized DMG from step 8.
 
 ### Expect
 
-- **One Keychain prompt, once.** macOS asks whether `ChatClip` may use the `com.highlightdesk.app.credentials` / `.license` items (the old app owned them). Enter your login password and choose **Always Allow**. You should not see it again on later launches. Denying it leaves the migration incomplete; it is retried on the next launch.
-- `~/.highlight-desk.json` is copied to `~/.chatclip.json` (the old file stays).
-- `~/Library/Application Support/Highlight Desk` is moved to `…/ChatClip`.
-- Keychain items are copied to `com.chatclip.app.credentials` and `com.chatclip.app.license`; the old ones stay.
-- Preferences are copied from `com.highlightdesk.app`.
-- `~/Movies/Highlight Desk` keeps being used as the output folder until a `~/Movies/ChatClip` folder exists.
+- **One Keychain prompt, once.** macOS asks whether `ClipSpike` may use the `com.chatclip.app.*` / `com.highlightdesk.app.*` credential and license items (the old app owned them). Enter your login password and choose **Always Allow**. You should not see it again on later launches. Denying it leaves the migration incomplete; it is retried on the next launch.
+- `~/.chatclip.json` (else `~/.highlight-desk.json`) is copied to `~/.clipspike.json` (the old file stays).
+- `~/Library/Application Support/ChatClip` and `…/Highlight Desk` are moved to (merged into) `…/ClipSpike`.
+- Keychain items are copied to `com.clipspike.app.credentials` and `com.clipspike.app.license`; the old ones stay.
+- Preferences are copied from `com.chatclip.app` and `com.highlightdesk.app`.
+- `~/Movies/ChatClip` or `~/Movies/Highlight Desk` keeps being used as the output folder until a `~/Movies/ClipSpike` folder exists.
 - Your license, Dropbox/Google connection and existing clips appear without re-entering anything.
 
 ### Confirm success
 
 ```sh
-ls -la ~/.chatclip.json ~/.highlight-desk.json
-ls -la "$HOME/Library/Application Support/ChatClip"
-cat "$HOME/Library/Application Support/ChatClip/.migrated-from-highlight-desk"   # JSON with migratedAt
-security find-generic-password -s com.chatclip.app.credentials
-security find-generic-password -s com.chatclip.app.license
-defaults read com.chatclip.app HDLegacyMigrationV1                               # 1
+ls -la ~/.clipspike.json ~/.chatclip.json ~/.highlight-desk.json
+ls -la "$HOME/Library/Application Support/ClipSpike"
+cat "$HOME/Library/Application Support/ClipSpike/.migrated-from-legacy"   # JSON with migratedAt
+security find-generic-password -s com.clipspike.app.credentials
+security find-generic-password -s com.clipspike.app.license
+defaults read com.clipspike.app HDLegacyMigrationV1                               # 1
 ```
 
-Then in the app: open **License…** (status matches before), and confirm connected storage and past clips are listed. Quit and relaunch: no second prompt, nothing is migrated twice. Check the engine log in Terminal-launched runs for `[migration]` errors (`/Applications/ChatClip.app/Contents/MacOS/ChatClip` prints them to stderr).
+Then in the app: open **License…** (status matches before), and confirm connected storage and past clips are listed. Quit and relaunch: no second prompt, nothing is migrated twice. Check the engine log in Terminal-launched runs for `[migration]` errors (`/Applications/ClipSpike.app/Contents/MacOS/ClipSpike` prints them to stderr).
 
 Automated coverage of the file/state part: `node tools/run-tests.js test/migrate.test.js`.
 
@@ -72,7 +72,7 @@ Prerequisites: Google Chrome or Chromium installed, the Kick developer app (Clie
 > The "12-step" Kick audit list is not written down in the repo. The steps below are the live checks that [KICK.md](KICK.md) ("Verification and remaining live checks") says must pass, split into 12. If your audit list differs, follow it and keep this one as a cross-check.
 
 1. Baseline: `npm run check && npm run test:kick && npm run test:monitor` passes.
-2. Pair the relay: `npm run kick:relay`, open the printed setup link, paste the Kick **Client Secret**. Expect the page to verify it and save `kick.clientSecret` and `kick.relayToken` to Keychain (`security find-generic-password -s com.chatclip.app.credentials -a kick.relayToken`).
+2. Pair the relay: `npm run kick:relay`, open the printed setup link, paste the Kick **Client Secret**. Expect the page to verify it and save `kick.clientSecret` and `kick.relayToken` to Keychain (`security find-generic-password -s com.clipspike.app.credentials -a kick.relayToken`).
 3. Confirm app-token generation: restart `npm run kick:relay`; it starts without asking for the secret again, and `curl http://127.0.0.1:8765/health` returns `{"ok":true,...}`.
 4. In a second terminal: `cloudflared tunnel --url http://127.0.0.1:8766 --no-autoupdate`. Copy the HTTPS address. Tunnel **only** port 8766, never 8765.
 5. In the Kick developer app, set the webhook URL to `<tunnel address>/kick/webhook`, turn webhooks **on**, save.
@@ -82,14 +82,14 @@ Prerequisites: Google Chrome or Chromium installed, the Kick developer app (Clie
 9. Streamlink video acquisition: capture logs show video segments being recorded (Chrome/Chromium found; no browser-check error). Do it on both an Apple Silicon and an Intel Mac, with the bundled Streamlink from `npm run build:mac` (verify its Kick plugin loads).
 10. Warmup and automatic spike: wait out the one-minute warmup, then have several people spam an emote. An automatic clip appears.
 11. Commands and permissions: the broadcaster/moderator types `!clip` (and `!highlight`) and a clip is made; a normal viewer typing it does not make one.
-12. Export and timing: the clip lands in `~/Movies/ChatClip/kick/<channel>/` with its JSON sidecar and plays correctly. Check chat/video alignment against the stream (there is no measured Kick latency offset yet); note the offset in seconds. Optionally run `BUILD_DIR="$PWD/mac/build-kick" zsh mac/build.sh` for the Kick-enabled build and repeat 6–12 in the app.
+12. Export and timing: the clip lands in `~/Movies/ClipSpike/kick/<channel>/` with its JSON sidecar and plays correctly. Check chat/video alignment against the stream (there is no measured Kick latency offset yet); note the offset in seconds. Optionally run `BUILD_DIR="$PWD/mac/build-kick" zsh mac/build.sh` for the Kick-enabled build and repeat 6–12 in the app.
 
 Stop: Control-C capture, tunnel and relay; disable webhooks in Kick if the relay stays offline.
 
 ### Update docs/KICK.md afterwards
 
 - **Current status:** replace "This has not yet been verified against a live Kick broadcast." with what you verified, the date and the channel type; keep any step that failed as an open item.
-- **Registered app:** rename the Kick developer app from `HighlightDesk` to `ChatClip` (step 7) and delete the "name was set on Kick before the rename" note. Note whether the webhook is now on.
+- **Registered app:** rename the Kick developer app from `HighlightDesk` to `ClipSpike` (step 7) and delete the "name was set on Kick before the rename" note. Note whether the webhook is now on.
 - **Verification and remaining live checks:** tick off or delete the verified items (app-token, subscription, webhook, Streamlink, exports) and record the measured chat/video latency; delete the "browser packaging has not been validated" line if step 9 passed on both architectures.
 - Delete the paragraph about DNS/VideoToolbox limits of the implementation session once the live checks pass.
 - If you move to a stable tunnel or hosted relay, document its URL setup in place of the temporary `cloudflared` instructions.
@@ -168,19 +168,19 @@ Automated coverage: `node tools/run-tests.js test/license.test.js`. For producti
 
 ---
 
-## 4. Sparkle EdDSA key and appcast for com.chatclip.app
+## 4. Sparkle EdDSA key and appcast for com.clipspike.app
 
 ```sh
 ./tools/fetch-sparkle.sh
 ./mac/vendor/sparkle/bin/generate_keys
 ```
 
-`generate_keys` prints the public key and stores the private key in the login Keychain (if it reports an existing key from Highlight Desk, decide whether to keep using it; the public key must match the private key CI signs with). Put the printed public key in the `SU_PUBLIC_ED_KEY` repo variable and in local release builds. Existing installs of Highlight Desk never auto-update to ChatClip because the bundle ID changed; users reinstall once.
+`generate_keys` prints the public key and stores the private key in the login Keychain (if it reports an existing key from Highlight Desk, decide whether to keep using it; the public key must match the private key CI signs with). Put the printed public key in the `SU_PUBLIC_ED_KEY` repo variable and in local release builds. Existing installs of ChatClip or Highlight Desk never auto-update to ClipSpike because the bundle ID changed; users reinstall once.
 
 Export the private key for CI and store it securely (never commit it):
 
 ```sh
-./mac/vendor/sparkle/bin/generate_keys -x /secure/path/chatclip-sparkle-private-key
+./mac/vendor/sparkle/bin/generate_keys -x /secure/path/clipspike-sparkle-private-key
 ```
 
 Paste the file's contents into the `SPARKLE_PRIVATE_KEY` secret in `troxerr/chatclip-release`.
@@ -191,10 +191,10 @@ Generate and check an appcast item against a real DMG (from step 8 or `npm run b
 
 ```sh
 ARCH=arm64 VERSION=<CFBundleShortVersionString> BUILD=<CFBundleVersion> \
-DOWNLOAD_URL="https://<your-domain>/ChatClip-<version>-arm64.dmg" \
-DMG="mac/build/ChatClip-<version>-arm64.dmg" \
+DOWNLOAD_URL="https://<your-domain>/ClipSpike-<version>-arm64.dmg" \
+DMG="mac/build/ClipSpike-<version>-arm64.dmg" \
 OUTPUT=/tmp/appcast.xml \
-SPARKLE_KEY_FILE=/secure/path/chatclip-sparkle-private-key \
+SPARKLE_KEY_FILE=/secure/path/clipspike-sparkle-private-key \
 ./tools/make-appcast.sh
 ```
 
@@ -202,23 +202,23 @@ Expect `/tmp/appcast.xml` with an `sparkle:edSignature` and a `length` matching 
 
 ---
 
-## 5. Create the chatclip-notary profile
+## 5. Create the clipspike-notary profile
 
 On the Mac that does local signing (CI uses an App Store Connect API key instead; see step 8). You need the Developer ID Application certificate installed, your Apple ID, Team ID and an app-specific password from appleid.apple.com:
 
 ```sh
-xcrun notarytool store-credentials chatclip-notary \
+xcrun notarytool store-credentials clipspike-notary \
   --apple-id you@example.com --team-id TEAMID --password APP_SPECIFIC_PASSWORD
 ```
 
 Verify it:
 
 ```sh
-xcrun notarytool history --keychain-profile chatclip-notary
+xcrun notarytool history --keychain-profile clipspike-notary
 security find-identity -v -p codesigning | grep "Developer ID Application"
 ```
 
-Expect the history call to succeed (an empty list is fine). Then `NOTARY_PROFILE=chatclip-notary` with `DEVELOPER_ID_APPLICATION="Developer ID Application: Your Name (TEAMID)" ./mac/release.sh --check` is used in step 8.
+Expect the history call to succeed (an empty list is fine). Then `NOTARY_PROFILE=clipspike-notary` with `DEVELOPER_ID_APPLICATION="Developer ID Application: Your Name (TEAMID)" ./mac/release.sh --check` is used in step 8.
 
 ---
 
@@ -240,7 +240,7 @@ Set in the repo `troxerr/chat-clip` → Settings → Secrets and variables → A
 Encode the certificate:
 
 ```sh
-base64 -i chatclip-codesign.pfx | pbcopy
+base64 -i clipspike-codesign.pfx | pbcopy
 ```
 
 Licensing values in `win/build-config.json` (committed file keeps them off; the release job runs `node win/tools/check-release-config.js` and fails unless they are set):
@@ -262,7 +262,7 @@ node win/tools/check-release-config.js
 
 ### Host latest.yml
 
-For `win-v*` tag builds the workflow uploads the installer and then `latest.yml` to R2 under `win/` when the `R2_*` secrets are set in this repo; skip the manual upload below in that case. Otherwise, after a Windows release run, download `ChatClip-*-x64.exe` and `latest.yml` (the `ChatClip-windows-release` artifact or the draft GitHub release for a `win-v*` tag) and upload both to the `WIN_UPDATE_URL` folder so that `<WIN_UPDATE_URL>/latest.yml` and the installer file named inside it are publicly readable over HTTPS:
+For `win-v*` tag builds the workflow uploads the installer and then `latest.yml` to R2 under `win/` when the `R2_*` secrets are set in this repo; skip the manual upload below in that case. Otherwise, after a Windows release run, download `ClipSpike-*-x64.exe` and `latest.yml` (the `ClipSpike-windows-release` artifact or the draft GitHub release for a `win-v*` tag) and upload both to the `WIN_UPDATE_URL` folder so that `<WIN_UPDATE_URL>/latest.yml` and the installer file named inside it are publicly readable over HTTPS:
 
 ```sh
 curl -fsSL "$WIN_UPDATE_URL/latest.yml"
@@ -274,10 +274,10 @@ Expect the YAML with `version`, `path` and `sha512` matching the installer. Uplo
 
 ## 7. External renames
 
-- **Polar / Lemon Squeezy:** rename the product(s) and checkout page to ChatClip, and update any customer-facing receipt text.
-- **Kick developer app:** rename `HighlightDesk` to `ChatClip` in the Kick developer settings (the Client ID does not change).
-- **R2 / appcast:** old DMGs and appcast entries may still be named for Highlight Desk. In the R2 bucket, list the objects, delete or rename the old DMG names, and confirm `appcast.xml` only references `ChatClip-<version>-<arch>.dmg` URLs that exist (`curl -I <url>` returns 200).
-- **troxerr/chatclip-release:** update the workflow names and secrets for ChatClip (see [RELEASE.md](RELEASE.md#rename-from-highlight-desk-external-steps)), then delete the stale deploy-key secret (the source repo is public, so it is not needed):
+- **Polar / Lemon Squeezy:** rename the product(s) and checkout page to ClipSpike, and update any customer-facing receipt text.
+- **Kick developer app:** rename `HighlightDesk` to `ClipSpike` in the Kick developer settings (the Client ID does not change).
+- **R2 / appcast:** old DMGs and appcast entries may still be named for Highlight Desk. In the R2 bucket, list the objects, delete or rename the old DMG names, and confirm `appcast.xml` only references `ClipSpike-<version>-<arch>.dmg` URLs that exist (`curl -I <url>` returns 200).
+- **troxerr/chatclip-release:** update the workflow names and secrets for ClipSpike (see [RELEASE.md](RELEASE.md#rename-from-chatclip--highlight-desk-external-steps)), then delete the stale deploy-key secret (the source repo is public, so it is not needed):
 
   ```sh
   gh secret list --repo troxerr/chatclip-release
@@ -302,7 +302,7 @@ Do these after steps 4–7. Use throwaway versions so nothing real is published,
 
    Then in `troxerr/chatclip-release` open **Actions → release → Run workflow** and enter `ref = v3.1.0-dryrun`; watch it with `gh run watch --repo troxerr/chatclip-release`.
 4. Expect both the arm64 and x86_64 jobs to pass the tests, `./mac/release.sh --check`, signing, notarization, stapling and `--verify`, upload to R2, and a merged `appcast.xml` carrying both architectures.
-5. To do the same locally on one machine: build with the variables from [RELEASE.md](RELEASE.md#build-sign-notarize), then run `./mac/release.sh --check`, `./mac/release.sh`, `./mac/release.sh --verify` with `DEVELOPER_ID_APPLICATION` and `NOTARY_PROFILE=chatclip-notary`.
+5. To do the same locally on one machine: build with the variables from [RELEASE.md](RELEASE.md#build-sign-notarize), then run `./mac/release.sh --check`, `./mac/release.sh`, `./mac/release.sh --verify` with `DEVELOPER_ID_APPLICATION` and `NOTARY_PROFILE=clipspike-notary`.
 
 ### Windows
 
@@ -321,7 +321,7 @@ On a Mac per architecture (no Homebrew, no Highlight Desk, a fresh user account 
 2. Run a capture on a Twitch channel and produce a clip; check the 7-day trial and License… screen; activate a sandbox/real key.
 3. **Update test:** install the previous throwaway version, publish a newer throwaway version (bump version/build, repeat the tag run, make sure the appcast / `latest.yml` is hosted), then:
    - Mac: **Check for Updates…**; confirm Sparkle verifies the signature, installs, relaunches, and keeps settings and license. Repeat while a capture is running and while offline. Sparkle only checks automatically after a license has been validated in the last 14 days ([UPDATE.md](UPDATE.md)).
-   - Windows: launch the older build; it checks at startup and installs on quit. Relaunch and confirm the new version. `CHATCLIP_NO_UPDATE=1` disables it.
+   - Windows: launch the older build; it checks at startup and installs on quit. Relaunch and confirm the new version. `CLIPSPIKE_NO_UPDATE=1` disables it.
 4. Clean up: delete the throwaway tags (`git push origin :refs/tags/v3.1.0-dryrun`), draft releases and R2 test objects, and restore `appcast.xml` / `latest.yml` to the last real release.
 
 When everything above is ticked, remove the matching items from "Current blockers" in [RELEASE.md](RELEASE.md) and the "Unverified" section of [WINDOWS_RELEASE.md](WINDOWS_RELEASE.md).

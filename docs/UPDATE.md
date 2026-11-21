@@ -14,7 +14,7 @@ The app embeds Sparkle 2.10.1 when `mac/vendor/Sparkle.framework` exists. A buil
 `generate_keys` prints a public key and stores the private key in the login keychain. Put the public key in the release build as `SU_PUBLIC_ED_KEY`; never commit the private key. Export it for CI with:
 
 ```sh
-./mac/vendor/sparkle/bin/generate_keys -x /secure/path/chatclip-sparkle-private-key
+./mac/vendor/sparkle/bin/generate_keys -x /secure/path/clipspike-sparkle-private-key
 ```
 
 ## Release build
@@ -22,14 +22,14 @@ The app embeds Sparkle 2.10.1 when `mac/vendor/Sparkle.framework` exists. A buil
 `SU_FEED_URL` and `SU_PUBLIC_ED_KEY` are read by `mac/build.sh` (they become `SUFeedURL` and `SUPublicEDKey` in `Info.plist`); `mac/release.sh` only signs what was built.
 
 ```sh
-SU_FEED_URL="https://your-domain.example/appcast.xml" \
+SU_FEED_URL="https://clipspike.com/appcast.xml" \
 SU_PUBLIC_ED_KEY="<public key>" \
 npm run build:mac            # plus the licensing/OAuth variables from RELEASE.md
 DEVELOPER_ID_APPLICATION="Developer ID Application: ..." \
-NOTARY_PROFILE="chatclip-notary" \
+NOTARY_PROFILE="clipspike-notary" \
 ./mac/release.sh --check     # before signing
 DEVELOPER_ID_APPLICATION="Developer ID Application: ..." \
-NOTARY_PROFILE="chatclip-notary" \
+NOTARY_PROFILE="clipspike-notary" \
 ./mac/release.sh             # sign, notarize, staple
 ./mac/release.sh --verify    # after notarizing: ticket and Gatekeeper
 ```
@@ -44,8 +44,8 @@ After the notarized DMG is uploaded:
 ARCH=arm64 \
 VERSION=3.1.0 \
 BUILD=5 \
-DOWNLOAD_URL="https://your-domain.example/ChatClip-3.1.0-arm64.dmg" \
-DMG="mac/build/ChatClip-3.1.0-arm64.dmg" \
+DOWNLOAD_URL="https://clipspike.com/ClipSpike-3.1.0-arm64.dmg" \
+DMG="mac/build/ClipSpike-3.1.0-arm64.dmg" \
 OUTPUT=site/appcast.xml \
 ./tools/make-appcast.sh
 ```

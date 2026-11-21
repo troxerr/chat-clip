@@ -1,6 +1,6 @@
 "use strict";
 
-// Scripted self-test of the real window, used by CI (CHATCLIP_SMOKE=<dir>).
+// Scripted self-test of the real window, used by CI (CLIPSPIKE_SMOKE=<dir>).
 // It feeds a local video and deterministic chat spike to the packaged recorder,
 // verifies the automatic highlight, and writes screenshots and <dir>/result.json.
 // Exit code 0 means every step passed.
@@ -74,7 +74,7 @@ async function run({ win, services, dir, send }) {
     await new Promise((resolve) => (win.webContents.isLoading() ? win.webContents.once("did-finish-load", resolve) : resolve()));
     step("window loaded", win.getTitle());
     if (Number(process.versions.node.split(".")[0]) < 22) throw new Error(`Node ${process.versions.node} is too old for the recorder (needs 22+)`);
-    if (!process.env.CHATCLIP_INPUT || !fs.existsSync(process.env.CHATCLIP_INPUT)) throw new Error("CHATCLIP_INPUT must point at a test video");
+    if (!process.env.CLIPSPIKE_INPUT || !fs.existsSync(process.env.CLIPSPIKE_INPUT)) throw new Error("CLIPSPIKE_INPUT must point at a test video");
 
     await shot("capture-idle");
     await page("clips"); await shot("clips-empty");
@@ -87,18 +87,18 @@ async function run({ win, services, dir, send }) {
     await shot("capture-watching");
     await page("settings");
     await win.webContents.executeJavaScript(`
-      window.chatClipSmoke = {
+      window.clipSpikeSmoke = {
         licenseHeading: document.querySelector("#license-card h2"),
         buffer: document.querySelector("#buffered-time").textContent
       };
-      if (!window.chatClipSmoke.licenseHeading) throw new Error("License heading missing");
+      if (!window.clipSpikeSmoke.licenseHeading) throw new Error("License heading missing");
       true;
     `);
     await waitFor(() => win.webContents.executeJavaScript(
-      'document.querySelector("#buffered-time").textContent !== window.chatClipSmoke.buffer'
+      'document.querySelector("#buffered-time").textContent !== window.clipSpikeSmoke.buffer'
     ), 10000, "a capture update in Settings");
     const settingsStable = await win.webContents.executeJavaScript(`
-      window.chatClipSmoke.licenseHeading === document.querySelector("#license-card h2")
+      window.clipSpikeSmoke.licenseHeading === document.querySelector("#license-card h2")
     `);
     if (!settingsStable) throw new Error("A capture update rebuilt the Settings license form");
     step("settings stayed mounted during capture");

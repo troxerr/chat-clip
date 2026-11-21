@@ -23,7 +23,7 @@ const copy = (from, to = from) => {
 
 fs.mkdirSync(stage, { recursive: true });
 fs.writeFileSync(path.join(stage, "package.json"), JSON.stringify({
-  name: "chatclip", productName: winPkg.productName, version: winPkg.version,
+  name: "clipspike", productName: winPkg.productName, version: winPkg.version,
   description: winPkg.description, author: winPkg.author, main: "win/main/main.js",
   dependencies: { "electron-updater": winPkg.dependencies["electron-updater"] }
 }, null, 2));

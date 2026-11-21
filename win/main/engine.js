@@ -49,7 +49,7 @@ class Engine extends EventEmitter {
   start(input, extraEnv = {}) {
     if (this.child) throw new Error("A capture is already running.");
     const channel = channelFromInput(input);
-    const env = { ...this.baseEnv, ...extraEnv, CHATCLIP_EVENTS: "1", CHATCLIP_COMMANDS: "1" };
+    const env = { ...this.baseEnv, ...extraEnv, CLIPSPIKE_EVENTS: "1", CLIPSPIKE_COMMANDS: "1" };
     if (this.runAsNode) env.ELECTRON_RUN_AS_NODE = "1";
     const child = this.spawnImpl(this.execPath, [this.script, channel], { env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     this.child = child;

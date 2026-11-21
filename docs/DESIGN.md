@@ -1,4 +1,4 @@
-# ChatClip presentation review
+# ClipSpike presentation review
 
 ## Design plan
 
@@ -15,9 +15,9 @@
 | Capture | View | Command-1 |
 | Clips | View | Command-2 |
 | Storage | View | Command-3 |
-| Save Highlight Now | ChatClip | Command-S |
-| Settings | ChatClip | Command-comma |
-| Capture Monitor | ChatClip | Command-Shift-M |
+| Save Highlight Now | ClipSpike | Command-S |
+| Settings | ClipSpike | Command-comma |
+| Capture Monitor | ClipSpike | Command-Shift-M |
 | Cut / Copy / Paste / Select All | Edit | Standard Mac shortcuts |
 | Undo / Redo | Edit | Command-Z / Command-Shift-Z |
 
@@ -37,7 +37,7 @@ Command-S saves a clip during capture; this app does not edit documents. Text-ed
 
 ## Existing-app mapping
 
-This is Objective-C/AppKit, not SwiftUI. Build with `BUILD_DIR="$PWD/mac/build-presentation" zsh mac/build.sh`. The existing `CHATCLIP_UI_REVIEW` mode captures app-owned windows and exits. Always provide temporary `CHATCLIP_CONFIG` and `CHATCLIP_STATE` paths and disable keychain and notifications for review runs.
+This is Objective-C/AppKit, not SwiftUI. Build with `BUILD_DIR="$PWD/mac/build-presentation" zsh mac/build.sh`. The existing `CLIPSPIKE_UI_REVIEW` mode captures app-owned windows and exits. Always provide temporary `CLIPSPIKE_CONFIG` and `CLIPSPIKE_STATE` paths and disable keychain and notifications for review runs.
 
 The existing 204-point sidebar, 28-point page margins, 24-point titles and native AppKit controls are intentionally retained for compatibility. This pass improves presentation without a framework migration, custom toolbar system or recorder rewrite. Native controls use the system appearance; custom action and selection colors use the violet brand. Status colors retain their semantic meaning.
 

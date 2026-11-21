@@ -1,19 +1,19 @@
 #!/usr/bin/env node
-/* Local-only usage audit for ChatClip. Writes a Markdown report; sends nothing. */
+/* Local-only usage audit for ClipSpike. Writes a Markdown report; sends nothing. */
 require("../lib/legacy.js").mirrorLegacyEnv();
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
 
 const HOME = os.homedir();
-const pick = (current, legacy) => (!fs.existsSync(current) && fs.existsSync(legacy) ? legacy : current);
-const stateDir = process.env.CHATCLIP_STATE || pick(path.join(HOME, "Library/Application Support/ChatClip"), path.join(HOME, "Library/Application Support/Highlight Desk"));
-const clipsDir = process.env.CHATCLIP_CLIPS || pick(path.join(HOME, "Movies/ChatClip"), path.join(HOME, "Movies/Highlight Desk"));
+const pick = (current, ...legacy) => (fs.existsSync(current) ? current : legacy.find((p) => fs.existsSync(p)) || current);
+const stateDir = process.env.CLIPSPIKE_STATE || pick(path.join(HOME, "Library/Application Support/ClipSpike"), path.join(HOME, "Library/Application Support/ChatClip"), path.join(HOME, "Library/Application Support/Highlight Desk"));
+const clipsDir = process.env.CLIPSPIKE_CLIPS || pick(path.join(HOME, "Movies/ClipSpike"), path.join(HOME, "Movies/ChatClip"), path.join(HOME, "Movies/Highlight Desk"));
 const outPath = process.argv[2] || path.join(process.cwd(), "USAGE_LOG.md");
 const usagePath = path.join(stateDir, "usage.jsonl");
 const historyPath = path.join(stateDir, "history.json");
 const queuePath = path.join(stateDir, "queue.json");
-const configPath = process.env.CHATCLIP_CONFIG || path.join(HOME, ".chatclip.json");
+const configPath = process.env.CLIPSPIKE_CONFIG || path.join(HOME, ".clipspike.json");
 
 const readJson = (p, fallback) => {
   try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch { return fallback; }
@@ -203,7 +203,7 @@ features.push("**Discord/Slack webhook** or local notification when a clip is re
 features.push("**Per-channel analytics** (clips per hour, best-performing triggers, upload success rate) for done-for-you clipping.");
 features.push("**Local-first privacy mode**: chat samples and diagnostics stay on-device with an explicit export button.");
 
-const markdown = `# ChatClip Usage Log
+const markdown = `# ClipSpike Usage Log
 
 Generated **${iso(now)}** by \`tools/usage-audit.js\`. Local-only; no data was uploaded.
 

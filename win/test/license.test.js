@@ -11,7 +11,7 @@ function harness({ build = { licenseRequired: true }, start = "2026-11-01T00:00:
     readConfig: () => JSON.parse(JSON.stringify(db.config)),
     writeConfig: (config) => { db.config = JSON.parse(JSON.stringify(config)); },
     store: { get: (n) => db.secrets.get(n) || "", set: (n, v) => db.secrets.set(n, v), delete: (n) => db.secrets.delete(n), writable: () => true },
-    request: async (action, options) => { calls.push({ action, options }); return request ? request(action, options) : { ok: true, valid: true, instanceId: "inst-1", customerEmail: "a@b.c", productName: "ChatClip" }; },
+    request: async (action, options) => { calls.push({ action, options }); return request ? request(action, options) : { ok: true, valid: true, instanceId: "inst-1", customerEmail: "a@b.c", productName: "ClipSpike" }; },
     now: () => now,
     build,
     env,
@@ -51,8 +51,8 @@ test("the trial starts on first run and counts down by whole days", () => {
 
 test("the trial length can come from the build or the environment", () => {
   assert.equal(harness({ build: { licenseRequired: true, trialDays: 14 } }).manager.state().daysLeft, 14);
-  assert.equal(harness({ env: { CHATCLIP_TRIAL_DAYS: "2" } }).manager.state().daysLeft, 2);
-  assert.equal(harness({ env: { CHATCLIP_TRIAL_DAYS: "0" } }).manager.state().valid, false);
+  assert.equal(harness({ env: { CLIPSPIKE_TRIAL_DAYS: "2" } }).manager.state().daysLeft, 2);
+  assert.equal(harness({ env: { CLIPSPIKE_TRIAL_DAYS: "0" } }).manager.state().valid, false);
 });
 
 test("a clock set back does not extend the trial past its length", () => {
@@ -74,7 +74,7 @@ test("activating stores the key in the secret store and the rest in the config",
   assert.equal(JSON.stringify(h.db.config).includes("KEY-123"), false, "the key is never written to the config file");
   assert.equal(h.db.config.license.instance, "inst-1");
   assert.equal(h.calls[0].action, "activate");
-  assert.equal(h.calls[0].options.instanceName, "ChatClip (TEST-PC)");
+  assert.equal(h.calls[0].options.instanceName, "ClipSpike (TEST-PC)");
 });
 
 test("activation failures reach the user and change nothing", async () => {

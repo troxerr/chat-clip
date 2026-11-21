@@ -13,19 +13,19 @@ This file is checked against the code by `test/protocol-doc.test.js`: every even
 
 ## Environment
 
-Every `CHATCLIP_*` variable also accepts its former `HIGHLIGHT_DESK_*` name; `CHATCLIP_*` wins when both are set.
+Every `CLIPSPIKE_*` variable also accepts its former `CHATCLIP_*` and `HIGHLIGHT_DESK_*` names; `CLIPSPIKE_*` wins, then `CHATCLIP_*`.
 
 | Variable | Meaning |
 |---|---|
-| `CHATCLIP_EVENTS=1` | Write events to stdout as JSON lines. Without it the engine prints human text. **Hosts must set this.** |
-| `CHATCLIP_COMMANDS=1` | `background.cjs` reads commands from stdin (see below). Needed on Windows, which has no `SIGUSR1`/`SIGUSR2`. |
-| `CHATCLIP_CONFIG` | Config file path (default `~/.chatclip.json`). |
-| `CHATCLIP_STATE` | State folder (queue, history, feedback, models). Default per OS, see `lib/platform.js`. |
-| `CHATCLIP_OUTPUT` | Clip output root. Default per OS. |
-| `CHATCLIP_INPUT` | Use a local video file instead of Streamlink (development and tests). |
-| `CHATCLIP_SMOKE` | Windows smoke output folder. When combined with `CHATCLIP_INPUT`, the recorder uses a deterministic chat spike in place of live Twitch chat. |
-| `CHATCLIP_KEYCHAIN=0` | Do not read the OS credential store. |
-| `CHATCLIP_PRIORITY` | `normal` or `belowNormal` CPU priority for the export and 9:16 encodes (default: `belowNormal` on Windows, `normal` elsewhere). The live recorder is always at normal priority. |
+| `CLIPSPIKE_EVENTS=1` | Write events to stdout as JSON lines. Without it the engine prints human text. **Hosts must set this.** |
+| `CLIPSPIKE_COMMANDS=1` | `background.cjs` reads commands from stdin (see below). Needed on Windows, which has no `SIGUSR1`/`SIGUSR2`. |
+| `CLIPSPIKE_CONFIG` | Config file path (default `~/.clipspike.json`). |
+| `CLIPSPIKE_STATE` | State folder (queue, history, feedback, models). Default per OS, see `lib/platform.js`. |
+| `CLIPSPIKE_OUTPUT` | Clip output root. Default per OS. |
+| `CLIPSPIKE_INPUT` | Use a local video file instead of Streamlink (development and tests). |
+| `CLIPSPIKE_SMOKE` | Windows smoke output folder. When combined with `CLIPSPIKE_INPUT`, the recorder uses a deterministic chat spike in place of live Twitch chat. |
+| `CLIPSPIKE_KEYCHAIN=0` | Do not read the OS credential store. |
+| `CLIPSPIKE_PRIORITY` | `normal` or `belowNormal` CPU priority for the export and 9:16 encodes (default: `belowNormal` on Windows, `normal` elsewhere). The live recorder is always at normal priority. |
 
 ## Events (stdout)
 
@@ -67,7 +67,7 @@ One JSON object per line. Every event has `type` and `at` (ISO timestamp). `back
 | `caption-progress` | Captioning one moment | `index`, `stage` (`transcribing`, `transcribed`), `at`, `cues`, `seconds` |
 | `vod-done` | The run finished | `saved`, `total`, `folder`, `chat` |
 
-## Commands (stdin, `background.cjs` with `CHATCLIP_COMMANDS=1`)
+## Commands (stdin, `background.cjs` with `CLIPSPIKE_COMMANDS=1`)
 
 One command per line, case-insensitive, unknown lines ignored.
 

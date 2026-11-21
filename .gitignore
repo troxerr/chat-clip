@@ -27,6 +27,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+.clipspike.json
 .chatclip.json
 .highlight-desk.json
 *.pem

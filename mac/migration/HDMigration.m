@@ -3,42 +3,61 @@
 #import <Security/Security.h>
 
 static NSString *const kDoneKey = @"HDLegacyMigrationV1";
-static NSString *const kLegacyDefaultsDomain = @"com.highlightdesk.app";
-static NSString *const kLegacyConfigName = @".highlight-desk.json";
-static NSString *const kLegacyAppName = @"Highlight Desk";
+// Pre-rename names, newest first: "ChatClip", then "Highlight Desk".
+static NSArray<NSString *> *LegacyDefaultsDomains(void) { return @[@"com.chatclip.app", @"com.highlightdesk.app"]; }
+static NSArray<NSString *> *LegacyConfigNames(void) { return @[@".chatclip.json", @".highlight-desk.json"]; }
+static NSArray<NSString *> *LegacyAppNames(void) { return @[@"ChatClip", @"Highlight Desk"]; }
+static NSArray<NSString *> *LegacyEnvPrefixes(void) { return @[@"CHATCLIP_", @"HIGHLIGHT_DESK_"]; }
 static NSString *const kServiceSuffixes[] = {@"credentials", @"license"};
 
 NSString *HDEnv(NSString *name) {
   NSDictionary *env = NSProcessInfo.processInfo.environment;
   NSString *value = env[name];
-  if (value.length || ![name hasPrefix:@"CHATCLIP_"]) return value;
-  return env[[@"HIGHLIGHT_DESK_" stringByAppendingString:[name substringFromIndex:9]]];
+  if (value.length || ![name hasPrefix:@"CLIPSPIKE_"]) return value;
+  for (NSString *prefix in LegacyEnvPrefixes()) {
+    NSString *old = env[[prefix stringByAppendingString:[name substringFromIndex:10]]];
+    if (old.length) return old;
+  }
+  return value;
 }
 
 @implementation HDMigration
 
 + (NSString *)defaultOutputPath {
   NSFileManager *fm = NSFileManager.defaultManager;
-  NSString *current = [NSHomeDirectory() stringByAppendingPathComponent:@"Movies/ChatClip"];
-  NSString *legacy = [NSHomeDirectory() stringByAppendingPathComponent:@"Movies/Highlight Desk"];
-  return (![fm fileExistsAtPath:current] && [fm fileExistsAtPath:legacy]) ? legacy : current;
+  NSString *current = [NSHomeDirectory() stringByAppendingPathComponent:@"Movies/ClipSpike"];
+  if ([fm fileExistsAtPath:current]) return current;
+  for (NSString *name in LegacyAppNames()) {
+    NSString *legacy = [NSHomeDirectory() stringByAppendingPathComponent:[@"Movies" stringByAppendingPathComponent:name]];
+    if ([fm fileExistsAtPath:legacy]) return legacy;
+  }
+  return current;
 }
 
 + (BOOL)copyDefaults {
   NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
-  if ([NSBundle.mainBundle.bundleIdentifier isEqualToString:kLegacyDefaultsDomain]) return YES;
-  NSDictionary *old = [defaults persistentDomainForName:kLegacyDefaultsDomain];
-  for (NSString *key in old) {
-    if ([defaults objectForKey:key] == nil) [defaults setObject:old[key] forKey:key];
+  for (NSString *domain in LegacyDefaultsDomains()) {
+    if ([NSBundle.mainBundle.bundleIdentifier isEqualToString:domain]) continue;
+    NSDictionary *old = [defaults persistentDomainForName:domain];
+    for (NSString *key in old) {
+      // The old app's "migrated" flag must not mark this migration as finished.
+      if ([key isEqualToString:kDoneKey]) continue;
+      if ([defaults objectForKey:key] == nil) [defaults setObject:old[key] forKey:key];
+    }
   }
   return YES;
 }
 
 + (BOOL)copyConfig {
   NSFileManager *fm = NSFileManager.defaultManager;
-  NSString *from = [NSHomeDirectory() stringByAppendingPathComponent:kLegacyConfigName];
-  NSString *to = [NSHomeDirectory() stringByAppendingPathComponent:@".chatclip.json"];
-  if (![fm fileExistsAtPath:from] || [fm fileExistsAtPath:to]) return YES;
+  NSString *to = [NSHomeDirectory() stringByAppendingPathComponent:@".clipspike.json"];
+  if ([fm fileExistsAtPath:to]) return YES;
+  NSString *from = nil;
+  for (NSString *name in LegacyConfigNames()) {
+    NSString *candidate = [NSHomeDirectory() stringByAppendingPathComponent:name];
+    if ([fm fileExistsAtPath:candidate]) { from = candidate; break; }
+  }
+  if (!from) return YES;
   NSString *draft = [to stringByAppendingString:@".partial"];
   [fm removeItemAtPath:draft error:nil];
   NSData *data = [NSData dataWithContentsOfFile:from];
@@ -60,16 +79,18 @@ NSString *HDEnv(NSString *name) {
 + (BOOL)moveStateDirectory {
   NSFileManager *fm = NSFileManager.defaultManager;
   NSString *base = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support"];
-  NSString *from = [base stringByAppendingPathComponent:kLegacyAppName];
-  NSString *to = [base stringByAppendingPathComponent:@"ChatClip"];
-  BOOL isDir = NO;
-  if (![fm fileExistsAtPath:from isDirectory:&isDir] || !isDir) return YES;
-  if (![fm fileExistsAtPath:to]) return [self moveItem:from to:to];
+  NSString *to = [base stringByAppendingPathComponent:@"ClipSpike"];
   BOOL ok = YES;
-  for (NSString *name in [fm contentsOfDirectoryAtPath:from error:nil]) {
-    NSString *target = [to stringByAppendingPathComponent:name];
-    if ([fm fileExistsAtPath:target]) continue;
-    ok = [self moveItem:[from stringByAppendingPathComponent:name] to:target] && ok;
+  for (NSString *legacyName in LegacyAppNames()) {
+    NSString *from = [base stringByAppendingPathComponent:legacyName];
+    BOOL isDir = NO;
+    if (![fm fileExistsAtPath:from isDirectory:&isDir] || !isDir) continue;
+    if (![fm fileExistsAtPath:to]) { ok = [self moveItem:from to:to] && ok; continue; }
+    for (NSString *name in [fm contentsOfDirectoryAtPath:from error:nil]) {
+      NSString *target = [to stringByAppendingPathComponent:name];
+      if ([fm fileExistsAtPath:target]) continue;
+      ok = [self moveItem:[from stringByAppendingPathComponent:name] to:target] && ok;
+    }
   }
   return ok;
 }
@@ -103,9 +124,11 @@ NSString *HDEnv(NSString *name) {
   if ([HDKeychain isDisabled]) return YES;
   BOOL ok = YES;
   for (size_t i = 0; i < sizeof(kServiceSuffixes) / sizeof(kServiceSuffixes[0]); i++) {
-    NSString *from = [@"com.highlightdesk.app." stringByAppendingString:kServiceSuffixes[i]];
-    NSString *to = [@"com.chatclip.app." stringByAppendingString:kServiceSuffixes[i]];
-    ok = [self copyKeychainService:from to:to] && ok;
+    NSString *to = [@"com.clipspike.app." stringByAppendingString:kServiceSuffixes[i]];
+    // Newest first: an item already copied from ChatClip is not overwritten by a Highlight Desk one.
+    for (NSString *domain in LegacyDefaultsDomains()) {
+      ok = [self copyKeychainService:[domain stringByAppendingFormat:@".%@", kServiceSuffixes[i]] to:to] && ok;
+    }
   }
   return ok;
 }
@@ -115,8 +138,8 @@ NSString *HDEnv(NSString *name) {
   if ([defaults boolForKey:kDoneKey]) return;
   NSDictionary *env = NSProcessInfo.processInfo.environment;
   // Old names for the override variables still apply.
-  BOOL configOverride = [env[@"CHATCLIP_CONFIG"] length] || [env[@"HIGHLIGHT_DESK_CONFIG"] length];
-  BOOL stateOverride = [env[@"CHATCLIP_STATE"] length] || [env[@"HIGHLIGHT_DESK_STATE"] length];
+  BOOL configOverride = [env[@"CLIPSPIKE_CONFIG"] length] || [env[@"CHATCLIP_CONFIG"] length] || [env[@"HIGHLIGHT_DESK_CONFIG"] length];
+  BOOL stateOverride = [env[@"CLIPSPIKE_STATE"] length] || [env[@"CHATCLIP_STATE"] length] || [env[@"HIGHLIGHT_DESK_STATE"] length];
   BOOL ok = [self copyDefaults];
   if (!configOverride) ok = [self copyConfig] && ok;
   if (!stateOverride) ok = [self moveStateDirectory] && ok;

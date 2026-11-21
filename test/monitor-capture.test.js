@@ -19,7 +19,7 @@ function captureHarness(t, inputSource = "example") {
   const signals = {};
   const context = vm.createContext({ console, Buffer, URL, setInterval, clearInterval, setTimeout, clearTimeout,
     __records: records, __dirname: path.dirname(file),
-    process: { argv: ["node", "background.cjs", inputSource], env: { CHATCLIP_OUTPUT: dir },
+    process: { argv: ["node", "background.cjs", inputSource], env: { CLIPSPIKE_OUTPUT: dir },
       on: (signal, fn) => { signals[signal] = fn; }, stdout: { on() {}, write() {} }, stderr: { write() {} } },
     require(name) {
       if (name === "./lib/kick-chat.js") return { ...localRequire(name), relaySettings: () => ({ url: "http://127.0.0.1:8765", token: "test" }) };

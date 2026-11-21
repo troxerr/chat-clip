@@ -2,9 +2,9 @@
 set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # Build outside file-provider folders so Finder metadata cannot invalidate signing.
-BUILD_DIR="${BUILD_DIR:-${TMPDIR:-/tmp}/chatclip-monitoring-build}"
+BUILD_DIR="${BUILD_DIR:-${TMPDIR:-/tmp}/clipspike-monitoring-build}"
 export BUILD_DIR
 cd "$PROJECT_ROOT"
 zsh mac/build.sh
-codesign --verify --deep --strict "$BUILD_DIR/ChatClip.app"
-open -n "$BUILD_DIR/ChatClip.app"
+codesign --verify --deep --strict "$BUILD_DIR/ClipSpike.app"
+open -n "$BUILD_DIR/ClipSpike.app"

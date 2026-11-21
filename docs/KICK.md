@@ -7,7 +7,7 @@ detection, broadcaster/moderator commands, separate monitoring profiles, and a
 personal Mac relay are implemented. This has not yet been verified against a live
 Kick broadcast. Twitch VOD scanning remains Twitch-only.
 
-The Kick developer application `HighlightDesk` has been registered (the name was set on Kick before the rename to ChatClip; renaming it there is an external step). Its Client ID
+The Kick developer application `HighlightDesk` has been registered (the name was set on Kick before the renames to ChatClip and ClipSpike; renaming it there is an external step). Its Client ID
 is `01M7JRFG1KV0DR5ZP6D0ECMK4V`. Its local OAuth callback is
 `http://localhost:8765/kick/callback`; the relay uses client credentials and does
 not implement user login at that callback. The app's webhook switch is still off.
@@ -23,14 +23,14 @@ npm run kick:relay
 On first use, open the setup link printed by the command. Copy the **Client
 Secret** from Kick's developer application into the password field on that local
 page. It verifies the secret with Kick and saves it and a generated local pairing
-token in macOS Keychain under `com.chatclip.app.credentials`, accounts
+token in macOS Keychain under `com.clipspike.app.credentials`, accounts
 `kick.clientSecret` and `kick.relayToken`. Never put the secret in source code, the
 app bundle, a screenshot, or chat. Later starts read these Keychain entries.
 
 The CLI also supports `KICK_CLIENT_ID`, `KICK_CLIENT_SECRET`, and
-`CHATCLIP_KICK_RELAY_TOKEN`. Environment credentials are useful for a hosted
+`CLIPSPIKE_KICK_RELAY_TOKEN`. Environment credentials are useful for a hosted
 relay; local browser setup requires macOS Keychain. The recorder uses
-`CHATCLIP_KICK_RELAY` or `kick.relayUrl` in its existing config to select an
+`CLIPSPIKE_KICK_RELAY` or `kick.relayUrl` in its existing config to select an
 alternate relay, and requires HTTPS for remote hosts.
 
 The relay binds two ports to loopback:
@@ -69,10 +69,10 @@ verified sender IDs and badges. Ordinary viewers cannot trigger privileged clips
 Kick capture requires Google Chrome or Chromium installed on the Mac (Streamlink
 uses it to pass Kick's browser check). Capture checks for it at startup, fails with
 a clear error if none is found, and passes it to Streamlink explicitly. To use a
-different Chromium-based browser, set `CHATCLIP_KICK_BROWSER` or `kick.browser`
+different Chromium-based browser, set `CLIPSPIKE_KICK_BROWSER` or `kick.browser`
 in the config to its full executable path.
 
-Kick clips save under `~/Movies/ChatClip/kick/channel/`. Monitoring uses the
+Kick clips save under `~/Movies/ClipSpike/kick/channel/`. Monitoring uses the
 key `kick--channel`, distinct from the Twitch channel of the same name. The
 monitor CLI accepts a Kick URL or that internal key. Existing Twitch folders and
 learning profiles are preserved.

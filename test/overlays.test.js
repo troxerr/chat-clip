@@ -152,8 +152,8 @@ test("captions finds whisper-cli on PATH or in the bundled runtime", () => {
   }
 });
 
-test("the captions model lives in Application Support/ChatClip/models", () => {
-  assert.equal(captions.modelPath({ CHATCLIP_STATE: "/x/state" }), path.join(path.resolve("/x/state"), "models", "ggml-base.en.bin"));
+test("the captions model lives in Application Support/ClipSpike/models", () => {
+  assert.equal(captions.modelPath({ CLIPSPIKE_STATE: "/x/state" }), path.join(path.resolve("/x/state"), "models", "ggml-base.en.bin"));
   assert.match(captions.MODEL_URL, /^https:\/\/huggingface\.co\/ggerganov\/whisper\.cpp\/resolve\/main\/ggml-base\.en\.bin$/);
 });
 

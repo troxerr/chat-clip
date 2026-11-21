@@ -31,7 +31,7 @@ test("sidecarPath replaces the media extension", () => {
 });
 
 test("exports a real MP4 and writes a sidecar", { skip: !ffmpeg || !ffprobe }, async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "chatclip-export-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-export-"));
   const input = path.join(dir, "input.mp4");
   const target = path.join(dir, "clip.mp4");
   try {

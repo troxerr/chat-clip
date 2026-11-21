@@ -87,13 +87,13 @@ test("buildArgs encodes an MP4 with optional audio", () => {
 });
 
 test("reframeClip reports missing input", async () => {
-  const result = await reframeClip({ input: "/tmp/does-not-exist-chatclip.mp4", output: "/tmp/out.mp4" });
+  const result = await reframeClip({ input: "/tmp/does-not-exist-clipspike.mp4", output: "/tmp/out.mp4" });
   assert.equal(result.ok, false);
   assert.match(result.error, /Input not found/);
 });
 
 test("reframes a landscape clip into a 1080x1920 MP4", { skip: !ffmpeg || !ffprobe }, async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "chatclip-reframe-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-reframe-"));
   const input = path.join(dir, "input.mp4");
   const output = path.join(dir, "vertical.mp4");
   const splitOutput = path.join(dir, "vertical-split.mp4");

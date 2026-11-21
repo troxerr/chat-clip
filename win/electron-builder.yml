@@ -1,8 +1,8 @@
 # Packaging for the Windows installer. `npm run pack` first stages a folder that
 # mirrors the repo layout (so the engine's relative requires work unchanged),
 # then builds from it. No asar: the recorder runs as a separate Node process.
-appId: com.chatclip.app
-productName: ChatClip
+appId: com.clipspike.app
+productName: ClipSpike
 electronVersion: 45.3.4
 directories:
   app: stage
@@ -22,7 +22,7 @@ win:
   target:
     - target: nsis
       arch: x64
-  artifactName: ChatClip-${version}-x64-unsigned.exe
+  artifactName: ClipSpike-${version}-x64-unsigned.exe
   signAndEditExecutable: false
 nsis:
   oneClick: true
