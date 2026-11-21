@@ -1,0 +1,10 @@
+:root { font-family: system-ui, sans-serif; color-scheme: light dark; }
+body { margin: 0; }
+.layout { min-height: 100vh; display: flex; flex-direction: column; }
+.header, .footer { padding: 1rem 2rem; display: flex; align-items: center; gap: 2rem; border-bottom: 1px solid #8884; }
+.footer { border: 0; border-top: 1px solid #8884; font-size: .85rem; opacity: .7; }
+.brand { font-weight: 700; }
+.nav { display: flex; gap: 1rem; }
+.nav a.active { font-weight: 700; text-decoration: none; }
+.main { flex: 1; padding: 2rem; max-width: 720px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+.row { display: flex; gap: .5rem; }
