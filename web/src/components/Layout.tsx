@@ -18,7 +18,7 @@ export default function Layout() {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <span className="brand">Chat<b>Clip</b></span>
+        <span className="brand">Clip<b>Spike</b></span>
         <nav className="nav" aria-label="Main">
           {links.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.end}>

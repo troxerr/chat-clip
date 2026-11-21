@@ -1,4 +1,4 @@
-# ChatClip Web
+# ClipSpike Web
 
 Vite + React + TypeScript app with React Router and Zustand.
 

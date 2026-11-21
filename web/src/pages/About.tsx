@@ -3,7 +3,7 @@ export default function About() {
     <>
       <h1>About</h1>
       <p>
-        ChatClip is a live highlight detector for Twitch. This preview runs on mock data; scores combine chat
+        ClipSpike is a live highlight detector for Twitch. This preview runs on mock data; scores combine chat
         velocity, audio peaks and in-game events.
       </p>
     </>

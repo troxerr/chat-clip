@@ -71,6 +71,14 @@ describe('routing', () => {
   })
 })
 
+describe('branding', () => {
+  it('shows the ClipSpike name in the header', () => {
+    renderAt('/')
+    expect(screen.getByText('Clip', { selector: '.brand' })).toBeInTheDocument()
+    expect(document.querySelector('.brand')).toHaveTextContent('ClipSpike')
+  })
+})
+
 describe('backup streamer', () => {
   beforeEach(() => useClipStore.setState(initial, true))
 
@@ -78,7 +86,7 @@ describe('backup streamer', () => {
     renderAt('/')
     expect(screen.getByLabelText('Current streamer')).toHaveTextContent('Jynxzi')
     act(() => useClipStore.getState().advanceMockStatus())
-    expect(screen.getByLabelText('Current streamer')).toHaveTextContent('kaicenat')
+    expect(screen.getByLabelText('Current streamer')).toHaveTextContent('xqc')
     expect(screen.getByText(/Switched to backup/)).toBeInTheDocument()
     act(() => useClipStore.getState().setStreamStatus({ Jynxzi: 'live' }))
     expect(screen.queryByText(/Switched to backup/)).not.toBeInTheDocument()

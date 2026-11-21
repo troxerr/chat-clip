@@ -14,7 +14,7 @@ export default function Home() {
         <span className="live-pill">● Live highlight detection</span>
         <h1>Never miss the moment chat loses it.</h1>
         <p>
-          ChatClip watches chat velocity, audio peaks and play-by-play to surface the best moments from your
+          ClipSpike watches chat velocity, audio peaks and play-by-play to surface the best moments from your
           favorite streams.
         </p>
         <Link className="btn" to="/clips">

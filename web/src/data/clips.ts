@@ -49,13 +49,14 @@ export const mockClips: Clip[] = [
   clip(10, 'Mic peaks on the final zone', 'driftwoodtv', 'Fortnite', 58, 'Audio peak', '2026-11-16T20:50:00Z', 9100, 22, 2100, 74),
 ]
 
-// Ordered by priority; the first live one is used when the featured streamer goes offline.
-export const BACKUP_STREAMERS = ['xqc', 'kaicenat', 'pokimane']
+// Real Twitch streamers, ordered by priority; the first live one is used when the featured streamer goes offline.
+export const BACKUP_STREAMERS = ['kaicenat', 'xqc', 'ishowspeed', 'pokimane']
 
 // Mock status timeline (no Twitch API); the store steps through it on a timer.
 export const MOCK_STATUS_TIMELINE: Record<string, 'live' | 'offline'>[] = [
-  { Jynxzi: 'live', xqc: 'live', kaicenat: 'offline', pokimane: 'live' },
-  { Jynxzi: 'offline', xqc: 'offline', kaicenat: 'live', pokimane: 'live' },
-  { Jynxzi: 'offline', xqc: 'offline', kaicenat: 'offline', pokimane: 'live' },
-  { Jynxzi: 'live', xqc: 'live', kaicenat: 'offline', pokimane: 'live' },
+  { Jynxzi: 'live', kaicenat: 'live', xqc: 'live', ishowspeed: 'offline', pokimane: 'live' },
+  { Jynxzi: 'offline', kaicenat: 'offline', xqc: 'live', ishowspeed: 'live', pokimane: 'live' },
+  { Jynxzi: 'offline', kaicenat: 'offline', xqc: 'offline', ishowspeed: 'live', pokimane: 'live' },
+  { Jynxzi: 'offline', kaicenat: 'offline', xqc: 'offline', ishowspeed: 'offline', pokimane: 'live' },
+  { Jynxzi: 'live', kaicenat: 'live', xqc: 'live', ishowspeed: 'offline', pokimane: 'live' },
 ]
