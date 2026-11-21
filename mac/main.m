@@ -18,7 +18,7 @@
 #define HD_SPARKLE 1
 #endif
 
-static NSString *const kDashboardURL = @"https://highlight-desk-at.expeditedclips.chatgpt.site";
+static NSString *const kDashboardURL = @"https://troxerr.github.io/chat-clip/";
 static NSString *const kDropboxHomeURL = @"https://www.dropbox.com/home";
 static NSString *const kGoogleDriveHomeURL = @"https://drive.google.com";
 static NSString *const kKeychainService = @"com.chatclip.app.credentials";
