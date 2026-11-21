@@ -17,6 +17,18 @@ or push a `win-v*` tag), which builds with `win/electron-builder.release.yml`.
 - `latest.yml` and the app feed config must exist. Tag builds attach installer + `latest.yml`
   to a draft GitHub release.
 
+## Licensing provider (Polar sandbox)
+The Windows app picks its provider from `win/build-config.json`: `provider` (`polar`) and
+`apiBase` are passed to every activate/validate/deactivate call (`LICENSE_PROVIDER` and
+`LEMON_API_BASE` only affect the `tools/license.js` CLI, not the app). Without them the app
+uses Lemon Squeezy. The committed config targets the **Polar sandbox**
+(`https://sandbox-api.polar.sh`), with `productId` as `ORG_ID:BENEFIT_ID`. These are
+identifiers, not secrets.
+
+**Production needs a new Polar product, license-key benefit, checkout link and organization
+values**: replace `productId` and `checkoutUrl`, and set `apiBase` to `https://api.polar.sh`
+(or remove it) before a public release. Sandbox keys do not work against production.
+
 ## Unsigned-first path
 Without a certificate, Windows SmartScreen shows "Windows protected your PC" (More info, then
 Run anyway) until the installer builds reputation. Tell early users this. Add a certificate

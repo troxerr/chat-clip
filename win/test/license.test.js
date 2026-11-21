@@ -164,3 +164,11 @@ test("offline detection tells network trouble from a rejection", () => {
   assert.equal(looksOffline(new Error("The license is not valid.")), false);
   assert.equal(looksOffline(new Error("This license key has expired.")), false);
 });
+
+test("the build config's provider and API base reach every license request", async () => {
+  const h = harness({ build: { licenseRequired: true, provider: "polar", apiBase: "https://sandbox-api.polar.sh", productId: "org:benefit" } });
+  await h.manager.activate("KEY");
+  assert.equal(h.calls[0].options.provider, "polar");
+  assert.equal(h.calls[0].options.apiBase, "https://sandbox-api.polar.sh");
+  assert.equal(h.calls[0].options.productId, "org:benefit");
+});
