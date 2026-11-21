@@ -31,6 +31,10 @@ function createLicenseManager({
 }) {
   const KEY = "license.key";
   const required = build.licenseRequired === true;
+  // Selects the licensing provider and API host (e.g. Polar sandbox) from the build config.
+  const providerOptions = {};
+  if (build.provider) providerOptions.provider = String(build.provider);
+  if (build.apiBase) providerOptions.apiBase = String(build.apiBase);
   const trialDays = (() => {
     const fromEnv = Number(env.CLIPSPIKE_TRIAL_DAYS);
     if (Number.isFinite(fromEnv) && env.CLIPSPIKE_TRIAL_DAYS !== undefined && env.CLIPSPIKE_TRIAL_DAYS !== "") return Math.max(0, Math.floor(fromEnv));
@@ -93,7 +97,7 @@ function createLicenseManager({
   async function activate(rawKey) {
     const licenseKey = String(rawKey || "").trim();
     if (!licenseKey) throw new Error("Enter your license key.");
-    const result = await request("activate", { licenseKey, instanceName: `ClipSpike (${deviceName})`, productId: build.productId || "" });
+    const result = await request("activate", { licenseKey, instanceName: `ClipSpike (${deviceName})`, productId: build.productId || "", ...providerOptions });
     if (!result || !result.valid || !result.instanceId) throw new Error("That license key could not be activated.");
     store.set(KEY, licenseKey);
     save({ instance: result.instanceId, email: result.customerEmail || "", productName: result.productName || "", lastValidatedAt: now().toISOString() });
@@ -108,7 +112,7 @@ function createLicenseManager({
     const instance = section().instance;
     if (!key || !instance) return state();
     try {
-      const result = await request("validate", { licenseKey: key, instanceId: instance, productId: build.productId || "" });
+      const result = await request("validate", { licenseKey: key, instanceId: instance, productId: build.productId || "", ...providerOptions });
       if (result && result.valid) save({ lastValidatedAt: now().toISOString() });
       else save({ lastValidatedAt: undefined });
     } catch (error) {
@@ -120,7 +124,7 @@ function createLicenseManager({
   async function deactivate() {
     const key = store.get(KEY);
     const instance = section().instance;
-    if (key && instance) await request("deactivate", { licenseKey: key, instanceId: instance, productId: build.productId || "" });
+    if (key && instance) await request("deactivate", { licenseKey: key, instanceId: instance, productId: build.productId || "", ...providerOptions });
     store.delete(KEY);
     save({ instance: undefined, email: undefined, productName: undefined, lastValidatedAt: undefined });
     return state();

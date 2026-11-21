@@ -1,6 +1,8 @@
 {
-  "licenseRequired": false,
+  "licenseRequired": true,
   "trialDays": 7,
-  "productId": "",
-  "checkoutUrl": ""
+  "provider": "polar",
+  "apiBase": "https://sandbox-api.polar.sh",
+  "productId": "23ee3970-fd3d-4d3c-b026-1d4efd3d51f7:51325433-f124-4973-a344-79242de9a627",
+  "checkoutUrl": "https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_pOh5hOp681JgeLkJNSvYGPXb93zmbTwJAjKGW0HyPrx/redirect"
 }
