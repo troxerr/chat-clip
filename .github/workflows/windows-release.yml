@@ -1,8 +1,10 @@
 name: Windows release
 
 # Manual or tag-triggered. Builds the Windows installer; signs it when a
-# code-signing certificate is configured, and attaches it to a draft GitHub
-# release for tag builds. Versions/names are not changed here.
+# code-signing certificate is configured (otherwise builds an UNSIGNED installer),
+# attaches it to a draft GitHub release for tag builds, and uploads it to
+# Cloudflare R2 for tag builds when R2 credentials are configured.
+# Versions/names are not changed here.
 on:
   workflow_dispatch:
   push:
@@ -22,6 +24,11 @@ jobs:
       # electron-builder signs automatically when these are set.
       CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
       CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      WIN_R2_PREFIX: ${{ vars.WIN_R2_PREFIX || 'win' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,7 +38,17 @@ jobs:
       - name: Report signing status
         shell: pwsh
         run: |
-          if ($env:CSC_LINK) { "Signing: certificate configured" } else { Write-Host "::warning::WIN_CSC_LINK is not set; the installer will be UNSIGNED." }
+          if ($env:CSC_LINK -and $env:CSC_KEY_PASSWORD) {
+            "Signing: certificate configured; the installer will be signed."
+            "SIGNED=true" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+            # Clear both so electron-builder does not try to sign with a half-set pair.
+            "CSC_LINK=" | Out-File -FilePath $env:GITHUB_ENV -Append
+            "CSC_KEY_PASSWORD=" | Out-File -FilePath $env:GITHUB_ENV -Append
+            "SIGNED=false" | Out-File -FilePath $env:GITHUB_ENV -Append
+            Write-Host "::warning title=Unsigned build::WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD are not both set. Building an UNSIGNED installer; Windows SmartScreen will warn users."
+            "### Unsigned build`nNo code-signing certificate was configured (WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD). This installer is **unsigned** and Windows SmartScreen will warn users." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          }
           if (-not $env:WIN_UPDATE_URL) { Write-Host "::error::Repo variable WIN_UPDATE_URL is not set; the installed app would have no update feed."; exit 1 }
           if ($env:WIN_UPDATE_URL -notmatch '^https://') { Write-Host "::error::WIN_UPDATE_URL must be an https:// URL."; exit 1 }
 
@@ -61,7 +78,7 @@ jobs:
         run: npm run pack:release
 
       - name: Verify the signature
-        if: env.CSC_LINK != ''
+        if: env.SIGNED == 'true'
         shell: pwsh
         run: |
           $exe = Get-ChildItem win\dist -Filter "ChatClip-*-x64.exe" | Select-Object -First 1
@@ -91,4 +108,32 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $files = @(Get-ChildItem win\dist -Filter "ChatClip-*-x64.exe") + @(Get-ChildItem win\dist -Filter latest.yml -ErrorAction SilentlyContinue)
-          gh release create "${{ github.ref_name }}" --draft --title "${{ github.ref_name }}" --notes "Windows build" ($files.FullName)
+          $notes = "Windows build"
+          if ($env:SIGNED -ne "true") {
+            $notes = "Windows build. **UNSIGNED**: no code-signing certificate was configured, so Windows SmartScreen will show an 'unknown publisher' warning (More info, then Run anyway)."
+          }
+          gh release create "${{ github.ref_name }}" --draft --title "${{ github.ref_name }}" --notes $notes ($files.FullName)
+
+      # Publishes the update feed. Installer first, then latest.yml, so clients never
+      # see a feed that points at a missing file. WIN_UPDATE_URL must be
+      # <public base>/<WIN_R2_PREFIX>/ for this bucket.
+      - name: Upload to Cloudflare R2 (optional)
+        if: startsWith(github.ref, 'refs/tags/win-v')
+        shell: pwsh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          if (-not ($env:R2_ACCOUNT_ID -and $env:R2_ACCESS_KEY_ID -and $env:R2_SECRET_ACCESS_KEY -and $env:R2_BUCKET)) {
+            Write-Host "::notice::R2_* secrets are not set in this repo; skipping upload. Host the installer and latest.yml at WIN_UPDATE_URL yourself (see docs/WINDOWS_RELEASE.md)."
+            exit 0
+          }
+          $endpoint = "https://$($env:R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+          $prefix = $env:WIN_R2_PREFIX.Trim("/")
+          $exe = Get-ChildItem win\dist -Filter "ChatClip-*-x64.exe" | Select-Object -First 1
+          aws s3 cp $exe.FullName "s3://$($env:R2_BUCKET)/$prefix/$($exe.Name)" --endpoint-url $endpoint
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          aws s3 cp win\dist\latest.yml "s3://$($env:R2_BUCKET)/$prefix/latest.yml" --endpoint-url $endpoint --cache-control "no-cache"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Write-Host "Uploaded to $prefix/ in the R2 bucket. Check: $($env:WIN_UPDATE_URL.TrimEnd('/'))/latest.yml"

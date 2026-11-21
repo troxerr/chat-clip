@@ -228,9 +228,13 @@ Set in the repo `troxerr/chat-clip` → Settings → Secrets and variables → A
 
 | Name | Kind | Value |
 |---|---|---|
-| `WIN_CSC_LINK` | secret | Code-signing `.pfx`: base64 of the file, or an https URL to it. Optional: unset gives an **unsigned** installer and a warning. |
-| `WIN_CSC_KEY_PASSWORD` | secret | The `.pfx` password. |
-| `WIN_UPDATE_URL` | variable | Public https folder that will hold the installer and `latest.yml`, e.g. `https://<your-domain>/win/`. Required; the workflow fails without it. |
+| `WIN_UPDATE_URL` | variable | **Required.** Public https folder that will hold the installer and `latest.yml`, e.g. `https://downloads.astlabs.dev/win/` (R2 public base + `win/`). The workflow fails without it. |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | secrets | Recommended. Same values as in `troxerr/chatclip-release`; lets tag builds upload to R2 `win/`. Without them you upload by hand. |
+| `WIN_R2_PREFIX` | variable | Optional R2 folder, default `win`; must match the path in `WIN_UPDATE_URL`. |
+| `WIN_CSC_LINK` | secret | Code-signing `.pfx`: base64 of the file, or an https URL to it. **Optional**: unset gives an **unsigned** installer (SmartScreen warns users), a warning in the log, and an "UNSIGNED" note in the draft release. |
+| `WIN_CSC_KEY_PASSWORD` | secret | The `.pfx` password (set together with `WIN_CSC_LINK`). |
+
+**Unsigned-first:** you can ship with only `WIN_UPDATE_URL` and the licensing values. Add the certificate later with no other change. See [WINDOWS_RELEASE.md](WINDOWS_RELEASE.md#unsigned-first-path).
 | `RUNTIME_MIRROR_URL` | variable | Optional mirror for the assets pinned in `tools/runtime-win.json`. |
 
 Encode the certificate:
@@ -258,13 +262,13 @@ node win/tools/check-release-config.js
 
 ### Host latest.yml
 
-The workflow does not upload to your host. After a Windows release run, download `ChatClip-*-x64.exe` and `latest.yml` (the `ChatClip-windows-release` artifact or the draft GitHub release for a `win-v*` tag) and upload both to the `WIN_UPDATE_URL` folder so that `<WIN_UPDATE_URL>/latest.yml` and the installer file named inside it are publicly readable over HTTPS:
+For `win-v*` tag builds the workflow uploads the installer and then `latest.yml` to R2 under `win/` when the `R2_*` secrets are set in this repo; skip the manual upload below in that case. Otherwise, after a Windows release run, download `ChatClip-*-x64.exe` and `latest.yml` (the `ChatClip-windows-release` artifact or the draft GitHub release for a `win-v*` tag) and upload both to the `WIN_UPDATE_URL` folder so that `<WIN_UPDATE_URL>/latest.yml` and the installer file named inside it are publicly readable over HTTPS:
 
 ```sh
 curl -fsSL "$WIN_UPDATE_URL/latest.yml"
 ```
 
-Expect the YAML with `version`, `path` and `sha512` matching the installer. Upload the installer before `latest.yml` so clients never see a feed pointing at a missing file. Cloudflare R2 (the same bucket as the Mac builds, under a `win/` prefix) works if you already have it.
+Expect the YAML with `version`, `path` and `sha512` matching the installer. Upload the installer before `latest.yml` so clients never see a feed pointing at a missing file. Cloudflare R2 (the same bucket as the Mac builds, under a `win/` prefix) is the recommended host.
 
 ---
 
@@ -307,13 +311,13 @@ git tag win-v3.1.0-dryrun && git push origin win-v3.1.0-dryrun
 gh run watch --repo troxerr/chat-clip
 ```
 
-(or run **windows-release** manually with workflow_dispatch). Expect the config checks, signature verification (if `WIN_CSC_LINK` is set), `latest.yml` and a draft GitHub release containing the installer. Host the files per step 6.
+(or run **windows-release** manually with workflow_dispatch). Expect the config checks, signature verification (only if `WIN_CSC_LINK` is set; otherwise an "unsigned" warning), `latest.yml` and a draft GitHub release containing the installer. Host the files per step 6.
 
 ### Clean-machine install tests
 
 On a Mac per architecture (no Homebrew, no Highlight Desk, a fresh user account is fine) and a clean Windows machine:
 
-1. Download the DMG/installer from the public URL (not the build folder). Mac: copy the app out of the DMG and launch; Gatekeeper must open it with no warning (`spctl -a -t open --context context:primary-signature <dmg>`). Windows: install; SmartScreen/publisher shows your signature.
+1. Download the DMG/installer from the public URL (not the build folder). Mac: copy the app out of the DMG and launch; Gatekeeper must open it with no warning (`spctl -a -t open --context context:primary-signature <dmg>`). Windows: install; signed builds show your publisher, unsigned builds show the SmartScreen warning (More info, then Run anyway).
 2. Run a capture on a Twitch channel and produce a clip; check the 7-day trial and License… screen; activate a sandbox/real key.
 3. **Update test:** install the previous throwaway version, publish a newer throwaway version (bump version/build, repeat the tag run, make sure the appcast / `latest.yml` is hosted), then:
    - Mac: **Check for Updates…**; confirm Sparkle verifies the signature, installs, relaunches, and keeps settings and license. Repeat while a capture is running and while offline. Sparkle only checks automatically after a license has been validated in the last 14 days ([UPDATE.md](UPDATE.md)).
