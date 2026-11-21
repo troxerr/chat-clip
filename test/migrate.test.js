@@ -89,9 +89,10 @@ test("the output folder from before the rename is still used until a new one exi
   try {
     const legacy = path.join(home, "Movies", "Highlight Desk");
     fs.mkdirSync(legacy, { recursive: true });
-    assert.equal(platform.outputRoot({}, "darwin", home), legacy);
+    const same = (a, b) => assert.equal(path.normalize(a), path.normalize(b));
+    same(platform.outputRoot({}, "darwin", home), legacy);
     fs.mkdirSync(path.join(home, "Movies", "ChatClip"));
-    assert.equal(platform.outputRoot({}, "darwin", home), path.join(home, "Movies", "ChatClip"));
+    same(platform.outputRoot({}, "darwin", home), path.join(home, "Movies", "ChatClip"));
   } finally { fs.rmSync(home, { recursive: true, force: true }); }
 });
 
