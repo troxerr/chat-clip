@@ -136,3 +136,78 @@ test("poller drops duplicate events and shuts down without scheduling reconnect"
   // Closing inside a callback also stops delivery of the rest of that batch.
   assert.equal(messages.length, 1);
 });
+
+test("subscribe accepts Kick's POST response shape (name, not event)", async () => {
+  const calls = [];
+  const api = new KickAPI({ clientId: "id", clientSecret: "s", fetchImpl: async (url, options = {}) => {
+    if (url.includes("oauth/token")) return { ok: true, json: async () => ({ access_token: "t", expires_in: 3600 }) };
+    calls.push(`${options.method || "GET"} ${url.replace("https://api.kick.com/public/v1", "")}`);
+    const data = url.includes("/channels") ? [{ broadcaster_user_id: 123 }] : options.method === "POST" ? [{ name: "chat.message.sent", version: 1, subscription_id: "x" }] : [];
+    return { ok: true, status: 200, json: async () => ({ data }) };
+  } });
+  assert.deepEqual(await api.subscribe("example"), { id: 123, slug: "example" });
+  assert.ok(calls.includes("GET /events/subscriptions?broadcaster_user_id=123"));
+  const failing = new KickAPI({ clientId: "id", clientSecret: "s", fetchImpl: async (url, options = {}) => url.includes("oauth/token")
+    ? { ok: true, json: async () => ({ access_token: "t" }) }
+    : { ok: true, status: 200, json: async () => ({ data: url.includes("/channels") ? [{ broadcaster_user_id: 1 }] : options.method === "POST" ? [{ name: "chat.message.sent", error: "nope" }] : [] }) } });
+  await assert.rejects(failing.subscribe("example"));
+});
+
+test("traffic on another channel does not cause a false cursor reset", async t => {
+  const api = { subscribe: async slug => ({ id: slug === "example" ? 123 : 999, slug }) };
+  const relay = createKickRelay({ api, relayToken, now: () => now, getPublicKey: () => keys.publicKey });
+  t.after(() => relay.close());
+  const start = (await call(relay.control, "/v1/channels/example", { headers: auth })).data;
+  await call(relay.control, "/v1/channels/other", { headers: auth });
+  const send = async (user, id) => {
+    const body = JSON.stringify(payload({ message_id: id, broadcaster: { user_id: user } }));
+    assert.equal((await call(relay.webhook, "/kick/webhook", { method: "POST", body, headers: signed(body, id) })).status, 200);
+  };
+  await send(999, "o1"); await send(999, "o2"); await send(123, "e1");
+  const batch = (await call(relay.control, `/v1/events/example?after=${start.cursor}&epoch=${start.epoch}`, { headers: auth })).data;
+  assert.equal(batch.reset, false);
+  assert.equal(batch.events.length, 1);
+});
+
+test("malformed signed webhook body is a 400, not a retryable 503", async t => {
+  const relay = fixture(t);
+  await call(relay.control, "/v1/channels/example", { headers: auth });
+  const body = "not json";
+  assert.equal((await call(relay.webhook, "/kick/webhook", { method: "POST", body, headers: signed(body, "bad") })).status, 400);
+});
+
+test("a failed subscription recheck keeps serving an already-working channel", async t => {
+  let fail = false, t0 = now;
+  const api = { subscribe: async slug => { if (fail) throw new Error("kick down"); return { id: 123, slug }; } };
+  const relay = createKickRelay({ api, relayToken, now: () => t0, getPublicKey: () => keys.publicKey });
+  t.after(() => relay.close());
+  const start = (await call(relay.control, "/v1/channels/example", { headers: auth })).data;
+  fail = true; t0 += 301000;
+  const res = await call(relay.control, `/v1/events/example?after=${start.cursor}&epoch=${start.epoch}`, { headers: auth });
+  assert.equal(res.status, 200);
+  assert.equal(res.data.reset, false);
+});
+
+test("an underscore channel name falls back to Kick's hyphenated slug", async () => {
+  const slugs = [];
+  const api = new KickAPI({ clientId: "id", clientSecret: "s", fetchImpl: async (url, options = {}) => {
+    if (url.includes("oauth/token")) return { ok: true, json: async () => ({ access_token: "t" }) };
+    let data = [];
+    if (url.includes("/channels")) { const slug = new URL(url).searchParams.get("slug"); slugs.push(slug); if (slug === "some-name") data = [{ broadcaster_user_id: 7 }]; }
+    else if (options.method === "POST") data = [{ name: "chat.message.sent" }];
+    return { ok: true, status: 200, json: async () => ({ data }) };
+  } });
+  assert.deepEqual(await api.subscribe("some_name"), { id: 7, slug: "some_name" });
+  assert.deepEqual(slugs, ["some_name", "some-name"]);
+});
+
+test("Kick browser preflight finds Chrome/Chromium, honors overrides, and fails clearly", () => {
+  const { findKickBrowser } = require("../lib/kick-browser.js");
+  const chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  assert.equal(findKickBrowser({ platform: "darwin", env: {}, home: "/h", exists: p => p === chrome }), chrome);
+  assert.equal(findKickBrowser({ platform: "darwin", env: {}, home: "/h", exists: p => p.startsWith("/Applications/Chromium") || p === chrome }), "/Applications/Chromium.app/Contents/MacOS/Chromium");
+  assert.equal(findKickBrowser({ platform: "darwin", env: { HIGHLIGHT_DESK_KICK_BROWSER: "/opt/b" }, exists: p => p === "/opt/b" }), "/opt/b");
+  assert.equal(findKickBrowser({ platform: "darwin", env: {}, config: { kick: { browser: "/opt/c" } }, exists: p => p === "/opt/c" }), "/opt/c");
+  assert.throws(() => findKickBrowser({ platform: "darwin", env: {}, home: "/h", exists: () => false }), /Chrome or Chromium/);
+  assert.throws(() => findKickBrowser({ platform: "darwin", env: { HIGHLIGHT_DESK_KICK_BROWSER: "relative" }, exists: () => true }), /override does not exist/);
+});

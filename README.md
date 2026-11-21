@@ -1,7 +1,7 @@
 # Chatclip
 
 Kick live automatic highlights are being integrated. See [Kick setup and live
-validation status](docs/KICK.md) before using the separate Kick-enabled build.
+validation status](docs/KICK.md) before using the separate Kick-enabled build. Kick capture needs Google Chrome or Chromium installed.
 
 ## Capture Monitor
 

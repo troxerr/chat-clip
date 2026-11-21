@@ -17,6 +17,7 @@ const platform = require("./lib/platform.js");
 const { resolveEncoder } = require("./lib/encoder.js");
 const { parseSource } = require("./lib/stream-source.js");
 const { relaySettings, connectKickChat } = require("./lib/kick-chat.js");
+const { findKickBrowser } = require("./lib/kick-browser.js");
 const { parseManifest, planClip } = require("./lib/manifest.js");
 const { readConfig, reframeSettings, storageSettings } = require("./lib/appconfig.js");
 const { createStorageProvider, storageLabel } = require("./lib/storage/index.js");
@@ -50,6 +51,7 @@ try { streamSource = parseSource(process.argv[2]); } catch (error) {
 }
 const channel = streamSource.key;
 let kickRelay;
+let kickBrowser;
 if (streamSource.platform === "kick") {
   try {
     kickRelay = relaySettings(configResult.config);
@@ -250,6 +252,12 @@ function preflight() {
       return false;
     }
   }
+  if (streamSource.platform === "kick" && !process.env.HIGHLIGHT_DESK_INPUT) {
+    try { kickBrowser = findKickBrowser({ config: configResult.config }); } catch (error) {
+      fatal(error.message);
+      return false;
+    }
+  }
   // Pick the encoder now so the first export does not stall on the probe.
   if (reframeConfig.encoder === "auto") reframeConfig.encoder = resolveEncoder();
   return true;
@@ -270,7 +278,7 @@ function record() {
       ? spawn("ffmpeg", ["-hide_banner", "-loglevel", "error", "-re", "-i", path.resolve(inputFile), "-c", "copy", "-f", "mpegts", "pipe:1"], {
         stdio: ["ignore", "pipe", "inherit"]
       })
-      : spawn("streamlink", ["--retry-streams", "30", "--retry-open", "3", "--stdout", streamSource.url, "best"], {
+      : spawn("streamlink", ["--retry-streams", "30", "--retry-open", "3", ...(kickBrowser ? ["--webbrowser-executable", kickBrowser] : []), "--stdout", streamSource.url, "best"], {
         stdio: ["ignore", "pipe", "inherit"]
       });
     enc = spawn("ffmpeg", [

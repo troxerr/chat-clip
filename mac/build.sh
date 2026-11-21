@@ -82,7 +82,7 @@ cp "$ROOT/tools/oauth-bridge.js" "$ROOT/tools/license.js" "$ROOT/tools/review-ex
 cp "$ROOT/dist/config.js" "$ROOT/dist/irc.js" "$ROOT/dist/reactions.js" "$APP_DIR/Contents/Resources/dist/"
 cp "$ROOT/lib/manifest.js" "$ROOT/lib/exporter.js" "$ROOT/lib/appconfig.js" "$ROOT/lib/reframe.js" "$ROOT/lib/encoder.js" "$ROOT/lib/dropbox.js" "$ROOT/lib/google-drive.js" "$ROOT/lib/jobstore.js" "$ROOT/lib/twitch-vod.js" "$ROOT/lib/vodscan.js" "$ROOT/lib/overlays.js" "$ROOT/lib/captions.js" "$ROOT/lib/feedback.js" "$APP_DIR/Contents/Resources/lib/"
 cp -R "$ROOT/lib/storage" "$APP_DIR/Contents/Resources/lib/"
-cp "$ROOT/lib/stream-source.js" "$ROOT/lib/kick-chat.js" "$ROOT/lib/freetier.js" "$APP_DIR/Contents/Resources/lib/"
+cp "$ROOT/lib/stream-source.js" "$ROOT/lib/kick-chat.js" "$ROOT/lib/kick-browser.js" "$ROOT/lib/freetier.js" "$APP_DIR/Contents/Resources/lib/"
 cp -R "$ROOT/lib/assets" "$APP_DIR/Contents/Resources/lib/"
 cp "$ROOT/lib/monitor.js" "$ROOT/lib/monitor-worker.js" "$ROOT/lib/monitor-policy.js" "$APP_DIR/Contents/Resources/lib/"
 cp "$ROOT/tools/monitor.js" "$APP_DIR/Contents/Resources/tools/"
