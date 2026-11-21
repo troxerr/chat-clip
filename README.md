@@ -420,4 +420,4 @@ Set `LEMON_API_BASE` only for testing or a proxy. A license is required to start
 
 The current builds are ad-hoc signed. Arm64 and x86_64 LGPL runtimes/apps are built locally, but a sellable release still requires Developer ID signing, notarization, vendor OAuth client credentials, a Lemon Squeezy product/checkout, a hosted Sparkle feed, legal review, and a paid pilot.
 
-See [docs/RELEASE.md](docs/RELEASE.md) for the release path.
+See [docs/RELEASE.md](docs/RELEASE.md) for the release path and [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md) for the ordered owner-side launch steps.
