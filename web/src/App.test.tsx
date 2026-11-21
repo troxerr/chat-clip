@@ -29,7 +29,7 @@ describe('routing', () => {
     renderAt('/clips')
     expect(screen.getByRole('heading', { name: 'Highlights' })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('10 highlights')
-    await user.selectOptions(screen.getByLabelText('Streamer'), 'jasontheween')
+    await user.selectOptions(screen.getByLabelText('Streamer'), 'Jynxzi')
     expect(screen.getByRole('status')).toHaveTextContent('4 highlights')
     await user.type(screen.getByLabelText('Search clips'), 'zzz')
     expect(screen.getByText('No highlights match your filters.')).toBeInTheDocument()
@@ -76,11 +76,11 @@ describe('backup streamer', () => {
 
   it('switches to a backup when the featured streamer goes offline and back', () => {
     renderAt('/')
-    expect(screen.getByLabelText('Current streamer')).toHaveTextContent('jasontheween')
+    expect(screen.getByLabelText('Current streamer')).toHaveTextContent('Jynxzi')
     act(() => useClipStore.getState().advanceMockStatus())
     expect(screen.getByLabelText('Current streamer')).toHaveTextContent('kaicenat')
     expect(screen.getByText(/Switched to backup/)).toBeInTheDocument()
-    act(() => useClipStore.getState().setStreamStatus({ jasontheween: 'live' }))
+    act(() => useClipStore.getState().setStreamStatus({ Jynxzi: 'live' }))
     expect(screen.queryByText(/Switched to backup/)).not.toBeInTheDocument()
   })
 })

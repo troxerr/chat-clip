@@ -16,7 +16,7 @@ export interface Clip {
   favorite: boolean
 }
 
-export const FEATURED_STREAMER = 'jasontheween'
+export const FEATURED_STREAMER = 'Jynxzi'
 
 const clip = (
   id: number,
@@ -37,10 +37,10 @@ const clip = (
 })
 
 export const mockClips: Clip[] = [
-  clip(1, 'Chat explodes after the 1v4 ace', 'jasontheween', 'Valorant', 97, 'Clutch play', '2026-11-20T21:14:00Z', 7522, 30, 18420, 212),
-  clip(2, 'The prank call nobody saw coming', 'jasontheween', 'Just Chatting', 91, 'Funny moment', '2026-11-20T19:02:00Z', 3905, 42, 12310, 168),
-  clip(3, 'Raid train hits 5,000 viewers', 'jasontheween', 'Just Chatting', 88, 'Hype train', '2026-11-19T23:40:00Z', 10211, 25, 9984, 190),
-  clip(4, 'Scream heard around the lobby', 'jasontheween', 'Phasmophobia', 84, 'Audio peak', '2026-11-19T20:31:00Z', 5120, 18, 8730, 143),
+  clip(1, 'Chat explodes after the 1v4 ace', 'Jynxzi', 'Valorant', 97, 'Clutch play', '2026-11-20T21:14:00Z', 7522, 30, 18420, 212),
+  clip(2, 'The prank call nobody saw coming', 'Jynxzi', 'Just Chatting', 91, 'Funny moment', '2026-11-20T19:02:00Z', 3905, 42, 12310, 168),
+  clip(3, 'Raid train hits 5,000 viewers', 'Jynxzi', 'Just Chatting', 88, 'Hype train', '2026-11-19T23:40:00Z', 10211, 25, 9984, 190),
+  clip(4, 'Scream heard around the lobby', 'Jynxzi', 'Phasmophobia', 84, 'Audio peak', '2026-11-19T20:31:00Z', 5120, 18, 8730, 143),
   clip(5, 'Impossible last-second parry', 'novaquill', 'Elden Ring', 93, 'Clutch play', '2026-11-20T17:45:00Z', 12044, 35, 15200, 175),
   clip(6, 'Chat spams the wrong emote', 'novaquill', 'Elden Ring', 62, 'Chat spike', '2026-11-18T18:10:00Z', 2210, 20, 3120, 96),
   clip(7, 'Speedrun skip finally lands', 'pixelmoth', 'Celeste', 79, 'Clutch play', '2026-11-20T14:20:00Z', 8800, 28, 6020, 88),
@@ -54,8 +54,8 @@ export const BACKUP_STREAMERS = ['xqc', 'kaicenat', 'pokimane']
 
 // Mock status timeline (no Twitch API); the store steps through it on a timer.
 export const MOCK_STATUS_TIMELINE: Record<string, 'live' | 'offline'>[] = [
-  { jasontheween: 'live', xqc: 'live', kaicenat: 'offline', pokimane: 'live' },
-  { jasontheween: 'offline', xqc: 'offline', kaicenat: 'live', pokimane: 'live' },
-  { jasontheween: 'offline', xqc: 'offline', kaicenat: 'offline', pokimane: 'live' },
-  { jasontheween: 'live', xqc: 'live', kaicenat: 'offline', pokimane: 'live' },
+  { Jynxzi: 'live', xqc: 'live', kaicenat: 'offline', pokimane: 'live' },
+  { Jynxzi: 'offline', xqc: 'offline', kaicenat: 'live', pokimane: 'live' },
+  { Jynxzi: 'offline', xqc: 'offline', kaicenat: 'offline', pokimane: 'live' },
+  { Jynxzi: 'live', xqc: 'live', kaicenat: 'offline', pokimane: 'live' },
 ]
