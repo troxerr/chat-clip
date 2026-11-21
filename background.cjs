@@ -1,5 +1,7 @@
 "use strict";
 
+require("./lib/migrate.js").runMigration();
+
 const { spawn, spawnSync } = require("node:child_process");
 const path = require("node:path");
 const fs = require("node:fs");
@@ -35,8 +37,8 @@ const storageConfig = storageSettings(configResult.config);
 let storageProvider = null;
 let storageProviderError = null;
 const jobStore = createJobStore();
-const QUEUE_INTERVAL_MS = Math.max(1000, Number(process.env.HIGHLIGHT_DESK_QUEUE_MS) || 60000);
-const RETRY_BASE_MS = Math.max(1000, Number(process.env.HIGHLIGHT_DESK_RETRY_MS) || 60000);
+const QUEUE_INTERVAL_MS = Math.max(1000, Number(process.env.CHATCLIP_QUEUE_MS) || 60000);
+const RETRY_BASE_MS = Math.max(1000, Number(process.env.CHATCLIP_RETRY_MS) || 60000);
 let queueTimer = null;
 let queueBusy = false;
 try {
@@ -69,8 +71,8 @@ try {
 }
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "chatclip-"));
 const manifestFile = path.join(temp, "segments.csv");
-const EVENTS = process.env.HIGHLIGHT_DESK_EVENTS === "1";
-const smokeChat = streamSource.platform === "twitch" && Boolean(process.env.HIGHLIGHT_DESK_SMOKE && process.env.HIGHLIGHT_DESK_INPUT);
+const EVENTS = process.env.CHATCLIP_EVENTS === "1";
+const smokeChat = streamSource.platform === "twitch" && Boolean(process.env.CHATCLIP_SMOKE && process.env.CHATCLIP_INPUT);
 let smokeSpikeSent = false;
 
 let chat = null;
@@ -242,7 +244,7 @@ function preflight() {
   }
   const win = process.platform === "win32";
   const checks = [
-    ...(process.env.HIGHLIGHT_DESK_INPUT ? [] : [["streamlink", ["--version"], win ? "winget install Streamlink.Streamlink" : "brew install streamlink"]]),
+    ...(process.env.CHATCLIP_INPUT ? [] : [["streamlink", ["--version"], win ? "winget install Streamlink.Streamlink" : "brew install streamlink"]]),
     ["ffmpeg", ["-version"], win ? "winget install Gyan.FFmpeg" : "brew install ffmpeg"]
   ];
   for (const [command, args, hint] of checks) {
@@ -252,7 +254,7 @@ function preflight() {
       return false;
     }
   }
-  if (streamSource.platform === "kick" && !process.env.HIGHLIGHT_DESK_INPUT) {
+  if (streamSource.platform === "kick" && !process.env.CHATCLIP_INPUT) {
     try { kickBrowser = findKickBrowser({ config: configResult.config }); } catch (error) {
       fatal(error.message);
       return false;
@@ -273,7 +275,7 @@ function record() {
   let src;
   let enc;
   try {
-    const inputFile = process.env.HIGHLIGHT_DESK_INPUT;
+    const inputFile = process.env.CHATCLIP_INPUT;
     src = inputFile
       ? spawn("ffmpeg", ["-hide_banner", "-loglevel", "error", "-re", "-i", path.resolve(inputFile), "-c", "copy", "-f", "mpegts", "pipe:1"], {
         stdio: ["ignore", "pipe", "inherit"]
@@ -1324,8 +1326,8 @@ process.on("SIGUSR1", () => {
   emit("missed-moment", { message: "Marked this moment for review. No extra clip was created." });
 });
 // Windows has no SIGUSR1/2, so a host app can send newline-delimited commands
-// on stdin instead (HIGHLIGHT_DESK_COMMANDS=1): "save", "missed", "stop".
-if (process.env.HIGHLIGHT_DESK_COMMANDS === "1") {
+// on stdin instead (CHATCLIP_COMMANDS=1): "save", "missed", "stop".
+if (process.env.CHATCLIP_COMMANDS === "1") {
   const commands = {
     save: () => process.emit("SIGUSR2"),
     missed: () => process.emit("SIGUSR1"),

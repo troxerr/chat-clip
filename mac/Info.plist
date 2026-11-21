@@ -5,19 +5,19 @@
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleDisplayName</key>
-  <string>Chatclip</string>
+  <string>ChatClip</string>
   <key>CFBundleExecutable</key>
-  <string>Chatclip</string>
+  <string>ChatClip</string>
   <key>CFBundleIconName</key>
   <string>AppIcon</string>
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
-  <string>com.highlightdesk.app</string>
+  <string>com.chatclip.app</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>Chatclip</string>
+  <string>ChatClip</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

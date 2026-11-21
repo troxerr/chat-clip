@@ -1,6 +1,6 @@
 # Third-party notices
 
-Chatclip bundles or links the following components. This file is a summary; the full license texts must ship with the release.
+ChatClip bundles or links the following components. This file is a summary; the full license texts must ship with the release.
 
 ## FFmpeg
 
@@ -37,7 +37,7 @@ Configure line, verbatim:
 
 - **FFmpeg source:** commit `1fdbca85aa`, which is 12 commits after the tag `n7.1.5` (that is what `n7.1.5-12-g1fdbca85aa` means). Links to check: https://github.com/FFmpeg/FFmpeg/commit/1fdbca85aa and https://ffmpeg.org/releases/. **These links have not been checked** (the environment this was written in cannot reach those pages).
 - **Build scripts and the other libraries' sources:** https://github.com/BtbN/FFmpeg-Builds at release tag `autobuild-2026-07-31-14-10`. **Not checked either.** Those scripts fetch and pin the sources of every library named in the configure line.
-- **Written offer:** Highlight Desk will provide, to anyone who received the Windows app, the complete corresponding source of the FFmpeg it bundles, including the build scripts, for at least three years after that version was last distributed, for no more than the cost of physically performing the distribution. Contact: **[support address to be added before release; none exists yet]**.
+- **Written offer:** ChatClip will provide, to anyone who received the Windows app, the complete corresponding source of the FFmpeg it bundles, including the build scripts, for at least three years after that version was last distributed, for no more than the cost of physically performing the distribution. Contact: **[support address to be added before release; none exists yet]**.
 - Ship with the app: the FFmpeg `LICENSE`/`COPYING` files (the fetch script copies the ones in the archive into `runtime/licenses`), and the licence texts of the libraries below.
 
 ### Points for the legal review
@@ -93,4 +93,4 @@ Public emote metadata and images are fetched from `7tv.io`/`cdn.7tv.app`; no cod
 
 ## Trademarks
 
-Twitch, TikTok, Dropbox, Google Drive, and Lemon Squeezy are trademarks of their respective owners. Chatclip is not affiliated with or endorsed by them.
+Twitch, TikTok, Dropbox, Google Drive, and Lemon Squeezy are trademarks of their respective owners. ChatClip is not affiliated with or endorsed by them.

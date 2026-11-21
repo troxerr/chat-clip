@@ -34,7 +34,7 @@ const SETTINGS = {
   clientSecret: "client-secret",
   refreshToken: "refresh-token",
   accessToken: "",
-  folder: "/Highlight Desk"
+  folder: "/ChatClip"
 };
 
 test("requires Google Drive credentials", () => {
@@ -81,10 +81,10 @@ test("refreshes a token, creates folders, and completes a resumable upload", asy
   };
 
   const client = createGoogleDriveClient(SETTINGS, { fetchImpl, sleep: async () => {} });
-  const result = await client.uploadClip(file.file, { folder: "/Highlight Desk", channel: "chan" });
+  const result = await client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" });
   assert.equal(result.ok, true);
   assert.equal(result.provider, "googleDrive");
-  assert.equal(result.remotePath, "/Highlight Desk/chan/clip.mp4");
+  assert.equal(result.remotePath, "/ChatClip/chan/clip.mp4");
   assert.equal(result.fileId, "file-1");
   assert.equal(result.size, file.size);
   assert.equal(result.webLink, "https://drive.example/file-1");
@@ -108,7 +108,7 @@ test("uses an existing folder instead of creating it", async () => {
     if (url.startsWith("https://www.googleapis.com/drive/v3/files?q=")) {
       lists += 1;
       return lists === 1
-        ? response({ files: [{ id: "existing-folder", name: "Chatclip" }] })
+        ? response({ files: [{ id: "existing-folder", name: "ChatClip" }] })
         : response({ files: [] });
     }
     if (url.startsWith("https://www.googleapis.com/drive/v3/files?fields=")) {
@@ -122,7 +122,7 @@ test("uses an existing folder instead of creating it", async () => {
     throw new Error(`unexpected URL ${url}`);
   };
   const client = createGoogleDriveClient(SETTINGS, { fetchImpl, sleep: async () => {} });
-  const result = await client.uploadClip(file.file, { folder: "/Highlight Desk", channel: "chan" });
+  const result = await client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" });
   assert.equal(result.ok, true);
   assert.equal(creates, 1);
   fs.rmSync(file.dir, { recursive: true, force: true });
@@ -140,7 +140,7 @@ test("rejects a size mismatch and preserves the local file", async () => {
   };
   const client = createGoogleDriveClient(SETTINGS, { fetchImpl, sleep: async () => {} });
   await assert.rejects(
-    () => client.uploadClip(file.file, { folder: "/Highlight Desk", channel: "chan" }),
+    () => client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" }),
     /size mismatch/
   );
   assert.equal(fs.existsSync(file.file), true);
@@ -162,7 +162,7 @@ test("surfaces quota errors without retrying", async () => {
   };
   const client = createGoogleDriveClient(SETTINGS, { fetchImpl, sleep: async () => {}, maxAttempts: 3 });
   await assert.rejects(
-    () => client.uploadClip(file.file, { folder: "/Highlight Desk", channel: "chan" }),
+    () => client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" }),
     /Storage quota exceeded/
   );
   assert.equal(uploadAttempts, 1);
@@ -190,7 +190,7 @@ test("refreshes after a 401 response", async () => {
     throw new Error(`unexpected URL ${url}`);
   };
   const client = createGoogleDriveClient(SETTINGS, { fetchImpl, sleep: async () => {} });
-  const result = await client.uploadClip(file.file, { folder: "/Highlight Desk", channel: "chan" });
+  const result = await client.uploadClip(file.file, { folder: "/ChatClip", channel: "chan" });
   assert.equal(result.ok, true);
   assert.equal(tokenCalls, 2);
   fs.rmSync(file.dir, { recursive: true, force: true });

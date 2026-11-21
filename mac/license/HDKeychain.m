@@ -1,10 +1,11 @@
 #import "HDKeychain.h"
 #import <Security/Security.h>
+#import "../migration/HDMigration.h"
 
 @implementation HDKeychain
 
 + (BOOL)isDisabled {
-  return [NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_KEYCHAIN"] isEqualToString:@"0"];
+  return [HDEnv(@"CHATCLIP_KEYCHAIN") isEqualToString:@"0"];
 }
 
 + (NSDictionary *)queryForAccount:(NSString *)account service:(NSString *)service {

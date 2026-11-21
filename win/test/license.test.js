@@ -11,7 +11,7 @@ function harness({ build = { licenseRequired: true }, start = "2026-11-01T00:00:
     readConfig: () => JSON.parse(JSON.stringify(db.config)),
     writeConfig: (config) => { db.config = JSON.parse(JSON.stringify(config)); },
     store: { get: (n) => db.secrets.get(n) || "", set: (n, v) => db.secrets.set(n, v), delete: (n) => db.secrets.delete(n), writable: () => true },
-    request: async (action, options) => { calls.push({ action, options }); return request ? request(action, options) : { ok: true, valid: true, instanceId: "inst-1", customerEmail: "a@b.c", productName: "Highlight Desk" }; },
+    request: async (action, options) => { calls.push({ action, options }); return request ? request(action, options) : { ok: true, valid: true, instanceId: "inst-1", customerEmail: "a@b.c", productName: "ChatClip" }; },
     now: () => now,
     build,
     env,
@@ -51,8 +51,8 @@ test("the trial starts on first run and counts down by whole days", () => {
 
 test("the trial length can come from the build or the environment", () => {
   assert.equal(harness({ build: { licenseRequired: true, trialDays: 14 } }).manager.state().daysLeft, 14);
-  assert.equal(harness({ env: { HIGHLIGHT_DESK_TRIAL_DAYS: "2" } }).manager.state().daysLeft, 2);
-  assert.equal(harness({ env: { HIGHLIGHT_DESK_TRIAL_DAYS: "0" } }).manager.state().valid, false);
+  assert.equal(harness({ env: { CHATCLIP_TRIAL_DAYS: "2" } }).manager.state().daysLeft, 2);
+  assert.equal(harness({ env: { CHATCLIP_TRIAL_DAYS: "0" } }).manager.state().valid, false);
 });
 
 test("a clock set back does not extend the trial past its length", () => {

@@ -19,7 +19,7 @@ test("checks for updates when packaged with a feed", async () => {
 });
 
 test("stays off without a feed, unpackaged, or in smoke runs", () => {
-  for (const over of [{ exists: () => false }, { app: { isPackaged: false } }, { env: { HIGHLIGHT_DESK_SMOKE: "x" } }]) {
+  for (const over of [{ exists: () => false }, { app: { isPackaged: false } }, { env: { CHATCLIP_SMOKE: "x" } }]) {
     const { au, result } = setup(over);
     assert.equal(result.enabled, false);
     assert.equal(au.checks, 0);

@@ -50,7 +50,7 @@ test("stale events, anonymous senders, and wrong channels cannot trigger clips",
 });
 
 test("relay credentials never travel to insecure remote origins", () => {
-  const env = { HIGHLIGHT_DESK_KEYCHAIN: "0", HIGHLIGHT_DESK_KICK_RELAY_TOKEN: "test" };
+  const env = { CHATCLIP_KEYCHAIN: "0", CHATCLIP_KICK_RELAY_TOKEN: "test" };
   assert.equal(relaySettings({}, env).url, "http://127.0.0.1:8765");
   for (const url of ["http://example.com", "https://user:pass@example.com", "https://example.com/path", "https://example.com?token=1"]) assert.throws(() => relaySettings({ kick: { relayUrl: url } }, env));
 });
@@ -206,8 +206,8 @@ test("Kick browser preflight finds Chrome/Chromium, honors overrides, and fails 
   const chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
   assert.equal(findKickBrowser({ platform: "darwin", env: {}, home: "/h", exists: p => p === chrome }), chrome);
   assert.equal(findKickBrowser({ platform: "darwin", env: {}, home: "/h", exists: p => p.startsWith("/Applications/Chromium") || p === chrome }), "/Applications/Chromium.app/Contents/MacOS/Chromium");
-  assert.equal(findKickBrowser({ platform: "darwin", env: { HIGHLIGHT_DESK_KICK_BROWSER: "/opt/b" }, exists: p => p === "/opt/b" }), "/opt/b");
+  assert.equal(findKickBrowser({ platform: "darwin", env: { CHATCLIP_KICK_BROWSER: "/opt/b" }, exists: p => p === "/opt/b" }), "/opt/b");
   assert.equal(findKickBrowser({ platform: "darwin", env: {}, config: { kick: { browser: "/opt/c" } }, exists: p => p === "/opt/c" }), "/opt/c");
   assert.throws(() => findKickBrowser({ platform: "darwin", env: {}, home: "/h", exists: () => false }), /Chrome or Chromium/);
-  assert.throws(() => findKickBrowser({ platform: "darwin", env: { HIGHLIGHT_DESK_KICK_BROWSER: "relative" }, exists: () => true }), /override does not exist/);
+  assert.throws(() => findKickBrowser({ platform: "darwin", env: { CHATCLIP_KICK_BROWSER: "relative" }, exists: () => true }), /override does not exist/);
 });

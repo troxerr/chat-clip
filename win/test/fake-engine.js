@@ -9,7 +9,7 @@ if (mode === "crash") {
   process.exit(1);
 }
 if (mode === "env") {
-  out({ type: "ready", channel, env: { EVENTS: process.env.HIGHLIGHT_DESK_EVENTS, COMMANDS: process.env.HIGHLIGHT_DESK_COMMANDS, RUN_AS_NODE: process.env.ELECTRON_RUN_AS_NODE || null, EXTRA: process.env.EXTRA || null } });
+  out({ type: "ready", channel, env: { EVENTS: process.env.CHATCLIP_EVENTS, COMMANDS: process.env.CHATCLIP_COMMANDS, RUN_AS_NODE: process.env.ELECTRON_RUN_AS_NODE || null, EXTRA: process.env.EXTRA || null } });
   setInterval(() => {}, 1000);
 }
 else if (mode === "deaf") {

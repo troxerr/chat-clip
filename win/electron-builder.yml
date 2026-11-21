@@ -1,7 +1,7 @@
 # Packaging for the Windows installer. `npm run pack` first stages a folder that
 # mirrors the repo layout (so the engine's relative requires work unchanged),
 # then builds from it. No asar: the recorder runs as a separate Node process.
-appId: com.highlightdesk.app
+appId: com.chatclip.app
 productName: ChatClip
 electronVersion: 45.3.4
 directories:

@@ -122,8 +122,8 @@ test("review export pairs each clip's signals with what happened to it", () => {
 
 test("review-export --mark-reviewed resets the counter", () => {
   const dir = tempDir();
-  const previous = process.env.HIGHLIGHT_DESK_STATE;
-  process.env.HIGHLIGHT_DESK_STATE = dir;
+  const previous = process.env.CHATCLIP_STATE;
+  process.env.CHATCLIP_STATE = dir;
   const log = console.log;
   const printed = [];
   console.log = (line) => printed.push(line);
@@ -138,7 +138,7 @@ test("review-export --mark-reviewed resets the counter", () => {
     assert.equal(feedback.readReviewState(dir).sinceReview, 0);
   } finally {
     console.log = log;
-    if (previous === undefined) delete process.env.HIGHLIGHT_DESK_STATE; else process.env.HIGHLIGHT_DESK_STATE = previous;
+    if (previous === undefined) delete process.env.CHATCLIP_STATE; else process.env.CHATCLIP_STATE = previous;
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });

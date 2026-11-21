@@ -1,6 +1,7 @@
 (function (root) {
   "use strict";
 
+  // Kept from before the rename: a new name would orphan clips already saved in this browser.
   const DB_NAME = "highlight-desk";
   const DB_VERSION = 1;
   let dbPromise = null;

@@ -1,6 +1,6 @@
 # Capture monitoring and learning
 
-Open **Monitor…** on Capture, or **Chatclip → Capture Monitor…** (Command–Shift–M).
+Open **Monitor…** on Capture, or **ChatClip → Capture Monitor…** (Command–Shift–M).
 Monitoring starts with every live capture in this build. A previously running build must finish its session before switching; changing source does not instrument an already running recorder.
 
 ## What is recorded
@@ -47,7 +47,7 @@ Utility is `(kept good − kept bad − missed good) / rated labels`. It is an e
 
 ## Files and retention
 
-Under `~/Library/Application Support/Highlight Desk/` (or `HIGHLIGHT_DESK_STATE`):
+Under `~/Library/Application Support/ChatClip/` (or `CHATCLIP_STATE`):
 
 - `feedback.jsonl`: existing session/clip feedback, plus explicit labels and missed markers.
 - `monitoring/sessions/`: aggregate decision/pipeline logs, rotated at 4 MiB, retained for 30 days and at most 120 files when a new monitoring session starts. Active session files are retained.

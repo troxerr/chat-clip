@@ -2,7 +2,7 @@
 
 // Thin wrapper over kSecClassGenericPassword items. The service name is
 // supplied by the caller so credentials and license data stay separate.
-// Setting HIGHLIGHT_DESK_KEYCHAIN=0 disables every call (tests and CI).
+// Setting CHATCLIP_KEYCHAIN=0 disables every call (tests and CI).
 NS_ASSUME_NONNULL_BEGIN
 
 @interface HDKeychain : NSObject

@@ -27,7 +27,7 @@
     { id: "3", channel: "otherchannel", createdAt: "2026-11-17T19:02:00Z", reason: "Raid", available: false, rating: "down" },
     { id: "4", channel: "somestreamer", createdAt: "2026-11-17T18:30:00Z", reason: "Chat spike: 47 chatters", available: true, rating: "" }
   ];
-  const state = { capture, license, settings: { launchAtLogin: false, permissionAcknowledged: params.has("ack"), outputFolder: "C:\\Users\\streamer\\Videos\\Highlight Desk" }, version: "0.1.0", versions: { electron: "45.3.4", node: "24.1.0" } };
+  const state = { capture, license, settings: { launchAtLogin: false, permissionAcknowledged: params.has("ack"), outputFolder: "C:\\Users\\streamer\\Videos\\ChatClip" }, version: "0.1.0", versions: { electron: "45.3.4", node: "24.1.0" } };
   const fire = (name, value) => (listeners[name] || []).forEach((fn) => fn(value));
   window.__hdStub = { state, fire };
   window.hd = {
