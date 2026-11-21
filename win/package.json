@@ -1,10 +1,10 @@
 {
-  "name": "chatclip-windows",
+  "name": "clipspike-windows",
   "version": "0.1.0",
   "private": true,
-  "productName": "ChatClip",
-  "description": "ChatClip for Windows",
-  "author": "ChatClip",
+  "productName": "ClipSpike",
+  "description": "ClipSpike for Windows",
+  "author": "ClipSpike",
   "scripts": {
     "stage": "node tools/stage.js",
     "pack": "node tools/stage.js && electron-builder --config electron-builder.yml --win nsis --x64 --publish never",

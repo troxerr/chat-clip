@@ -32,8 +32,8 @@ function createLicenseManager({
   const KEY = "license.key";
   const required = build.licenseRequired === true;
   const trialDays = (() => {
-    const fromEnv = Number(env.CHATCLIP_TRIAL_DAYS);
-    if (Number.isFinite(fromEnv) && env.CHATCLIP_TRIAL_DAYS !== undefined && env.CHATCLIP_TRIAL_DAYS !== "") return Math.max(0, Math.floor(fromEnv));
+    const fromEnv = Number(env.CLIPSPIKE_TRIAL_DAYS);
+    if (Number.isFinite(fromEnv) && env.CLIPSPIKE_TRIAL_DAYS !== undefined && env.CLIPSPIKE_TRIAL_DAYS !== "") return Math.max(0, Math.floor(fromEnv));
     return Number(build.trialDays) > 0 ? Math.floor(Number(build.trialDays)) : 7;
   })();
 
@@ -93,7 +93,7 @@ function createLicenseManager({
   async function activate(rawKey) {
     const licenseKey = String(rawKey || "").trim();
     if (!licenseKey) throw new Error("Enter your license key.");
-    const result = await request("activate", { licenseKey, instanceName: `ChatClip (${deviceName})`, productId: build.productId || "" });
+    const result = await request("activate", { licenseKey, instanceName: `ClipSpike (${deviceName})`, productId: build.productId || "" });
     if (!result || !result.valid || !result.instanceId) throw new Error("That license key could not be activated.");
     store.set(KEY, licenseKey);
     save({ instance: result.instanceId, email: result.customerEmail || "", productName: result.productName || "", lastValidatedAt: now().toISOString() });

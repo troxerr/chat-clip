@@ -10,9 +10,9 @@ const { videoEncoderArgs, resolveEncoder } = require("../lib/encoder.js");
 // Full engine, no mocks: feeds a local video through the real recorder, asks
 // for a highlight on stdin, and checks the vertical clip that comes out.
 // Opt-in because it takes about a minute of real time (the recorder reads the
-// input at playback speed). CI runs it with CHATCLIP_E2E=1; the Windows
+// input at playback speed). CI runs it with CLIPSPIKE_E2E=1; the Windows
 // job runs it with only the bundled FFmpeg on PATH.
-const enabled = process.env.CHATCLIP_E2E === "1";
+const enabled = process.env.CLIPSPIKE_E2E === "1";
 const hasFfmpeg = spawnSync("ffmpeg", ["-version"], { stdio: "ignore" }).status === 0;
 
 test("the engine turns a video into a 1080x1920 clip on request", { skip: !enabled || !hasFfmpeg, timeout: 180000 }, async () => {
@@ -33,9 +33,9 @@ test("the engine turns a video into a 1080x1920 clip on request", { skip: !enabl
 
     const events = [];
     child = spawn(process.execPath, [path.join(__dirname, "..", "background.cjs"), "e2e_channel"], {
-      env: { ...process.env, CHATCLIP_EVENTS: "1", CHATCLIP_COMMANDS: "1", CHATCLIP_KEYCHAIN: "0",
-        CHATCLIP_INPUT: input, CHATCLIP_STATE: path.join(dir, "state"), CHATCLIP_OUTPUT: path.join(dir, "out"),
-        CHATCLIP_CONFIG: path.join(dir, "config.json"), CHATCLIP_NOTIFICATIONS: "0" },
+      env: { ...process.env, CLIPSPIKE_EVENTS: "1", CLIPSPIKE_COMMANDS: "1", CLIPSPIKE_KEYCHAIN: "0",
+        CLIPSPIKE_INPUT: input, CLIPSPIKE_STATE: path.join(dir, "state"), CLIPSPIKE_OUTPUT: path.join(dir, "out"),
+        CLIPSPIKE_CONFIG: path.join(dir, "config.json"), CLIPSPIKE_NOTIFICATIONS: "0" },
       stdio: ["pipe", "pipe", "pipe"]
     });
     let stderr = "";

@@ -2,7 +2,7 @@
 
 // Electron entry point: wires the window, menu and Windows services to the
 // app logic in app.js. Kept thin on purpose; the rules are unit-tested there.
-// Setting CHATCLIP_SMOKE=<folder> runs a scripted self-test (see smoke.js).
+// Setting CLIPSPIKE_SMOKE=<folder> runs a scripted self-test (see smoke.js).
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -21,24 +21,24 @@ const { createClips } = require("./clips.js");
 const { createApp } = require("./app.js");
 
 require("../../lib/legacy.js").mirrorLegacyEnv();
-const SMOKE = process.env.CHATCLIP_SMOKE || "";
-// Moves a pre-rename "Highlight Desk" profile (state and Electron userData share one folder) before it is used.
+const SMOKE = process.env.CLIPSPIKE_SMOKE || "";
+// Moves a pre-rename "ChatClip" or "Highlight Desk" profile (state and Electron userData share one folder) before it is used.
 if (!SMOKE) require("../../lib/migrate.js").runMigration();
 const ROOT = path.join(__dirname, "..", "..");
 const INDEX = path.join(__dirname, "..", "renderer", "index.html");
 
-const userData = SMOKE ? path.join(SMOKE, "electron") : path.join(app.getPath("appData"), "ChatClip");
+const userData = SMOKE ? path.join(SMOKE, "electron") : path.join(app.getPath("appData"), "ClipSpike");
 fs.mkdirSync(userData, { recursive: true });
 app.setPath("userData", userData);
 
 if (SMOKE) {
   // Self-test runs keep everything inside the given folder and need no GPU.
   fs.mkdirSync(SMOKE, { recursive: true });
-  process.env.CHATCLIP_STATE = process.env.CHATCLIP_STATE || path.join(SMOKE, "state");
-  process.env.CHATCLIP_OUTPUT = process.env.CHATCLIP_OUTPUT || path.join(SMOKE, "clips");
-  process.env.CHATCLIP_CONFIG = process.env.CHATCLIP_CONFIG || path.join(SMOKE, "config.json");
-  process.env.CHATCLIP_NOTIFICATIONS = "0";
-  process.env.CHATCLIP_KEYCHAIN = "0";
+  process.env.CLIPSPIKE_STATE = process.env.CLIPSPIKE_STATE || path.join(SMOKE, "state");
+  process.env.CLIPSPIKE_OUTPUT = process.env.CLIPSPIKE_OUTPUT || path.join(SMOKE, "clips");
+  process.env.CLIPSPIKE_CONFIG = process.env.CLIPSPIKE_CONFIG || path.join(SMOKE, "config.json");
+  process.env.CLIPSPIKE_NOTIFICATIONS = "0";
+  process.env.CLIPSPIKE_KEYCHAIN = "0";
   app.disableHardwareAcceleration();
 }
 
@@ -106,7 +106,7 @@ function main() {
   function createWindow() {
     win = new BrowserWindow({
       width: 1100, height: 720, minWidth: 760, minHeight: 560,
-      title: "ChatClip",
+      title: "ClipSpike",
       backgroundColor: nativeTheme.shouldUseDarkColors ? "#15131a" : "#f6f5fb",
       webPreferences: {
         preload: path.join(__dirname, "..", "preload.js"),

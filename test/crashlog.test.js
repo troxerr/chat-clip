@@ -6,7 +6,7 @@ const path = require("node:path");
 const { writeCrashReport, listCrashReports, MAX_REPORTS } = require("../lib/crashlog.js");
 
 function tempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "chatclip-crash-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-crash-"));
 }
 
 test("writes a readable crash report with the stack and context", () => {

@@ -25,7 +25,7 @@ function arg(name, fallback) {
 const minutes = arg("minutes", 10);
 const maxIterations = arg("iterations", Infinity);
 const deadline = Date.now() + minutes * 60_000;
-const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "chatclip-soak-"));
+const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-soak-"));
 const store = createJobStore({ stateDir, maxHistory: 500 });
 const canInjectFailure = typeof process.getuid === "function" && process.getuid() !== 0;
 

@@ -5,7 +5,7 @@ set -euo pipefail
 # notarytool keychain profile (or Apple ID credentials).
 #
 #   DEVELOPER_ID_APPLICATION="Developer ID Application: Name (TEAMID)" \
-#   NOTARY_PROFILE="chatclip-notary" \
+#   NOTARY_PROFILE="clipspike-notary" \
 #   ./mac/release.sh
 #
 # The app is currently ad-hoc signed by mac/build.sh; this script re-signs the
@@ -24,8 +24,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-APP_DIR="$ROOT/mac/build/ChatClip.app"
-ENTITLEMENTS="$ROOT/mac/ChatClip.entitlements"
+APP_DIR="$ROOT/mac/build/ClipSpike.app"
+ENTITLEMENTS="$ROOT/mac/ClipSpike.entitlements"
 IDENTITY="${DEVELOPER_ID_APPLICATION:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$ROOT/mac/Info.plist" 2>/dev/null || echo 0.0.0)"
@@ -70,7 +70,7 @@ if [[ "${1:-}" == "--check" ]]; then
 fi
 
 if [[ "${1:-}" == "--verify" ]]; then
-  VERIFY_DMG="${2:-$ROOT/mac/build/ChatClip-$VERSION-$ARCH.dmg}"
+  VERIFY_DMG="${2:-$ROOT/mac/build/ClipSpike-$VERSION-$ARCH.dmg}"
   failures=0
   pass() { echo "  PASS  $1"; }
   fail() { echo "  FAIL  $1"; failures=$((failures + 1)); }
@@ -81,10 +81,10 @@ if [[ "${1:-}" == "--verify" ]]; then
   else
     xcrun stapler validate "$VERIFY_DMG" >/dev/null 2>&1 && pass "notarization ticket stapled" || fail "no valid stapled ticket"
     spctl -a -t open --context context:primary-signature "$VERIFY_DMG" >/dev/null 2>&1 && pass "Gatekeeper accepts the DMG" || fail "Gatekeeper rejects the DMG"
-    VERIFY_MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/chatclip-verify.XXXXXX")"
+    VERIFY_MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/clipspike-verify.XXXXXX")"
     if hdiutil attach "$VERIFY_DMG" -nobrowse -readonly -mountpoint "$VERIFY_MOUNT" >/dev/null 2>&1; then
-      codesign --verify --deep --strict "$VERIFY_MOUNT/ChatClip.app" >/dev/null 2>&1 && pass "app signature verifies" || fail "app signature does not verify"
-      spctl -a -t exec "$VERIFY_MOUNT/ChatClip.app" >/dev/null 2>&1 && pass "Gatekeeper accepts the app" || fail "Gatekeeper rejects the app"
+      codesign --verify --deep --strict "$VERIFY_MOUNT/ClipSpike.app" >/dev/null 2>&1 && pass "app signature verifies" || fail "app signature does not verify"
+      spctl -a -t exec "$VERIFY_MOUNT/ClipSpike.app" >/dev/null 2>&1 && pass "Gatekeeper accepts the app" || fail "Gatekeeper rejects the app"
       hdiutil detach "$VERIFY_MOUNT" >/dev/null 2>&1 || true
     else
       fail "could not mount the DMG"
@@ -152,13 +152,13 @@ echo "Signing the app…"
 codesign --force --options runtime --timestamp --sign "$IDENTITY" --entitlements "$ENTITLEMENTS" "$APP_DIR"
 codesign --verify --deep --strict --verbose=2 "$APP_DIR"
 
-STAGE="$(mktemp -d "${TMPDIR:-/tmp}/chatclip-dmg.XXXXXX")"
+STAGE="$(mktemp -d "${TMPDIR:-/tmp}/clipspike-dmg.XXXXXX")"
 trap 'rm -rf "$STAGE"' EXIT
 cp -R "$APP_DIR" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
-DMG="$ROOT/mac/build/ChatClip-$VERSION-$ARCH.dmg"
+DMG="$ROOT/mac/build/ClipSpike-$VERSION-$ARCH.dmg"
 rm -f "$DMG"
-hdiutil create -volname "ChatClip" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+hdiutil create -volname "ClipSpike" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
 codesign --force --timestamp --sign "$IDENTITY" "$DMG"
 
 echo "Notarizing $DMG…"
@@ -178,9 +178,9 @@ xcrun stapler staple "$DMG"
 xcrun stapler validate "$DMG"
 spctl -a -t open --context context:primary-signature -vv "$DMG"
 
-MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/chatclip-mount.XXXXXX")"
+MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/clipspike-mount.XXXXXX")"
 hdiutil attach "$DMG" -nobrowse -mountpoint "$MOUNT" >/dev/null
-spctl -a -t exec -vv "$MOUNT/ChatClip.app"
+spctl -a -t exec -vv "$MOUNT/ClipSpike.app"
 hdiutil detach "$MOUNT" >/dev/null
 rmdir "$MOUNT" 2>/dev/null || true
 

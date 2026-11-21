@@ -5,7 +5,7 @@
 @implementation HDKeychain
 
 + (BOOL)isDisabled {
-  return [HDEnv(@"CHATCLIP_KEYCHAIN") isEqualToString:@"0"];
+  return [HDEnv(@"CLIPSPIKE_KEYCHAIN") isEqualToString:@"0"];
 }
 
 + (NSDictionary *)queryForAccount:(NSString *)account service:(NSString *)service {

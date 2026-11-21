@@ -46,7 +46,7 @@ function waitForCode(state) {
       const returnedState = url.searchParams.get("state");
       const code = url.searchParams.get("code");
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      response.end("<!doctype html><meta charset=utf-8><title>ChatClip</title><body style='font:16px system-ui;padding:32px'><h1>Google Drive connected</h1><p>You can close this tab and return to the terminal.</p></body>");
+      response.end("<!doctype html><meta charset=utf-8><title>ClipSpike</title><body style='font:16px system-ui;padding:32px'><h1>Google Drive connected</h1><p>You can close this tab and return to the terminal.</p></body>");
       server.close();
       if (error) return reject(new Error(error));
       if (returnedState !== state) return reject(new Error("Google OAuth state did not match."));
@@ -157,7 +157,7 @@ async function main() {
   authorize.searchParams.set("code_challenge", challenge);
   authorize.searchParams.set("code_challenge_method", "S256");
 
-  console.log("\nAuthorize ChatClip to create files in Google Drive:");
+  console.log("\nAuthorize ClipSpike to create files in Google Drive:");
   console.log(authorize.toString());
   console.log(`\nThe Google OAuth client must allow redirect URI ${REDIRECT_URI}`);
   console.log("and the OAuth consent screen must be published for unattended use.\n");
@@ -181,7 +181,7 @@ async function main() {
     ? `\nSaved the Google Drive refresh token in the Windows credential store (encrypted for your user).`
     : `\nSaved the Google Drive refresh token to ${configPath}`);
   if (email) console.log(`Connected as ${email}`);
-  console.log("Active storage is now Google Drive. Restart capture (or restart ChatClip).");
+  console.log("Active storage is now Google Drive. Restart capture (or restart ClipSpike).");
 }
 
 if (require.main === module) {

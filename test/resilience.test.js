@@ -6,7 +6,7 @@ const path = require("node:path");
 const { createJobStore } = require("../lib/jobstore.js");
 
 function tempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "chatclip-resilience-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-resilience-"));
 }
 
 function cleanup(dir) {

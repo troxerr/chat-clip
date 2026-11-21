@@ -16,7 +16,7 @@ const have = (cmd) => !spawnSync(cmd, ["-version"], { stdio: "ignore" }).error;
 
 test("plan defaults to pro unless the app marks it free", () => {
   assert.equal(freeTier.currentPlan({}), "pro");
-  assert.equal(freeTier.currentPlan({ CHATCLIP_PLAN: "free" }), "free");
+  assert.equal(freeTier.currentPlan({ CLIPSPIKE_PLAN: "free" }), "free");
   const status = freeTier.status({ dir: tmp(), plan: "pro" });
   assert.equal(status.watermark, false);
   assert.equal(status.remaining, null);

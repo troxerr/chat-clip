@@ -1,4 +1,4 @@
-# ChatClip website
+# ClipSpike website
 
 Static site for the macOS app. No build step.
 
@@ -19,7 +19,7 @@ python3 -m http.server 8080 --directory site
 
 - Replace the placeholder download links (`#` and the final CTA) with the notarized DMG URL.
 - Replace the Lemon Squeezy checkout link in the pricing card and download CTA.
-- Replace `support@chatclip.example` and the legal entity/address placeholders.
+- Replace `support@clipspike.example` and the legal entity/address placeholders.
 - Point the app’s `HDCheckoutURL` at the same checkout.
 - Have the privacy policy, terms, EULA, refund policy, and third-party notices reviewed by a lawyer.
 - Add real screenshots and a demo video. The current hero is a CSS mockup so no personal desktop content is exposed.

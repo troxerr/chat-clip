@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 BUILD_DIR="${BUILD_DIR:-$ROOT/mac/build}"
-APP_DIR="$BUILD_DIR/ChatClip.app"
+APP_DIR="$BUILD_DIR/ClipSpike.app"
 NODE_BIN="${NODE_BIN:-$(command -v node || true)}"
 ARCH="${ARCH:-$(uname -m)}"
 
@@ -39,7 +39,7 @@ SPARKLE="$ROOT/mac/vendor/Sparkle.framework"
 if [[ -d "$SPARKLE" ]]; then
   SPARKLE_FLAGS=(-F "$ROOT/mac/vendor" -framework Sparkle -Wl,-rpath,@executable_path/../Frameworks)
 fi
-clang -arch "$ARCH" -fobjc-arc -framework Cocoa -framework QuartzCore -framework Security -framework UniformTypeIdentifiers -framework ServiceManagement -framework IOKit -framework UserNotifications -framework AVFoundation -framework AVKit -framework CoreMedia "${SPARKLE_FLAGS[@]}" "$ROOT/mac/main.m" "$ROOT/mac/ui/HDUI.m" "$ROOT/mac/ui/HDSymbols.m" "$ROOT/mac/license/HDKeychain.m" "$ROOT/mac/migration/HDMigration.m" "$ROOT/mac/license/HDLicenseManager.m" -o "$APP_DIR/Contents/MacOS/ChatClip"
+clang -arch "$ARCH" -fobjc-arc -framework Cocoa -framework QuartzCore -framework Security -framework UniformTypeIdentifiers -framework ServiceManagement -framework IOKit -framework UserNotifications -framework AVFoundation -framework AVKit -framework CoreMedia "${SPARKLE_FLAGS[@]}" "$ROOT/mac/main.m" "$ROOT/mac/ui/HDUI.m" "$ROOT/mac/ui/HDSymbols.m" "$ROOT/mac/license/HDKeychain.m" "$ROOT/mac/migration/HDMigration.m" "$ROOT/mac/license/HDLicenseManager.m" -o "$APP_DIR/Contents/MacOS/ClipSpike"
 cp "$ROOT/mac/Info.plist" "$APP_DIR/Contents/Info.plist"
 if [[ -n "${DROPBOX_APP_KEY:-}" ]]; then
   /usr/libexec/PlistBuddy -c "Set :HDDropboxAppKey $DROPBOX_APP_KEY" "$APP_DIR/Contents/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :HDDropboxAppKey string $DROPBOX_APP_KEY" "$APP_DIR/Contents/Info.plist"

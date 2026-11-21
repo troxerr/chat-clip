@@ -44,7 +44,7 @@ test("saveSecrets reports unsupported where there is no writable store", () => {
   assert.equal(saveSecrets({ "google.refresh": "x" }, { store: linux }).unsupported, true);
   const dir = tempDir();
   try {
-    const off = createCredentialStore({ platform: "win32", env: { CHATCLIP_KEYCHAIN: "0" }, dir, run: fakeRun() });
+    const off = createCredentialStore({ platform: "win32", env: { CLIPSPIKE_KEYCHAIN: "0" }, dir, run: fakeRun() });
     const result = saveSecrets({ "google.refresh": "x" }, { store: off });
     assert.equal(result.unsupported, true);
     assert.deepEqual(result.stored, []);
@@ -168,9 +168,9 @@ test("license key: argument, then environment, then the store", () => {
 // recorder uses, with an empty config. Runs in the Windows CI job.
 test("tokens saved by the sign-in tools are read back by the recorder (real DPAPI)", { skip: process.platform !== "win32" }, () => {
   const dir = tempDir();
-  const saved = { state: process.env.CHATCLIP_STATE, keychain: process.env.CHATCLIP_KEYCHAIN };
-  process.env.CHATCLIP_STATE = dir;
-  delete process.env.CHATCLIP_KEYCHAIN; // the test runner turns the store off; this test needs it
+  const saved = { state: process.env.CLIPSPIKE_STATE, keychain: process.env.CLIPSPIKE_KEYCHAIN };
+  process.env.CLIPSPIKE_STATE = dir;
+  delete process.env.CLIPSPIKE_KEYCHAIN; // the test runner turns the store off; this test needs it
   try {
     const result = saveSecrets({ "dropbox.refresh": "rt-1", "dropbox.appSecret": "ds-1", "google.refresh": "gr-1", "google.clientSecret": "gs-1" });
     assert.deepEqual(result.failed, []);
@@ -184,7 +184,7 @@ test("tokens saved by the sign-in tools are read back by the recorder (real DPAP
     assert.equal(google.clientSecret, "gs-1");
     assert.equal(fs.readFileSync(path.join(dir, "credentials.json"), "utf8").includes("gr-1"), false);
   } finally {
-    for (const [key, name] of [["state", "CHATCLIP_STATE"], ["keychain", "CHATCLIP_KEYCHAIN"]]) {
+    for (const [key, name] of [["state", "CLIPSPIKE_STATE"], ["keychain", "CLIPSPIKE_KEYCHAIN"]]) {
       if (saved[key] === undefined) delete process.env[name]; else process.env[name] = saved[key];
     }
     fs.rmSync(dir, { recursive: true, force: true });

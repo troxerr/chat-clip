@@ -79,14 +79,14 @@ test("a PC where nothing probes still falls back to h264_mf, not the new last-re
   assert.equal(resolveEncoder({ ffmpegPath: "ff-mac", platform: "darwin", spawnImpl: () => ({ status: 1 }), env: {} }), "h264_videotoolbox");
 });
 
-test("CHATCLIP_ENCODER forces a supported encoder without probing", () => {
+test("CLIPSPIKE_ENCODER forces a supported encoder without probing", () => {
   const spawnImpl = () => { throw new Error("must not probe when an encoder is forced"); };
-  assert.equal(resolveEncoder({ ffmpegPath: "ff-forced", platform: "win32", spawnImpl, env: { CHATCLIP_ENCODER: "libopenh264" } }), "libopenh264");
-  assert.equal(resolveEncoder({ ffmpegPath: "ff-forced", platform: "linux", spawnImpl, env: { CHATCLIP_ENCODER: "libx264" } }), "libx264");
+  assert.equal(resolveEncoder({ ffmpegPath: "ff-forced", platform: "win32", spawnImpl, env: { CLIPSPIKE_ENCODER: "libopenh264" } }), "libopenh264");
+  assert.equal(resolveEncoder({ ffmpegPath: "ff-forced", platform: "linux", spawnImpl, env: { CLIPSPIKE_ENCODER: "libx264" } }), "libx264");
 });
 
-test("an unsupported or 'auto' CHATCLIP_ENCODER is ignored", () => {
+test("an unsupported or 'auto' CLIPSPIKE_ENCODER is ignored", () => {
   const spawnImpl = () => ({ status: 0 });
-  assert.equal(resolveEncoder({ ffmpegPath: "ff-bad", platform: "win32", spawnImpl, env: { CHATCLIP_ENCODER: "not_an_encoder" } }), "h264_nvenc");
-  assert.equal(resolveEncoder({ ffmpegPath: "ff-auto", platform: "win32", spawnImpl, env: { CHATCLIP_ENCODER: "auto" } }), "h264_nvenc");
+  assert.equal(resolveEncoder({ ffmpegPath: "ff-bad", platform: "win32", spawnImpl, env: { CLIPSPIKE_ENCODER: "not_an_encoder" } }), "h264_nvenc");
+  assert.equal(resolveEncoder({ ffmpegPath: "ff-auto", platform: "win32", spawnImpl, env: { CLIPSPIKE_ENCODER: "auto" } }), "h264_nvenc");
 });

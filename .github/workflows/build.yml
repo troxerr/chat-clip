@@ -27,7 +27,7 @@ jobs:
             arch: arm64
     env:
       PYTHON: python3
-      CHATCLIP_KEYCHAIN: "0"
+      CLIPSPIKE_KEYCHAIN: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,21 +56,21 @@ jobs:
 
       - name: Verify app
         run: |
-          codesign --verify --deep --strict "mac/build/ChatClip.app"
-          test -x "mac/build/ChatClip.app/Contents/Resources/runtime/bin/ffmpeg"
-          test -x "mac/build/ChatClip.app/Contents/Resources/runtime/bin/streamlink"
-          test -d "mac/build/ChatClip.app/Contents/Frameworks/Sparkle.framework"
+          codesign --verify --deep --strict "mac/build/ClipSpike.app"
+          test -x "mac/build/ClipSpike.app/Contents/Resources/runtime/bin/ffmpeg"
+          test -x "mac/build/ClipSpike.app/Contents/Resources/runtime/bin/streamlink"
+          test -d "mac/build/ClipSpike.app/Contents/Frameworks/Sparkle.framework"
 
       - name: Package unsigned artifact
         run: |
           mkdir -p mac/build/artifact
-          ditto -c -k --keepParent "mac/build/ChatClip.app" "mac/build/artifact/ChatClip-${RUNNER_ARCH}.zip"
-          hdiutil create -volname "ChatClip" -srcfolder "mac/build/ChatClip.app" -ov -format UDZO "mac/build/artifact/ChatClip-${RUNNER_ARCH}.dmg"
+          ditto -c -k --keepParent "mac/build/ClipSpike.app" "mac/build/artifact/ClipSpike-${RUNNER_ARCH}.zip"
+          hdiutil create -volname "ClipSpike" -srcfolder "mac/build/ClipSpike.app" -ov -format UDZO "mac/build/artifact/ClipSpike-${RUNNER_ARCH}.dmg"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ChatClip-${{ matrix.arch }}-unsigned
+          name: ClipSpike-${{ matrix.arch }}-unsigned
           path: mac/build/artifact/
           if-no-files-found: error
           retention-days: 14
@@ -79,7 +79,7 @@ jobs:
     name: Windows engine tests
     runs-on: windows-latest
     env:
-      CHATCLIP_KEYCHAIN: "0"
+      CLIPSPIKE_KEYCHAIN: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -119,8 +119,8 @@ jobs:
     name: Windows bundled runtime
     runs-on: windows-latest
     env:
-      CHATCLIP_KEYCHAIN: "0"
-      CHATCLIP_E2E: "1"
+      CLIPSPIKE_KEYCHAIN: "0"
+      CLIPSPIKE_E2E: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -157,7 +157,7 @@ jobs:
 
           # The software encoder a Windows "N" edition (no Media Foundation) would fall
           # back to: force it and make the same real clip, so it is proven, not assumed.
-          $env:CHATCLIP_ENCODER = "libopenh264"
+          $env:CLIPSPIKE_ENCODER = "libopenh264"
           node tools/run-tests.js test/e2e-clip.test.js
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
@@ -174,7 +174,7 @@ jobs:
     name: Windows app (Electron installer)
     runs-on: windows-latest
     env:
-      CHATCLIP_KEYCHAIN: "0"
+      CLIPSPIKE_KEYCHAIN: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -194,7 +194,7 @@ jobs:
         working-directory: win
         run: npm ci --no-audit --no-fund
 
-      # Unsigned on purpose (no certificate yet). Output: win/dist/ChatClip-<version>-x64-unsigned.exe
+      # Unsigned on purpose (no certificate yet). Output: win/dist/ClipSpike-<version>-x64-unsigned.exe
       - name: Build the installer
         working-directory: win
         run: npm run pack
@@ -212,12 +212,12 @@ jobs:
       - name: Smoke test the unpacked app
         shell: pwsh
         run: |
-          $exe = (Get-ChildItem win\dist\win-unpacked -Filter "ChatClip.exe").FullName
+          $exe = (Get-ChildItem win\dist\win-unpacked -Filter "ClipSpike.exe").FullName
           "app: $exe"
           $out = "$env:RUNNER_TEMP\smoke\unpacked"
           $env:PATH = "C:\Windows\System32;C:\Windows"
-          $env:CHATCLIP_SMOKE = $out
-          $env:CHATCLIP_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
+          $env:CLIPSPIKE_SMOKE = $out
+          $env:CLIPSPIKE_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
           $p = Start-Process -FilePath $exe -PassThru -Wait
           if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
           if ($p.ExitCode -ne 0) { Write-Host "::error::smoke test exit code $($p.ExitCode)"; exit 1 }
@@ -225,21 +225,21 @@ jobs:
       - name: Silent install, smoke test the installed app, silent uninstall
         shell: pwsh
         run: |
-          $setup = (Get-ChildItem win\dist -Filter "ChatClip-*-x64-unsigned.exe").FullName
-          $dir = "$env:RUNNER_TEMP\smoke\ChatClip"
+          $setup = (Get-ChildItem win\dist -Filter "ClipSpike-*-x64-unsigned.exe").FullName
+          $dir = "$env:RUNNER_TEMP\smoke\ClipSpike"
           $install = Start-Process -FilePath $setup -ArgumentList "/S /D=$dir" -PassThru -Wait
           if ($install.ExitCode -ne 0) { exit $install.ExitCode }
-          $exe = Join-Path $dir "ChatClip.exe"
+          $exe = Join-Path $dir "ClipSpike.exe"
           if (-not (Test-Path $exe)) { Write-Host "::error::not installed at $dir"; exit 1 }
           "installed: $exe"
           $out = "$env:RUNNER_TEMP\smoke\installed"
           $env:PATH = "C:\Windows\System32;C:\Windows"
-          $env:CHATCLIP_SMOKE = $out
-          $env:CHATCLIP_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
+          $env:CLIPSPIKE_SMOKE = $out
+          $env:CLIPSPIKE_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
           $p = Start-Process -FilePath $exe -PassThru -Wait
           if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
           $failed = $p.ExitCode -ne 0
-          $uninstall = Join-Path $dir "Uninstall ChatClip.exe"
+          $uninstall = Join-Path $dir "Uninstall ClipSpike.exe"
           if (Test-Path $uninstall) { Start-Process -FilePath $uninstall -ArgumentList "/S" -Wait }
           # The uninstaller hands off to a copy of itself, so wait for the folder to go.
           for ($i = 0; $i -lt 60 -and (Test-Path $exe); $i++) { Start-Sleep -Seconds 1 }
@@ -266,15 +266,15 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ChatClip-windows-installer-unsigned
-          path: win/dist/ChatClip-*-x64-unsigned.exe
+          name: ClipSpike-windows-installer-unsigned
+          path: win/dist/ClipSpike-*-x64-unsigned.exe
           if-no-files-found: error
           retention-days: 14
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ChatClip-windows-screenshots
+          name: ClipSpike-windows-screenshots
           path: ${{ runner.temp }}/upload/screenshots
           if-no-files-found: warn
           retention-days: 14

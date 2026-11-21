@@ -6,7 +6,7 @@ const path = require("node:path");
 const { createJobStore, defaultStateDir } = require("../lib/jobstore.js");
 
 function tempDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "chatclip-state-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-state-"));
 }
 
 test("queue and history round-trip through JSON files", () => {
@@ -53,6 +53,6 @@ test("disabled state store keeps an in-memory queue", () => {
   }
 });
 
-test("defaultStateDir honors CHATCLIP_STATE", () => {
-  assert.equal(defaultStateDir({ CHATCLIP_STATE: "/tmp/example" }), require("node:path").resolve("/tmp/example"));
+test("defaultStateDir honors CLIPSPIKE_STATE", () => {
+  assert.equal(defaultStateDir({ CLIPSPIKE_STATE: "/tmp/example" }), require("node:path").resolve("/tmp/example"));
 });

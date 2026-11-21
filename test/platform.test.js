@@ -3,15 +3,15 @@ const assert = require("node:assert/strict");
 const p = require("../lib/platform.js");
 
 test("state and output paths per platform", () => {
-  assert.equal(p.stateDir({ APPDATA: "C:\\Users\\a\\AppData\\Roaming" }, "win32", "C:\\Users\\a"), "C:\\Users\\a\\AppData\\Roaming\\ChatClip");
-  assert.equal(p.stateDir({}, "darwin", "/Users/a"), "/Users/a/Library/Application Support/ChatClip");
-  assert.equal(p.outputRoot({ USERPROFILE: "C:\\Users\\a" }, "win32", "C:\\Users\\a"), "C:\\Users\\a\\Videos\\ChatClip");
-  assert.equal(p.outputRoot({}, "darwin", "/Users/a"), "/Users/a/Movies/ChatClip");
+  assert.equal(p.stateDir({ APPDATA: "C:\\Users\\a\\AppData\\Roaming" }, "win32", "C:\\Users\\a"), "C:\\Users\\a\\AppData\\Roaming\\ClipSpike");
+  assert.equal(p.stateDir({}, "darwin", "/Users/a"), "/Users/a/Library/Application Support/ClipSpike");
+  assert.equal(p.outputRoot({ USERPROFILE: "C:\\Users\\a" }, "win32", "C:\\Users\\a"), "C:\\Users\\a\\Videos\\ClipSpike");
+  assert.equal(p.outputRoot({}, "darwin", "/Users/a"), "/Users/a/Movies/ClipSpike");
 });
 
 test("env overrides win on every platform", () => {
-  assert.equal(p.stateDir({ CHATCLIP_STATE: "/tmp/x" }, "win32"), require("node:path").resolve("/tmp/x"));
-  assert.equal(p.outputRoot({ CHATCLIP_OUTPUT: "/tmp/o" }, "win32"), require("node:path").resolve("/tmp/o"));
+  assert.equal(p.stateDir({ CLIPSPIKE_STATE: "/tmp/x" }, "win32"), require("node:path").resolve("/tmp/x"));
+  assert.equal(p.outputRoot({ CLIPSPIKE_OUTPUT: "/tmp/o" }, "win32"), require("node:path").resolve("/tmp/o"));
 });
 
 test("fonts, ffmpeg candidates and default encoder", () => {
