@@ -32,10 +32,11 @@ jobs:
         shell: pwsh
         run: |
           if ($env:CSC_LINK) { "Signing: certificate configured" } else { Write-Host "::warning::WIN_CSC_LINK is not set; the installer will be UNSIGNED." }
-          if (-not $env:WIN_UPDATE_URL) {
-            Write-Host "::warning::WIN_UPDATE_URL is not set; using a placeholder feed URL."
-            "WIN_UPDATE_URL=https://example.invalid/chatclip/win" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          }
+          if (-not $env:WIN_UPDATE_URL) { Write-Host "::error::Repo variable WIN_UPDATE_URL is not set; the installed app would have no update feed."; exit 1 }
+          if ($env:WIN_UPDATE_URL -notmatch '^https://') { Write-Host "::error::WIN_UPDATE_URL must be an https:// URL."; exit 1 }
+
+      - name: Check licensing is configured for release
+        run: node win/tools/check-release-config.js
 
       - uses: actions/cache@v4
         with:
@@ -67,6 +68,13 @@ jobs:
           $sig = Get-AuthenticodeSignature $exe.FullName
           $sig.Status
           if ($sig.Status -ne "Valid") { Write-Host "::error::Installer signature is $($sig.Status)"; exit 1 }
+
+      - name: Verify the update feed file
+        shell: pwsh
+        run: |
+          if (-not (Test-Path win\dist\latest.yml)) { Write-Host "::error::latest.yml was not produced"; exit 1 }
+          if (-not (Test-Path win\dist\win-unpacked\resources\app-update.yml)) { Write-Host "::error::app-update.yml (feed config) is missing from the app"; exit 1 }
+          Get-Content win\dist\latest.yml
 
       - uses: actions/upload-artifact@v4
         with:

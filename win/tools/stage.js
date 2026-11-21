@@ -24,8 +24,11 @@ const copy = (from, to = from) => {
 fs.mkdirSync(stage, { recursive: true });
 fs.writeFileSync(path.join(stage, "package.json"), JSON.stringify({
   name: "highlight-desk", productName: winPkg.productName, version: winPkg.version,
-  description: winPkg.description, author: winPkg.author, main: "win/main/main.js"
+  description: winPkg.description, author: winPkg.author, main: "win/main/main.js",
+  dependencies: { "electron-updater": winPkg.dependencies["electron-updater"] }
 }, null, 2));
+// electron-builder packs node_modules from the app folder, so install the runtime dependency there.
+require("node:child_process").execSync("npm install --omit=dev --ignore-scripts --no-audit --no-fund --no-package-lock", { cwd: stage, stdio: "inherit", shell: true });
 copy("background.cjs"); copy("lib"); copy("dist");
 fs.mkdirSync(path.join(stage, "tools"), { recursive: true });
 copy("tools/license.js");

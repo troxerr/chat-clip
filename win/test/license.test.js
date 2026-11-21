@@ -158,6 +158,9 @@ test("offline detection tells network trouble from a rejection", () => {
   assert.equal(looksOffline(new TypeError("fetch failed")), true);
   assert.equal(looksOffline(Object.assign(new Error("The operation timed out"), { name: "TimeoutError" })), true);
   assert.equal(looksOffline(new Error("License service failed (503).")), true);
+  assert.equal(looksOffline(new Error("License service unavailable (502).")), true);
+  assert.equal(looksOffline(new Error("Upstream says go away", { cause: 1 })), false);
+  assert.equal(looksOffline(Object.assign(new Error("Server error from Polar"), { transient: true })), true);
   assert.equal(looksOffline(new Error("The license is not valid.")), false);
   assert.equal(looksOffline(new Error("This license key has expired.")), false);
 });
