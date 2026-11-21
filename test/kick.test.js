@@ -187,3 +187,16 @@ test("a failed subscription recheck keeps serving an already-working channel", a
   assert.equal(res.status, 200);
   assert.equal(res.data.reset, false);
 });
+
+test("an underscore channel name falls back to Kick's hyphenated slug", async () => {
+  const slugs = [];
+  const api = new KickAPI({ clientId: "id", clientSecret: "s", fetchImpl: async (url, options = {}) => {
+    if (url.includes("oauth/token")) return { ok: true, json: async () => ({ access_token: "t" }) };
+    let data = [];
+    if (url.includes("/channels")) { const slug = new URL(url).searchParams.get("slug"); slugs.push(slug); if (slug === "some-name") data = [{ broadcaster_user_id: 7 }]; }
+    else if (options.method === "POST") data = [{ name: "chat.message.sent" }];
+    return { ok: true, status: 200, json: async () => ({ data }) };
+  } });
+  assert.deepEqual(await api.subscribe("some_name"), { id: 7, slug: "some_name" });
+  assert.deepEqual(slugs, ["some_name", "some-name"]);
+});
