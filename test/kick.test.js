@@ -200,3 +200,14 @@ test("an underscore channel name falls back to Kick's hyphenated slug", async ()
   assert.deepEqual(await api.subscribe("some_name"), { id: 7, slug: "some_name" });
   assert.deepEqual(slugs, ["some_name", "some-name"]);
 });
+
+test("Kick browser preflight finds Chrome/Chromium, honors overrides, and fails clearly", () => {
+  const { findKickBrowser } = require("../lib/kick-browser.js");
+  const chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  assert.equal(findKickBrowser({ platform: "darwin", env: {}, home: "/h", exists: p => p === chrome }), chrome);
+  assert.equal(findKickBrowser({ platform: "darwin", env: {}, home: "/h", exists: p => p.startsWith("/Applications/Chromium") || p === chrome }), "/Applications/Chromium.app/Contents/MacOS/Chromium");
+  assert.equal(findKickBrowser({ platform: "darwin", env: { HIGHLIGHT_DESK_KICK_BROWSER: "/opt/b" }, exists: p => p === "/opt/b" }), "/opt/b");
+  assert.equal(findKickBrowser({ platform: "darwin", env: {}, config: { kick: { browser: "/opt/c" } }, exists: p => p === "/opt/c" }), "/opt/c");
+  assert.throws(() => findKickBrowser({ platform: "darwin", env: {}, home: "/h", exists: () => false }), /Chrome or Chromium/);
+  assert.throws(() => findKickBrowser({ platform: "darwin", env: { HIGHLIGHT_DESK_KICK_BROWSER: "relative" }, exists: () => true }), /override does not exist/);
+});

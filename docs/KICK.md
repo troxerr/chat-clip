@@ -66,6 +66,12 @@ Allow the existing one-minute detector warmup. Native Kick emotes participate in
 reaction scoring. Broadcaster and moderator `!clip` / `!highlight` commands use
 verified sender IDs and badges. Ordinary viewers cannot trigger privileged clips.
 
+Kick capture requires Google Chrome or Chromium installed on the Mac (Streamlink
+uses it to pass Kick's browser check). Capture checks for it at startup, fails with
+a clear error if none is found, and passes it to Streamlink explicitly. To use a
+different Chromium-based browser, set `HIGHLIGHT_DESK_KICK_BROWSER` or `kick.browser`
+in the config to its full executable path.
+
 Kick clips save under `~/Movies/Highlight Desk/kick/channel/`. Monitoring uses the
 key `kick--channel`, distinct from the Twitch channel of the same name. The
 monitor CLI accepts a Kick URL or that internal key. Existing Twitch folders and
