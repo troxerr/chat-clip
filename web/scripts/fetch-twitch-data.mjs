@@ -33,13 +33,18 @@ async function main() {
     const res = await fetch(`${HELIX}/${path}?${params}`, {
       headers: { 'Client-Id': clientId, Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) throw new Error(`Helix ${path} failed: HTTP ${res.status}`)
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(`Helix ${path} failed: HTTP ${res.status} ${String(body.message ?? '').slice(0, 200)}`.trim())
+    }
     return (await res.json()).data
   }
   const generatedAt = new Date().toISOString()
-  const loginParams = () => new URLSearchParams(STREAMERS.map((l) => ['user_login', l]))
-
-  const [streams, users] = await Promise.all([helix('streams', loginParams()), helix('users', loginParams())])
+  // Get Streams filters by `user_login`; Get Users filters by `login`.
+  const [streams, users] = await Promise.all([
+    helix('streams', new URLSearchParams(STREAMERS.map((l) => ['user_login', l]))),
+    helix('users', new URLSearchParams(STREAMERS.map((l) => ['login', l]))),
+  ])
 
   const liveByLogin = new Map(streams.filter((s) => s.type === 'live').map((s) => [s.user_login.toLowerCase(), s]))
   const status = {
@@ -61,12 +66,20 @@ async function main() {
       helix(
         'clips',
         new URLSearchParams({ broadcaster_id: u.id, started_at: startedAt, first: String(CLIPS_PER_STREAMER) }),
-      ),
+      ).catch((err) => {
+        console.warn(`Skipping clips for ${u.login}: ${err.message}`)
+        return []
+      }),
     ),
   )
   const rawClips = perStreamer.flat()
   const gameIds = [...new Set(rawClips.map((c) => c.game_id).filter(Boolean))].slice(0, 100)
-  const games = gameIds.length ? await helix('games', new URLSearchParams(gameIds.map((id) => ['id', id]))) : []
+  const games = gameIds.length
+    ? await helix('games', new URLSearchParams(gameIds.map((id) => ['id', id]))).catch((err) => {
+        console.warn(err.message)
+        return []
+      })
+    : []
   const gameName = new Map(games.map((g) => [g.id, g.name]))
 
   const clips = {
