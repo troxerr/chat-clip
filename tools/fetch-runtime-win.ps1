@@ -9,6 +9,8 @@
                 it found for this run, so a first CI run can still be tested.
     (default)   require pins, verify the SHA-256 of each download, and fail on
                 any mismatch.
+  RUNTIME_MIRROR_URL (optional env) is a base URL hosting copies of the pinned
+  assets by file name, used only if the upstream download fails.
   Output goes to <repo>\runtime\ (bin\ for FFmpeg, streamlink\ for Streamlink),
   where background.cjs already looks for bundled binaries.
 #>
@@ -52,7 +54,16 @@ function Get-Verified($name, $component) {
   $url = "https://github.com/$($component.repo)/releases/download/$tag/$asset"
   $file = Join-Path $work $asset
   Write-Host "Downloading $url"
-  Invoke-WebRequest -Uri $url -OutFile $file -UseBasicParsing
+  try {
+    Invoke-WebRequest -Uri $url -OutFile $file -UseBasicParsing
+  } catch {
+    # Upstream tags (BtbN autobuilds especially) can be deleted. If a mirror of the
+    # pinned assets is configured, use it; the SHA-256 check below still applies.
+    if (-not $env:RUNTIME_MIRROR_URL) { throw }
+    $mirror = "$($env:RUNTIME_MIRROR_URL.TrimEnd('/'))/$asset"
+    Write-Host "::warning::Upstream download failed ($($_.Exception.Message)); trying mirror $mirror"
+    Invoke-WebRequest -Uri $mirror -OutFile $file -UseBasicParsing
+  }
   $actual = (Get-FileHash -Algorithm SHA256 -Path $file).Hash.ToLower()
   Write-Host "$name SHA-256: $actual"
   $script:summary += "$name tag=$tag asset=$asset sha256=$actual"

@@ -1,0 +1,86 @@
+name: Windows release
+
+# Manual or tag-triggered. Builds the Windows installer; signs it when a
+# code-signing certificate is configured, and attaches it to a draft GitHub
+# release for tag builds. Versions/names are not changed here.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["win-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build Windows release installer
+    runs-on: windows-latest
+    env:
+      HIGHLIGHT_DESK_KEYCHAIN: "0"
+      RUNTIME_MIRROR_URL: ${{ vars.RUNTIME_MIRROR_URL }}
+      WIN_UPDATE_URL: ${{ vars.WIN_UPDATE_URL }}
+      # electron-builder signs automatically when these are set.
+      CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Report signing status
+        shell: pwsh
+        run: |
+          if ($env:CSC_LINK) { "Signing: certificate configured" } else { Write-Host "::warning::WIN_CSC_LINK is not set; the installer will be UNSIGNED." }
+          if (-not $env:WIN_UPDATE_URL) {
+            Write-Host "::warning::WIN_UPDATE_URL is not set; using a placeholder feed URL."
+            "WIN_UPDATE_URL=https://example.invalid/chatclip/win" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/hd-runtime
+          key: win-runtime-${{ hashFiles('tools/runtime-win.json') }}
+
+      - name: Fetch the pinned runtime
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./tools/fetch-runtime-win.ps1
+
+      - name: Tests
+        run: node tools/run-tests.js
+
+      - name: Install Electron and electron-builder
+        working-directory: win
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the installer
+        working-directory: win
+        run: npm run pack:release
+
+      - name: Verify the signature
+        if: env.CSC_LINK != ''
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem win\dist -Filter "ChatClip-*-x64.exe" | Select-Object -First 1
+          $sig = Get-AuthenticodeSignature $exe.FullName
+          $sig.Status
+          if ($sig.Status -ne "Valid") { Write-Host "::error::Installer signature is $($sig.Status)"; exit 1 }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChatClip-windows-release
+          path: |
+            win/dist/ChatClip-*-x64.exe
+            win/dist/latest.yml
+          if-no-files-found: error
+
+      - name: Attach to a draft GitHub release
+        if: startsWith(github.ref, 'refs/tags/win-v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = @(Get-ChildItem win\dist -Filter "ChatClip-*-x64.exe") + @(Get-ChildItem win\dist -Filter latest.yml -ErrorAction SilentlyContinue)
+          gh release create "${{ github.ref_name }}" --draft --title "${{ github.ref_name }}" --notes "Windows build" ($files.FullName)
