@@ -25,10 +25,8 @@ npm run preview  # serve the production build
 - Marketing site: https://troxerr.github.io/chat-clip/
 - Web app: https://troxerr.github.io/chat-clip/app/
 
-Client-side routing: `BrowserRouter` uses `import.meta.env.BASE_URL` as its basename.
-Deep links (e.g. `/chat-clip/app/clips`) hit GitHub's root `404.html`, which redirects to
-`/chat-clip/app/?/clips`; a small script in `index.html` restores the path.
-`public/404.html` is copied to the site root by the workflow.
+Client-side routing: the app uses `HashRouter` (URLs like `/chat-clip/app/#/clips`), so deep
+links work on GitHub Pages without server rewrites or a 404 fallback.
 
 Pages is already enabled with the "GitHub Actions" source. To test locally:
 `VITE_BASE=/chat-clip/app/ npm run build && VITE_BASE=/chat-clip/app/ npm run preview`.

@@ -41,8 +41,6 @@ jobs:
           mkdir _site
           cp -R site/. _site/
           cp -R web/dist _site/app
-          # Pages only serves the root 404.html; it redirects deep links into the SPA
-          cp web/dist/404.html _site/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
