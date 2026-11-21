@@ -110,3 +110,7 @@ R2 setup: create a bucket, attach a custom domain, and create an R2 API token sc
 ## Licensing
 
 ChatClip activates against Lemon Squeezy with the Mac's hardware UUID in `instance_name`. The key, instance ID and last-validated time are stored in the login Keychain (service `com.chatclip.app.license`). A license stays valid offline for 14 days after the last successful validation; a refunded, revoked or deleted key clears the Keychain on the next check and returns the app to the free plan.
+
+## Rename from Highlight Desk (external steps)
+
+The bundle ID is now `com.chatclip.app` and the notary profile is `chatclip-notary`. Before the first release: create the notary profile (`xcrun notarytool store-credentials chatclip-notary`), re-issue or confirm the Sparkle EdDSA key and appcast for the new bundle ID, update the Lemon Squeezy / Polar product names, and update the chatclip-release repo's workflow names and secrets.
