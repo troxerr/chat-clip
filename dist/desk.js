@@ -8,8 +8,8 @@ const STORE = globalThis.HDStore;
 
 if (!CONFIG || !IRC || !REACT || !STORE) {
   const status = document.getElementById("status");
-  if (status) status.textContent = "Chatclip could not load its shared modules. Refresh the page.";
-  throw new Error("Chatclip modules failed to load.");
+  if (status) status.textContent = "ChatClip could not load its shared modules. Refresh the page.";
+  throw new Error("ChatClip modules failed to load.");
 }
 
 const field = $("channel");
@@ -899,7 +899,7 @@ function load(name) {
   $("monitor").hidden = false;
   $("chat").hidden = false;
   $("title").textContent = "#" + name;
-  document.title = `#${name} · Chatclip`;
+  document.title = `#${name} · ChatClip`;
   $("player").src = `https://player.twitch.tv/?channel=${encodeURIComponent(name)}&parent=${encodeURIComponent(location.hostname)}&autoplay=false`;
   try { history.replaceState(null, "", "?c=" + name); } catch {}
   setStatus("Ready. Play the stream, then start capture.", "");

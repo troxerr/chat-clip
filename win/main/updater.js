@@ -13,7 +13,7 @@ function feedConfigured({ resourcesPath, exists = fs.existsSync } = {}) {
 }
 
 function startAutoUpdate({ app, autoUpdater, resourcesPath, env = process.env, log = () => {}, exists }) {
-  if (!app.isPackaged || env.HIGHLIGHT_DESK_SMOKE || env.HIGHLIGHT_DESK_NO_UPDATE === "1") return { enabled: false, reason: "not a normal packaged run" };
+  if (!app.isPackaged || env.CHATCLIP_SMOKE || env.CHATCLIP_NO_UPDATE === "1") return { enabled: false, reason: "not a normal packaged run" };
   if (!feedConfigured({ resourcesPath, exists })) return { enabled: false, reason: "no update feed configured" };
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;

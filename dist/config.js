@@ -80,17 +80,18 @@
     return mergeSettings(PROFILES[mode] || {});
   }
 
-  function loadSettings(storage, key = "highlight-desk.settings") {
+  function loadSettings(storage, key = "chatclip.settings") {
     try {
       if (!storage || typeof storage.getItem !== "function") return {};
-      const raw = storage.getItem(key);
+      // Settings saved before the rename live under the old key until the next save.
+      const raw = storage.getItem(key) || (key === "chatclip.settings" ? storage.getItem("highlight-desk.settings") : null);
       return raw ? pickSettings(JSON.parse(raw)) : {};
     } catch {
       return {};
     }
   }
 
-  function saveSettings(settings, storage, key = "highlight-desk.settings") {
+  function saveSettings(settings, storage, key = "chatclip.settings") {
     try {
       if (!storage || typeof storage.setItem !== "function") return false;
       storage.setItem(key, JSON.stringify(pickSettings(settings)));

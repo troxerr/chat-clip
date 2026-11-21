@@ -28,7 +28,7 @@ function normalize(data, action, expectedProductId = "") {
   if (expectedProductId && productId !== String(expectedProductId)) {
     throw new Error(productId
       ? `This license belongs to a different product (${productId}).`
-      : "This license could not be matched to Chatclip.");
+      : "This license could not be matched to ChatClip.");
   }
   const ok = action === "activate"
     ? Boolean(data.activated)
@@ -73,7 +73,7 @@ async function lemonRequest(action, {
   };
   if (!paths[action]) throw new Error(`Unknown license action: ${action}`);
   const body = new URLSearchParams({ license_key: licenseKey });
-  if (action === "activate") body.set("instance_name", instanceName || "Chatclip");
+  if (action === "activate") body.set("instance_name", instanceName || "ChatClip");
   if (action === "validate" || action === "deactivate") {
     if (!instanceId) throw new Error("An instance ID is required.");
     body.set("instance_id", instanceId);
@@ -141,7 +141,7 @@ function normalizePolar(data, action, { benefitId = "", instanceId = "" } = {}) 
   if (action !== "deactivate" && benefitId && productId !== benefitId) {
     throw new Error(productId
       ? `This license belongs to a different product (${productId}).`
-      : "This license could not be matched to Chatclip.");
+      : "This license could not be matched to ChatClip.");
   }
   const status = action === "deactivate" ? "" : (license.status === "granted" ? "active" : String(license.status || ""));
   const activation = action === "activate" ? data : (data.activation || {});
@@ -179,7 +179,7 @@ async function polarRequest(action, {
   const { orgId, benefitId } = parsePolarProduct(productId);
   if (!orgId) throw new Error("Polar licensing needs an organization ID: set the product ID to ORG_ID or ORG_ID:BENEFIT_ID.");
   const body = { key: licenseKey, organization_id: orgId };
-  if (action === "activate") body.label = instanceName || "Chatclip";
+  if (action === "activate") body.label = instanceName || "ChatClip";
   if (action === "validate" || action === "deactivate") {
     if (!instanceId) throw new Error("An instance ID is required.");
     body.activation_id = instanceId;
@@ -239,7 +239,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const action = String(args.action || "validate").trim();
   const licenseKey = resolveLicenseKey(args);
-  const instanceName = String(args["instance-name"] || process.env.LEMON_INSTANCE_NAME || "Chatclip").trim();
+  const instanceName = String(args["instance-name"] || process.env.LEMON_INSTANCE_NAME || "ChatClip").trim();
   const instanceId = String(args["instance-id"] || process.env.LEMON_INSTANCE_ID || "").trim();
   const productId = String(args["product-id"] || process.env.LEMON_PRODUCT_ID || "").trim();
   const provider = String(args.provider || process.env.LICENSE_PROVIDER || "").trim();

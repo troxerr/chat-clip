@@ -16,7 +16,7 @@ const ACTIVATE = {
   instance: { id: "instance-1", name: "Mac" },
   meta: {
     product_id: 123,
-    product_name: "Chatclip",
+    product_name: "ChatClip",
     customer_email: "creator@example.com"
   }
 };

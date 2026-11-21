@@ -41,7 +41,7 @@ function waitForCode(state) {
       const returnedState = url.searchParams.get("state");
       const code = url.searchParams.get("code");
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      response.end("<!doctype html><meta charset=utf-8><title>Chatclip</title><body style='font:16px system-ui;padding:32px'><h1>Dropbox connected</h1><p>You can close this tab and return to the terminal.</p></body>");
+      response.end("<!doctype html><meta charset=utf-8><title>ChatClip</title><body style='font:16px system-ui;padding:32px'><h1>Dropbox connected</h1><p>You can close this tab and return to the terminal.</p></body>");
       server.close();
       if (error) return reject(new Error(error));
       if (returnedState !== state) return reject(new Error("Dropbox OAuth state did not match."));
@@ -125,7 +125,7 @@ async function main() {
     authorize.searchParams.set("client_id", appKey);
     authorize.searchParams.set("response_type", "code");
     authorize.searchParams.set("token_access_type", "offline");
-    console.log("\nAuthorize Chatclip in Dropbox:");
+    console.log("\nAuthorize ChatClip in Dropbox:");
     console.log(authorize.toString());
     console.log("\nAfter approving, Dropbox shows an authorization code. Copy it and paste it below.\n");
     openBrowser(authorize.toString());
@@ -148,7 +148,7 @@ async function main() {
     authorize.searchParams.set("redirect_uri", REDIRECT_URI);
     authorize.searchParams.set("state", state);
 
-    console.log("\nAuthorize Chatclip in Dropbox:");
+    console.log("\nAuthorize ChatClip in Dropbox:");
     console.log(authorize.toString());
     console.log(`\nThe Dropbox app needs redirect URI ${REDIRECT_URI}`);
     console.log("and scopes files.content.write plus files.metadata.write.\n");
@@ -172,7 +172,7 @@ async function main() {
   console.log(saved.stored.includes("dropbox.refresh")
     ? `\nSaved the Dropbox refresh token in the Windows credential store (encrypted for your user).`
     : `\nSaved the Dropbox refresh token to ${configPath}`);
-  console.log("Restart capture (or restart Chatclip) to start uploading vertical clips.");
+  console.log("Restart capture (or restart ChatClip) to start uploading vertical clips.");
 }
 
 if (require.main === module) {

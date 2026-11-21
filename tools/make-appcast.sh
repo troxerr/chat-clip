@@ -4,8 +4,8 @@ set -euo pipefail
 # Builds a signed Sparkle 2 appcast item for a notarized DMG.
 #
 #   ARCH=arm64 VERSION=3.1.0 BUILD=5 \
-#   DOWNLOAD_URL=https://example.com/Chatclip-3.1.0-arm64.dmg \
-#   DMG="mac/build/Chatclip-3.1.0-arm64.dmg" \
+#   DOWNLOAD_URL=https://example.com/ChatClip-3.1.0-arm64.dmg \
+#   DMG="mac/build/ChatClip-3.1.0-arm64.dmg" \
 #   OUTPUT=site/appcast.xml \
 #   ./tools/make-appcast.sh
 #
@@ -20,7 +20,7 @@ BUILD="${BUILD:?Set BUILD}"
 DMG="${DMG:?Set DMG}"
 DOWNLOAD_URL="${DOWNLOAD_URL:?Set DOWNLOAD_URL}"
 OUTPUT="${OUTPUT:-$ROOT/site/appcast.xml}"
-RELEASE_NOTES="${RELEASE_NOTES:-A new version of Chatclip is available.}"
+RELEASE_NOTES="${RELEASE_NOTES:-A new version of ChatClip is available.}"
 ARCH="${ARCH:?Set ARCH to arm64 or x86_64}"
 [[ "$ARCH" == "arm64" || "$ARCH" == "x86_64" ]] || { echo "ARCH must be arm64 or x86_64 (got $ARCH)" >&2; exit 1; }
 SIGN_UPDATE="$ROOT/mac/vendor/sparkle/bin/sign_update"
@@ -48,7 +48,7 @@ ITEM_FILE="$(mktemp "${TMPDIR:-/tmp}/appcast-item.XXXXXX")"
 trap 'rm -f "$ITEM_FILE"' EXIT
 cat > "$ITEM_FILE" <<XML
     <item>
-      <title>Chatclip ${VERSION}</title>
+      <title>ChatClip ${VERSION}</title>
       <pubDate>${PUB_DATE}</pubDate>
       <sparkle:version>${BUILD}</sparkle:version>
       <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
@@ -103,9 +103,9 @@ else
      xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
      xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
-    <title>Chatclip</title>
+    <title>ChatClip</title>
     <link>${DOWNLOAD_URL%/*}/</link>
-    <description>Chatclip releases</description>
+    <description>ChatClip releases</description>
     <language>en</language>
 $(cat "$ITEM_FILE")
   </channel>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the Chatclip app icon with Pillow.
+"""Render the ChatClip app icon with Pillow.
 
 Design: a 9:16 cream clip card with a chat-bubble tail, a chartreuse
 highlighter swipe, a deep-ink play mark, and a coral spark on an

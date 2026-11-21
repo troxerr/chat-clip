@@ -136,13 +136,13 @@ test("decrypted values are reused until the stored blob changes", () => {
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test("HIGHLIGHT_DESK_KEYCHAIN=0 disables the store", () => {
+test("CHATCLIP_KEYCHAIN=0 disables the store", () => {
   const { dir } = make();
   try {
     const fake = fakeRun();
     const on = createCredentialStore({ platform: "win32", env: {}, dir, run: fake.run, respectDisableFlag: false });
     on.set("google.refresh", "secret");
-    const off = createCredentialStore({ platform: "win32", env: { HIGHLIGHT_DESK_KEYCHAIN: "0" }, dir, run: fake.run });
+    const off = createCredentialStore({ platform: "win32", env: { CHATCLIP_KEYCHAIN: "0" }, dir, run: fake.run });
     assert.equal(off.get("google.refresh"), "");
     assert.equal(off.has("google.refresh"), false);
     assert.deepEqual(off.list(), []);
@@ -157,7 +157,7 @@ test("macOS reads Keychain through security, uncached, and cannot write from the
   assert.equal(store.backend, "keychain");
   assert.equal(store.get("google.refresh"), "token-1");
   assert.equal(store.get("google.refresh"), "token-2");
-  assert.deepEqual(seen[0], ["/usr/bin/security", ["find-generic-password", "-w", "-s", "com.highlightdesk.app.credentials", "-a", "google.refresh"]]);
+  assert.deepEqual(seen[0], ["/usr/bin/security", ["find-generic-password", "-w", "-s", "com.chatclip.app.credentials", "-a", "google.refresh"]]);
   assert.throws(() => store.set("google.refresh", "x"), /macOS/);
 });
 

@@ -11,6 +11,7 @@
 #import "ui/HDUI.h"
 #import "ui/HDSymbols.h"
 #import "license/HDLicenseManager.h"
+#import "migration/HDMigration.h"
 
 #if __has_include(<Sparkle/Sparkle.h>)
 #import <Sparkle/Sparkle.h>
@@ -20,10 +21,10 @@
 static NSString *const kDashboardURL = @"https://highlight-desk-at.expeditedclips.chatgpt.site";
 static NSString *const kDropboxHomeURL = @"https://www.dropbox.com/home";
 static NSString *const kGoogleDriveHomeURL = @"https://drive.google.com";
-static NSString *const kKeychainService = @"com.highlightdesk.app.credentials";
+static NSString *const kKeychainService = @"com.chatclip.app.credentials";
 
 static BOOL HDKeychainDisabled(void) {
-  return [NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_KEYCHAIN"] isEqualToString:@"0"];
+  return [HDEnv(@"CHATCLIP_KEYCHAIN") isEqualToString:@"0"];
 }
 
 static NSString *HDKeychainGet(NSString *account) {
@@ -98,7 +99,7 @@ static NSString *const kConfigTemplate =
 "  },\n"
 "  \"storage\": {\n"
 "    \"mode\": \"local\",\n"
-"    \"folder\": \"/Highlight Desk\",\n"
+"    \"folder\": \"/ChatClip\",\n"
 "    \"deleteAfterUpload\": true,\n"
 "    \"keepLocalCopy\": false,\n"
 "    \"keepRaw\": false\n"
@@ -108,7 +109,7 @@ static NSString *const kConfigTemplate =
 "    \"appKey\": \"\",\n"
 "    \"appSecret\": \"\",\n"
 "    \"refreshToken\": \"\",\n"
-"    \"folder\": \"/Highlight Desk\",\n"
+"    \"folder\": \"/ChatClip\",\n"
 "    \"deleteAfterUpload\": true\n"
 "  },\n"
 "  \"googleDrive\": {\n"
@@ -116,7 +117,7 @@ static NSString *const kConfigTemplate =
 "    \"clientId\": \"\",\n"
 "    \"clientSecret\": \"\",\n"
 "    \"refreshToken\": \"\",\n"
-"    \"folder\": \"/Highlight Desk\"\n"
+"    \"folder\": \"/ChatClip\"\n"
 "  },\n"
 "  \"license\": {\n"
 "    \"trialStartedAt\": \"\",\n"
@@ -244,7 +245,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 @implementation Desk
 
 - (NSMutableDictionary *)loadConfig {
-  NSString *path = self.configPath.length ? self.configPath : [NSHomeDirectory() stringByAppendingPathComponent:@".highlight-desk.json"];
+  NSString *path = self.configPath.length ? self.configPath : [NSHomeDirectory() stringByAppendingPathComponent:@".chatclip.json"];
   NSFileManager *manager = [NSFileManager defaultManager];
   if (![manager fileExistsAtPath:path]) {
     [manager createDirectoryAtPath:[path stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
@@ -261,7 +262,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 
 - (BOOL)writeConfig:(NSDictionary *)config {
   if (!config) return NO;
-  NSString *path = self.configPath.length ? self.configPath : [NSHomeDirectory() stringByAppendingPathComponent:@".highlight-desk.json"];
+  NSString *path = self.configPath.length ? self.configPath : [NSHomeDirectory() stringByAppendingPathComponent:@".chatclip.json"];
   NSError *error = nil;
   NSData *data = [NSJSONSerialization dataWithJSONObject:config options:NSJSONWritingPrettyPrinted error:&error];
   if (!data) return NO;
@@ -345,7 +346,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 
 - (NSString *)infoOrEnvironment:(NSString *)key environment:(NSString *)environment fallback:(NSString *)fallback {
   NSString *value = NSBundle.mainBundle.infoDictionary[key];
-  if (![value isKindOfClass:[NSString class]] || !value.length) value = NSProcessInfo.processInfo.environment[environment];
+  if (![value isKindOfClass:[NSString class]] || !value.length) value = HDEnv(environment);
   if (![value isKindOfClass:[NSString class]] || !value.length) value = fallback;
   return value ?: @"";
 }
@@ -354,15 +355,15 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSMutableDictionary *config = [self loadConfig];
   NSDictionary *storage = [config[@"storage"] isKindOfClass:[NSDictionary class]] ? config[@"storage"] : nil;
   NSString *mode = [storage[@"mode"] isKindOfClass:[NSString class]] ? storage[@"mode"] : @"local";
-  NSString *folder = [storage[@"folder"] isKindOfClass:[NSString class]] ? storage[@"folder"] : @"/Highlight Desk";
-  environment[@"HIGHLIGHT_DESK_STORAGE"] = mode;
-  environment[@"HIGHLIGHT_DESK_PLAN"] = self.freeTier ? @"free" : @"pro";
-  environment[@"HIGHLIGHT_DESK_CONFIG"] = self.configPath;
-  if (self.stateDir.length) environment[@"HIGHLIGHT_DESK_STATE"] = self.stateDir;
+  NSString *folder = [storage[@"folder"] isKindOfClass:[NSString class]] ? storage[@"folder"] : @"/ChatClip";
+  environment[@"CHATCLIP_STORAGE"] = mode;
+  environment[@"CHATCLIP_PLAN"] = self.freeTier ? @"free" : @"pro";
+  environment[@"CHATCLIP_CONFIG"] = self.configPath;
+  if (self.stateDir.length) environment[@"CHATCLIP_STATE"] = self.stateDir;
 
   NSDictionary *dropbox = [config[@"dropbox"] isKindOfClass:[NSDictionary class]] ? config[@"dropbox"] : nil;
-  NSString *dropboxKey = [self infoOrEnvironment:@"HDDropboxAppKey" environment:@"HIGHLIGHT_DESK_DROPBOX_APP_KEY" fallback:dropbox[@"appKey"]];
-  NSString *dropboxSecret = [self infoOrEnvironment:@"HDDropboxAppSecret" environment:@"HIGHLIGHT_DESK_DROPBOX_APP_SECRET" fallback:dropbox[@"appSecret"]];
+  NSString *dropboxKey = [self infoOrEnvironment:@"HDDropboxAppKey" environment:@"CHATCLIP_DROPBOX_APP_KEY" fallback:dropbox[@"appKey"]];
+  NSString *dropboxSecret = [self infoOrEnvironment:@"HDDropboxAppSecret" environment:@"CHATCLIP_DROPBOX_APP_SECRET" fallback:dropbox[@"appSecret"]];
   if (!dropboxSecret.length) dropboxSecret = HDKeychainGet(@"dropbox.appSecret") ?: @"";
   NSString *dropboxToken = [self tokenForMode:@"dropbox"];
   if (dropboxKey.length) environment[@"DROPBOX_APP_KEY"] = dropboxKey;
@@ -371,8 +372,8 @@ static NSString *HDByteString(unsigned long long bytes) {
   environment[@"DROPBOX_FOLDER"] = folder;
 
   NSDictionary *google = [config[@"googleDrive"] isKindOfClass:[NSDictionary class]] ? config[@"googleDrive"] : nil;
-  NSString *googleId = [self infoOrEnvironment:@"HDGoogleClientId" environment:@"HIGHLIGHT_DESK_GOOGLE_CLIENT_ID" fallback:google[@"clientId"]];
-  NSString *googleSecret = [self infoOrEnvironment:@"HDGoogleClientSecret" environment:@"HIGHLIGHT_DESK_GOOGLE_CLIENT_SECRET" fallback:google[@"clientSecret"]];
+  NSString *googleId = [self infoOrEnvironment:@"HDGoogleClientId" environment:@"CHATCLIP_GOOGLE_CLIENT_ID" fallback:google[@"clientId"]];
+  NSString *googleSecret = [self infoOrEnvironment:@"HDGoogleClientSecret" environment:@"CHATCLIP_GOOGLE_CLIENT_SECRET" fallback:google[@"clientSecret"]];
   NSString *googleToken = [self tokenForMode:@"googleDrive"];
   if (googleId.length) environment[@"GOOGLE_CLIENT_ID"] = googleId;
   if (googleSecret.length) environment[@"GOOGLE_CLIENT_SECRET"] = googleSecret;
@@ -419,13 +420,13 @@ static NSString *HDByteString(unsigned long long bytes) {
 - (NSString *)licenseInstanceValue { return self.licenseManager.instanceId; }
 
 - (BOOL)licenseIsRequired {
-  NSString *env = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_LICENSE_REQUIRED"];
+  NSString *env = HDEnv(@"CHATCLIP_LICENSE_REQUIRED");
   if (env.length) return ![env isEqualToString:@"0"];
   return [NSBundle.mainBundle.infoDictionary[@"HDLicenseRequired"] boolValue];
 }
 
 - (NSInteger)configuredTrialDays {
-  NSString *env = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_TRIAL_DAYS"];
+  NSString *env = HDEnv(@"CHATCLIP_TRIAL_DAYS");
   if (env.length) return MAX(0, env.integerValue);
   NSInteger value = [NSBundle.mainBundle.infoDictionary[@"HDTrialDays"] integerValue];
   return value > 0 ? value : 7;
@@ -475,7 +476,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   iso.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
   iso.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
   iso.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Highlight Desk"];
+  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/ChatClip"];
   NSData *data = [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:@"free-tier.json"]];
   NSDictionary *usage = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
   NSInteger used = ([usage isKindOfClass:NSDictionary.class] && [usage[@"weekStart"] isEqual:[iso stringFromDate:monday]]) ? [usage[@"used"] integerValue] : 0;
@@ -520,19 +521,19 @@ static NSString *HDByteString(unsigned long long bytes) {
 
 - (NSString *)licenseApiBase {
   NSString *value = NSBundle.mainBundle.infoDictionary[@"HDLicenseApiBase"];
-  if (![value isKindOfClass:[NSString class]] || !value.length) value = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_LICENSE_API_BASE"];
+  if (![value isKindOfClass:[NSString class]] || !value.length) value = HDEnv(@"CHATCLIP_LICENSE_API_BASE");
   return value ?: @"";
 }
 
 - (NSString *)licenseProductId {
   NSString *value = NSBundle.mainBundle.infoDictionary[@"HDProductId"];
-  if (![value isKindOfClass:[NSString class]] || !value.length) value = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_PRODUCT_ID"];
+  if (![value isKindOfClass:[NSString class]] || !value.length) value = HDEnv(@"CHATCLIP_PRODUCT_ID");
   return value ?: @"";
 }
 
 - (NSString *)checkoutURL {
   NSString *value = NSBundle.mainBundle.infoDictionary[@"HDCheckoutURL"];
-  if (![value isKindOfClass:[NSString class]] || !value.length) value = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_CHECKOUT_URL"];
+  if (![value isKindOfClass:[NSString class]] || !value.length) value = HDEnv(@"CHATCLIP_CHECKOUT_URL");
   return value ?: @"";
 }
 
@@ -623,7 +624,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     window.releasedWhenClosed = NO;
     NSView *view = window.contentView;
 
-    NSTextField *heading = [NSTextField labelWithString:@"Chatclip License"];
+    NSTextField *heading = [NSTextField labelWithString:@"ChatClip License"];
     heading.font = [NSFont boldSystemFontOfSize:20];
     heading.frame = NSMakeRect(24, 328, 472, 26);
     [view addSubview:heading];
@@ -827,7 +828,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 }
 
 - (NSString *)usageLogPath {
-  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Highlight Desk"];
+  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/ChatClip"];
   [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
   return [dir stringByAppendingPathComponent:@"usage.jsonl"];
 }
@@ -897,7 +898,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 #pragma mark - Local feedback log (feedback.jsonl, read by tools/review-export.js)
 
 - (NSString *)feedbackDirectory {
-  return self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Highlight Desk"];
+  return self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/ChatClip"];
 }
 
 - (void)logFeedbackAction:(NSString *)action clipId:(NSString *)clipId details:(NSDictionary *)details {
@@ -1026,8 +1027,8 @@ static NSString *HDByteString(unsigned long long bytes) {
   if (option.length) [args addObject:option];
   task.arguments = args;
   NSMutableDictionary *env = [NSProcessInfo.processInfo.environment mutableCopy];
-  env[@"HIGHLIGHT_DESK_STATE"] = [self feedbackDirectory];
-  env[@"HIGHLIGHT_DESK_KEYCHAIN"] = @"0";
+  env[@"CHATCLIP_STATE"] = [self feedbackDirectory];
+  env[@"CHATCLIP_KEYCHAIN"] = @"0";
   task.environment = env;
   NSPipe *pipe = NSPipe.pipe;
   task.standardOutput = pipe;
@@ -1137,7 +1138,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 }
 
 - (NSArray<NSDictionary *> *)historyRowsFromDisk {
-  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Highlight Desk"];
+  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/ChatClip"];
   NSData *historyData = [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:@"history.json"]];
   NSData *queueData = [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:@"queue.json"]];
   NSArray *history = historyData ? [NSJSONSerialization JSONObjectWithData:historyData options:0 error:nil] : @[];
@@ -1203,7 +1204,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 }
 
 - (void)reloadHistoryFromDisk {
-  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Highlight Desk"];
+  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/ChatClip"];
   NSData *queueData = [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:@"queue.json"]];
   NSArray *queue = queueData ? [NSJSONSerialization JSONObjectWithData:queueData options:0 error:nil] : @[];
   self.queueItems = [queue isKindOfClass:[NSArray class]] ? [queue mutableCopy] : [NSMutableArray array];
@@ -1340,7 +1341,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 }
 
 - (void)openStateFolder:(id)sender {
-  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Highlight Desk"];
+  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/ChatClip"];
   [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
   [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:dir]];
 }
@@ -1638,7 +1639,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 }
 
 - (void)setupNotifications {
-  NSString *env = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_NOTIFICATIONS"];
+  NSString *env = HDEnv(@"CHATCLIP_NOTIFICATIONS");
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   if (env.length) {
     self.notificationsEnabled = ![env isEqualToString:@"0"];
@@ -1677,7 +1678,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 - (void)notifyTitle:(NSString *)title body:(NSString *)body {
   if (!self.notificationsEnabled || !self.notificationsAuthorized) return;
   UNMutableNotificationContent *content = [UNMutableNotificationContent new];
-  content.title = title ?: @"Chatclip";
+  content.title = title ?: @"ChatClip";
   content.body = body ?: @"";
   content.sound = [UNNotificationSound defaultSound];
   UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:NSUUID.UUID.UUIDString content:content trigger:nil];
@@ -1738,12 +1739,12 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSSavePanel *panel = [NSSavePanel savePanel];
   NSDateFormatter *stamp = [NSDateFormatter new];
   stamp.dateFormat = @"yyyyMMdd-HHmm";
-  panel.nameFieldStringValue = [NSString stringWithFormat:@"Chatclip-Diagnostics-%@.zip", [stamp stringFromDate:[NSDate date]]];
+  panel.nameFieldStringValue = [NSString stringWithFormat:@"ChatClip-Diagnostics-%@.zip", [stamp stringFromDate:[NSDate date]]];
   panel.allowedContentTypes = @[[UTType typeWithFilenameExtension:@"zip"]];
   panel.canCreateDirectories = YES;
   [panel beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse response) {
     if (response != NSModalResponseOK || !panel.URL) return;
-    NSString *temp = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"Chatclip-Diagnostics-%@", NSUUID.UUID.UUIDString]];
+    NSString *temp = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"ChatClip-Diagnostics-%@", NSUUID.UUID.UUIDString]];
     NSFileManager *fm = [NSFileManager defaultManager];
     [fm createDirectoryAtPath:temp withIntermediateDirectories:YES attributes:nil error:nil];
 
@@ -1800,7 +1801,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     [runtime addObject:[NSString stringWithFormat:@"codesign:\n%@", [self runDiagnosticCommand:@"/usr/bin/codesign" arguments:@[@"-dv", @"--verbose=2", NSBundle.mainBundle.bundlePath]]]];
     [[runtime componentsJoinedByString:@"\n\n"] writeToFile:[temp stringByAppendingPathComponent:@"runtime.txt"] atomically:YES encoding:NSUTF8StringEncoding error:nil];
 
-    NSString *readme = @"Chatclip diagnostics\n\nThis archive may contain local paths, clip history, and error logs. Review it before sharing.\nOAuth tokens, app secrets, and license keys are redacted from config-redacted.json.\n\nSend this zip with a short description of what happened.\n";
+    NSString *readme = @"ChatClip diagnostics\n\nThis archive may contain local paths, clip history, and error logs. Review it before sharing.\nOAuth tokens, app secrets, and license keys are redacted from config-redacted.json.\n\nSend this zip with a short description of what happened.\n";
     [readme writeToFile:[temp stringByAppendingPathComponent:@"README.txt"] atomically:YES encoding:NSUTF8StringEncoding error:nil];
 
     NSString *zip = panel.URL.path;
@@ -1849,7 +1850,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   [self updateLaunchAtLoginState];
   if (error) {
     [self alert:@"Could not update Launch at Login"
-           info:[NSString stringWithFormat:@"%@\n\nMove Chatclip to /Applications before enabling this.", error.localizedDescription]];
+           info:[NSString stringWithFormat:@"%@\n\nMove ChatClip to /Applications before enabling this.", error.localizedDescription]];
   }
 }
 
@@ -1877,7 +1878,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     window.releasedWhenClosed = NO;
     NSView *view = window.contentView;
 
-    NSTextField *heading = [NSTextField labelWithString:@"Welcome to Chatclip"];
+    NSTextField *heading = [NSTextField labelWithString:@"Welcome to ChatClip"];
     heading.font = [NSFont boldSystemFontOfSize:22];
     heading.frame = NSMakeRect(24, 360, 512, 28);
     [view addSubview:heading];
@@ -1976,12 +1977,13 @@ static NSString *HDByteString(unsigned long long bytes) {
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
-  NSString *envConfig = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_CONFIG"];
-  self.configPath = envConfig.length ? [envConfig stringByExpandingTildeInPath] : [NSHomeDirectory() stringByAppendingPathComponent:@".highlight-desk.json"];
-  NSString *envState = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_STATE"];
-  self.stateDir = envState.length ? [envState stringByExpandingTildeInPath] : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Highlight Desk"];
+  [HDMigration runIfNeeded];
+  NSString *envConfig = HDEnv(@"CHATCLIP_CONFIG");
+  self.configPath = envConfig.length ? [envConfig stringByExpandingTildeInPath] : [NSHomeDirectory() stringByAppendingPathComponent:@".chatclip.json"];
+  NSString *envState = HDEnv(@"CHATCLIP_STATE");
+  self.stateDir = envState.length ? [envState stringByExpandingTildeInPath] : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/ChatClip"];
   [self migrateCredentialsIfNeeded];
-  NSString *forcedAppearance = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_APPEARANCE"];
+  NSString *forcedAppearance = HDEnv(@"CHATCLIP_APPEARANCE");
   if ([forcedAppearance isEqualToString:@"light"]) NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
   else if ([forcedAppearance isEqualToString:@"dark"]) NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
   self.licenseRequired = [self licenseIsRequired];
@@ -2023,7 +2025,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 
   self.stdoutBuffer = [NSMutableString new];
   self.logLines = [NSMutableArray array];
-  [self appendLogLine:[NSString stringWithFormat:@"Chatclip %@ (%@) started", NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"] ?: @"?", NSBundle.mainBundle.infoDictionary[@"CFBundleVersion"] ?: @"?"]];
+  [self appendLogLine:[NSString stringWithFormat:@"ChatClip %@ (%@) started", NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"] ?: @"?", NSBundle.mainBundle.infoDictionary[@"CFBundleVersion"] ?: @"?"]];
 
   NSMenu *menu = [NSMenu new];
   NSMenuItem *appItem = [menu addItemWithTitle:@"" action:nil keyEquivalent:@""];
@@ -2062,7 +2064,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSMenuItem *licenseItem = [appMenu addItemWithTitle:@"License…" action:@selector(showLicense:) keyEquivalent:@""];
   licenseItem.target = self;
   [appMenu addItem:[NSMenuItem separatorItem]];
-  [appMenu addItemWithTitle:@"Quit Chatclip" action:@selector(terminate:) keyEquivalent:@"q"];
+  [appMenu addItemWithTitle:@"Quit ChatClip" action:@selector(terminate:) keyEquivalent:@"q"];
   appItem.submenu = appMenu;
   // Standard responder actions keep text editing and keyboard navigation native.
   NSMenuItem *editItem = [menu addItemWithTitle:@"Edit" action:nil keyEquivalent:@""];
@@ -2084,7 +2086,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   viewItem.submenu = viewMenu;
   NSApp.mainMenu = menu;
   // The menu bar companion would leak into headless UI review captures and runs.
-  if (!NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_UI_REVIEW"].length) [self installStatusItem];
+  if (!HDEnv(@"CHATCLIP_UI_REVIEW").length) [self installStatusItem];
 
   [self reloadStorageSettings];
   [self reloadHistoryFromDisk];
@@ -2092,10 +2094,10 @@ static NSString *HDByteString(unsigned long long bytes) {
   [self.window center];
   [self.window makeKeyAndOrderFront:nil];
   [NSApp activateIgnoringOtherApps:YES];
-  if ([NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_OPEN_MONITOR"] isEqualToString:@"1"]) {
+  if ([HDEnv(@"CHATCLIP_OPEN_MONITOR") isEqualToString:@"1"]) {
     [self showMonitoring:nil];
   }
-  NSString *openPage = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_OPEN_PAGE"];
+  NSString *openPage = HDEnv(@"CHATCLIP_OPEN_PAGE");
   if (openPage.length) {
     if ([openPage isEqualToString:@"clips"]) [self.ui selectPage:HDPageClips];
     else if ([openPage isEqualToString:@"storage"]) [self.ui selectPage:HDPageStorage];
@@ -2103,35 +2105,35 @@ static NSString *HDByteString(unsigned long long bytes) {
     else if ([openPage isEqualToString:@"settings"]) [self.ui selectPage:HDPageSettings];
     else [self.ui selectPage:HDPageCapture];
   }
-  if ([NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_OPEN_STORAGE"] isEqualToString:@"1"]) {
+  if ([HDEnv(@"CHATCLIP_OPEN_STORAGE") isEqualToString:@"1"]) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
       [self showStorageSettings:nil];
     });
   }
-  if ([NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_OPEN_HISTORY"] isEqualToString:@"1"]) {
+  if ([HDEnv(@"CHATCLIP_OPEN_HISTORY") isEqualToString:@"1"]) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
       [self showHistory:nil];
     });
   }
-  if ([NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_OPEN_LICENSE"] isEqualToString:@"1"]) {
+  if ([HDEnv(@"CHATCLIP_OPEN_LICENSE") isEqualToString:@"1"]) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
       [self showLicense:nil];
     });
   }
   [self refreshLicenseState];
   [self refreshFreeTierNote];
-  NSString *reviewDirectory = NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_UI_REVIEW"];
+  NSString *reviewDirectory = HDEnv(@"CHATCLIP_UI_REVIEW");
   if (reviewDirectory.length) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
       [self exportUIReview:reviewDirectory];
     });
     return;
   }
-  if ([NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_OPEN_ONBOARDING"] isEqualToString:@"1"]) {
+  if ([HDEnv(@"CHATCLIP_OPEN_ONBOARDING") isEqualToString:@"1"]) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.6 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
       [self showOnboarding:nil];
     });
-  } else if (!NSProcessInfo.processInfo.environment[@"HIGHLIGHT_DESK_UI_REVIEW"].length) {
+  } else if (!HDEnv(@"CHATCLIP_UI_REVIEW").length) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.7 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
       [self showOnboardingIfNeeded];
     });
@@ -2145,13 +2147,13 @@ static NSString *HDByteString(unsigned long long bytes) {
 - (void)installStatusItem {
   if (self.statusItem) return;
   NSStatusItem *item = [NSStatusBar.systemStatusBar statusItemWithLength:NSVariableStatusItemLength];
-  NSImage *icon = [HDSymbolImage(HDSymbolRoleCapture, 14, NSFontWeightMedium, @"Chatclip") copy];
+  NSImage *icon = [HDSymbolImage(HDSymbolRoleCapture, 14, NSFontWeightMedium, @"ChatClip") copy];
   icon.template = YES;
   item.button.image = icon;
   item.button.imagePosition = NSImageLeft;
-  item.button.accessibilityLabel = @"Chatclip";
-  item.button.toolTip = @"Chatclip";
-  NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Chatclip"];
+  item.button.accessibilityLabel = @"ChatClip";
+  item.button.toolTip = @"ChatClip";
+  NSMenu *menu = [[NSMenu alloc] initWithTitle:@"ChatClip"];
   menu.delegate = self;
   self.statusStateItem = [menu addItemWithTitle:@"Idle" action:nil keyEquivalent:@""];
   [menu addItem:[NSMenuItem separatorItem]];
@@ -2163,7 +2165,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   self.statusToggleItem = [menu addItemWithTitle:@"Start Capture" action:@selector(toggleCapture:) keyEquivalent:@""];
   self.statusToggleItem.target = self;
   [menu addItem:[NSMenuItem separatorItem]];
-  NSMenuItem *show = [menu addItemWithTitle:@"Show Chatclip" action:@selector(showMainWindow:) keyEquivalent:@""];
+  NSMenuItem *show = [menu addItemWithTitle:@"Show ChatClip" action:@selector(showMainWindow:) keyEquivalent:@""];
   show.target = self;
   item.menu = menu;
   self.statusItem = item;
@@ -2599,7 +2601,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.status.stringValue = [NSString stringWithFormat:@"Uploading to %@…", self.storageLabel ?: @"storage"];
   } else if ([type isEqualToString:@"review-ready"]) {
     NSString *message = [event[@"message"] isKindOfClass:NSString.class] ? event[@"message"] : @"Open Capture Monitor to review your highlights.";
-    [self notifyTitle:@"Chatclip" body:message];
+    [self notifyTitle:@"ChatClip" body:message];
     [self logUsageEvent:@"review-ready" details:@{@"sessions": event[@"sessions"] ?: @0}];
   } else if ([type isEqualToString:@"clip-uploaded"]) {
     if ([event[@"queued"] boolValue]) [self logFeedbackAction:@"uploaded" clipId:event[@"clipId"] details:@{@"provider": event[@"provider"] ?: @"", @"queued": @YES}];
@@ -2683,7 +2685,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.status.stringValue = message;
     [self logUsageEvent:@"engine-fatal" details:@{@"message": message ?: @"unknown"}];
     [self.ui setSessionState:HDSessionStateError status:message ?: @"Recorder stopped"];
-    [self alert:@"Chatclip stopped." info:message];
+    [self alert:@"ChatClip stopped." info:message];
   }
   if (self.vodEvents && [type isEqualToString:@"clip-saved"]) {
     self.vodSaved += 1;
@@ -2728,7 +2730,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSString *resource = NSBundle.mainBundle.resourcePath;
   NSString *background = [resource stringByAppendingPathComponent:@"background.cjs"];
   if (![[NSFileManager defaultManager] fileExistsAtPath:background]) {
-    [self alert:@"Chatclip is incomplete." info:@"background.cjs is missing from the app bundle. Rebuild with mac/build.sh."];
+    [self alert:@"ChatClip is incomplete." info:@"background.cjs is missing from the app bundle. Rebuild with mac/build.sh."];
     return;
   }
 
@@ -2757,10 +2759,10 @@ static NSString *HDByteString(unsigned long long bytes) {
   task.arguments = @[background, name];
   NSMutableDictionary *environment = [NSProcessInfo.processInfo.environment mutableCopy];
   environment[@"PATH"] = [paths componentsJoinedByString:@":"];
-  environment[@"HIGHLIGHT_DESK_EVENTS"] = @"1";
+  environment[@"CHATCLIP_EVENTS"] = @"1";
   [self applyStorageEnvironment:environment];
   NSString *preferredOutput = [[NSUserDefaults standardUserDefaults] stringForKey:@"HDOutputRoot"];
-  if (preferredOutput.length) environment[@"HIGHLIGHT_DESK_OUTPUT"] = preferredOutput;
+  if (preferredOutput.length) environment[@"CHATCLIP_OUTPUT"] = preferredOutput;
   task.environment = environment;
 
   NSPipe *stdoutPipe = [NSPipe pipe];
@@ -2880,7 +2882,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSString *resource = NSBundle.mainBundle.resourcePath;
   NSString *script = [resource stringByAppendingPathComponent:@"vod.cjs"];
   if (![[NSFileManager defaultManager] fileExistsAtPath:script]) {
-    [self alert:@"Chatclip is incomplete." info:@"vod.cjs is missing from the app bundle. Rebuild with mac/build.sh."];
+    [self alert:@"ChatClip is incomplete." info:@"vod.cjs is missing from the app bundle. Rebuild with mac/build.sh."];
     return;
   }
   NSArray<NSString *> *paths = [self searchPaths];
@@ -2916,10 +2918,10 @@ static NSString *HDByteString(unsigned long long bytes) {
   task.arguments = arguments;
   NSMutableDictionary *environment = [NSProcessInfo.processInfo.environment mutableCopy];
   environment[@"PATH"] = [paths componentsJoinedByString:@":"];
-  environment[@"HIGHLIGHT_DESK_EVENTS"] = @"1";
+  environment[@"CHATCLIP_EVENTS"] = @"1";
   [self applyStorageEnvironment:environment];
   NSString *preferredOutput = [[NSUserDefaults standardUserDefaults] stringForKey:@"HDOutputRoot"];
-  if (preferredOutput.length) environment[@"HIGHLIGHT_DESK_OUTPUT"] = preferredOutput;
+  if (preferredOutput.length) environment[@"CHATCLIP_OUTPUT"] = preferredOutput;
   task.environment = environment;
 
   NSPipe *stdoutPipe = [NSPipe pipe];
@@ -3020,7 +3022,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 
 - (void)folder:(id)sender {
   NSString *preferred = [[NSUserDefaults standardUserDefaults] stringForKey:@"HDOutputRoot"];
-  NSString *path = preferred.length ? preferred : (self.outputPath.length ? self.outputPath : [NSHomeDirectory() stringByAppendingPathComponent:@"Movies/Highlight Desk"]);
+  NSString *path = preferred.length ? preferred : (self.outputPath.length ? self.outputPath : [HDMigration defaultOutputPath]);
   [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:nil];
   [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:path]];
 }
@@ -3063,7 +3065,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   config[@"reframe"] = reframe;
 
   NSMutableDictionary *dropbox = [config[@"dropbox"] isKindOfClass:[NSMutableDictionary class]] ? config[@"dropbox"] : nil;
-  NSString *folder = [dropbox[@"folder"] isKindOfClass:[NSString class]] ? dropbox[@"folder"] : @"/Highlight Desk";
+  NSString *folder = [dropbox[@"folder"] isKindOfClass:[NSString class]] ? dropbox[@"folder"] : @"/ChatClip";
   NSMutableDictionary *storage = [config[@"storage"] isKindOfClass:[NSMutableDictionary class]] ? config[@"storage"] : [NSMutableDictionary dictionary];
   if (!storage[@"mode"]) {
     BOOL dropboxReady = dropbox && (([dropbox[@"appKey"] isKindOfClass:[NSString class]] && [dropbox[@"appKey"] length] > 0)
@@ -3142,7 +3144,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSString *mode = [storage[@"mode"] isKindOfClass:[NSString class]] ? storage[@"mode"] : @"local";
   NSInteger index = [mode isEqualToString:@"dropbox"] ? 1 : [mode isEqualToString:@"googleDrive"] ? 2 : 0;
   [self.storageModePopup selectItemAtIndex:index];
-  NSString *folder = [storage[@"folder"] isKindOfClass:[NSString class]] ? storage[@"folder"] : @"/Highlight Desk";
+  NSString *folder = [storage[@"folder"] isKindOfClass:[NSString class]] ? storage[@"folder"] : @"/ChatClip";
   self.storageFolder.stringValue = folder;
   self.storageDeleteCheckbox.state = [storage[@"deleteAfterUpload"] boolValue] ? NSControlStateValueOn : NSControlStateValueOff;
   self.storageKeepLocalCheckbox.state = ([storage[@"keepLocalCopy"] boolValue] || (storage[@"deleteAfterUpload"] && ![storage[@"deleteAfterUpload"] boolValue])) ? NSControlStateValueOn : NSControlStateValueOff;
@@ -3206,7 +3208,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     folderLabel.frame = NSMakeRect(24, 220, 110, 18);
     [view addSubview:folderLabel];
 
-    self.storageFolder = [NSTextField textFieldWithString:@"/Highlight Desk"];
+    self.storageFolder = [NSTextField textFieldWithString:@"/ChatClip"];
     self.storageFolder.frame = NSMakeRect(136, 214, 400, 26);
     [view addSubview:self.storageFolder];
 
@@ -3255,7 +3257,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   if (!config) return;
   NSMutableDictionary *storage = [config[@"storage"] isKindOfClass:[NSMutableDictionary class]] ? config[@"storage"] : [NSMutableDictionary dictionary];
   storage[@"mode"] = [self selectedStorageMode];
-  storage[@"folder"] = self.storageFolder.stringValue.length ? self.storageFolder.stringValue : @"/Highlight Desk";
+  storage[@"folder"] = self.storageFolder.stringValue.length ? self.storageFolder.stringValue : @"/ChatClip";
   if (![[self selectedStorageMode] isEqualToString:@"local"]) {
     BOOL keep = self.storageKeepLocalCheckbox.state == NSControlStateValueOn;
     storage[@"deleteAfterUpload"] = @(!keep);
@@ -3280,16 +3282,16 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSMutableDictionary *config = [self loadConfig];
   if ([mode isEqualToString:@"dropbox"]) {
     NSDictionary *dropbox = [config[@"dropbox"] isKindOfClass:[NSDictionary class]] ? config[@"dropbox"] : nil;
-    return [self infoOrEnvironment:@"HDDropboxAppKey" environment:@"HIGHLIGHT_DESK_DROPBOX_APP_KEY" fallback:dropbox[@"appKey"]];
+    return [self infoOrEnvironment:@"HDDropboxAppKey" environment:@"CHATCLIP_DROPBOX_APP_KEY" fallback:dropbox[@"appKey"]];
   }
   NSDictionary *google = [config[@"googleDrive"] isKindOfClass:[NSDictionary class]] ? config[@"googleDrive"] : nil;
-  return [self infoOrEnvironment:@"HDGoogleClientId" environment:@"HIGHLIGHT_DESK_GOOGLE_CLIENT_ID" fallback:google[@"clientId"]];
+  return [self infoOrEnvironment:@"HDGoogleClientId" environment:@"CHATCLIP_GOOGLE_CLIENT_ID" fallback:google[@"clientId"]];
 }
 
 - (NSString *)clientSecretForMode:(NSString *)mode {
   NSMutableDictionary *config = [self loadConfig];
   NSDictionary *google = [config[@"googleDrive"] isKindOfClass:[NSDictionary class]] ? config[@"googleDrive"] : nil;
-  return [self infoOrEnvironment:@"HDGoogleClientSecret" environment:@"HIGHLIGHT_DESK_GOOGLE_CLIENT_SECRET" fallback:google[@"clientSecret"]];
+  return [self infoOrEnvironment:@"HDGoogleClientSecret" environment:@"CHATCLIP_GOOGLE_CLIENT_SECRET" fallback:google[@"clientSecret"]];
 }
 
 - (void)connectStorage:(id)sender {
@@ -3444,7 +3446,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 }
 
 - (void)openConfig:(id)sender {
-  NSString *path = self.configPath.length ? self.configPath : [NSHomeDirectory() stringByAppendingPathComponent:@".highlight-desk.json"];
+  NSString *path = self.configPath.length ? self.configPath : [NSHomeDirectory() stringByAppendingPathComponent:@".chatclip.json"];
   NSFileManager *manager = [NSFileManager defaultManager];
   BOOL created = NO;
   if (![manager fileExistsAtPath:path]) {
@@ -3472,7 +3474,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   if (self.vodTask.running && !self.task.running) {
     NSAlert *alert = [NSAlert new];
     alert.messageText = @"Still finding highlights.";
-    alert.informativeText = @"Cancel the VOD scan and quit Chatclip?";
+    alert.informativeText = @"Cancel the VOD scan and quit ChatClip?";
     [alert addButtonWithTitle:@"Cancel Scan and Quit"];
     [alert addButtonWithTitle:@"Keep Running"];
     if ([alert runModal] != NSAlertFirstButtonReturn) return NO;
@@ -3482,7 +3484,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   if (self.task.running) {
     NSAlert *alert = [NSAlert new];
     alert.messageText = @"Capture is still running.";
-    alert.informativeText = @"Stop recording and quit Chatclip?";
+    alert.informativeText = @"Stop recording and quit ChatClip?";
     [alert addButtonWithTitle:@"Stop and Quit"];
     [alert addButtonWithTitle:@"Keep Running"];
     if ([alert runModal] != NSAlertFirstButtonReturn) return NO;

@@ -5,7 +5,7 @@ set -euo pipefail
 # notarytool keychain profile (or Apple ID credentials).
 #
 #   DEVELOPER_ID_APPLICATION="Developer ID Application: Name (TEAMID)" \
-#   NOTARY_PROFILE="highlightdesk-notary" \
+#   NOTARY_PROFILE="chatclip-notary" \
 #   ./mac/release.sh
 #
 # The app is currently ad-hoc signed by mac/build.sh; this script re-signs the
@@ -24,8 +24,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-APP_DIR="$ROOT/mac/build/Chatclip.app"
-ENTITLEMENTS="$ROOT/mac/Chatclip.entitlements"
+APP_DIR="$ROOT/mac/build/ChatClip.app"
+ENTITLEMENTS="$ROOT/mac/ChatClip.entitlements"
 IDENTITY="${DEVELOPER_ID_APPLICATION:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$ROOT/mac/Info.plist" 2>/dev/null || echo 0.0.0)"
@@ -70,7 +70,7 @@ if [[ "${1:-}" == "--check" ]]; then
 fi
 
 if [[ "${1:-}" == "--verify" ]]; then
-  VERIFY_DMG="${2:-$ROOT/mac/build/Chatclip-$VERSION-$ARCH.dmg}"
+  VERIFY_DMG="${2:-$ROOT/mac/build/ChatClip-$VERSION-$ARCH.dmg}"
   failures=0
   pass() { echo "  PASS  $1"; }
   fail() { echo "  FAIL  $1"; failures=$((failures + 1)); }
@@ -83,8 +83,8 @@ if [[ "${1:-}" == "--verify" ]]; then
     spctl -a -t open --context context:primary-signature "$VERIFY_DMG" >/dev/null 2>&1 && pass "Gatekeeper accepts the DMG" || fail "Gatekeeper rejects the DMG"
     VERIFY_MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/chatclip-verify.XXXXXX")"
     if hdiutil attach "$VERIFY_DMG" -nobrowse -readonly -mountpoint "$VERIFY_MOUNT" >/dev/null 2>&1; then
-      codesign --verify --deep --strict "$VERIFY_MOUNT/Chatclip.app" >/dev/null 2>&1 && pass "app signature verifies" || fail "app signature does not verify"
-      spctl -a -t exec "$VERIFY_MOUNT/Chatclip.app" >/dev/null 2>&1 && pass "Gatekeeper accepts the app" || fail "Gatekeeper rejects the app"
+      codesign --verify --deep --strict "$VERIFY_MOUNT/ChatClip.app" >/dev/null 2>&1 && pass "app signature verifies" || fail "app signature does not verify"
+      spctl -a -t exec "$VERIFY_MOUNT/ChatClip.app" >/dev/null 2>&1 && pass "Gatekeeper accepts the app" || fail "Gatekeeper rejects the app"
       hdiutil detach "$VERIFY_MOUNT" >/dev/null 2>&1 || true
     else
       fail "could not mount the DMG"
@@ -156,9 +156,9 @@ STAGE="$(mktemp -d "${TMPDIR:-/tmp}/chatclip-dmg.XXXXXX")"
 trap 'rm -rf "$STAGE"' EXIT
 cp -R "$APP_DIR" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
-DMG="$ROOT/mac/build/Chatclip-$VERSION-$ARCH.dmg"
+DMG="$ROOT/mac/build/ChatClip-$VERSION-$ARCH.dmg"
 rm -f "$DMG"
-hdiutil create -volname "Chatclip" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+hdiutil create -volname "ChatClip" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
 codesign --force --timestamp --sign "$IDENTITY" "$DMG"
 
 echo "Notarizing $DMG…"
@@ -180,7 +180,7 @@ spctl -a -t open --context context:primary-signature -vv "$DMG"
 
 MOUNT="$(mktemp -d "${TMPDIR:-/tmp}/chatclip-mount.XXXXXX")"
 hdiutil attach "$DMG" -nobrowse -mountpoint "$MOUNT" >/dev/null
-spctl -a -t exec -vv "$MOUNT/Chatclip.app"
+spctl -a -t exec -vv "$MOUNT/ChatClip.app"
 hdiutil detach "$MOUNT" >/dev/null
 rmdir "$MOUNT" 2>/dev/null || true
 

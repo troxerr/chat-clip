@@ -6,7 +6,7 @@ This is the production release path. The current app can be built ad-hoc for dev
 
 1. **Apple Developer Program** — enroll, create a **Developer ID Application** certificate, install it in the login keychain. Store notary credentials:
    ```sh
-   xcrun notarytool store-credentials highlightdesk-notary \
+   xcrun notarytool store-credentials chatclip-notary \
      --apple-id you@example.com --team-id TEAMID --password APP_SPECIFIC_PASSWORD
    ```
 2. **Dropbox app** — create a vendor-owned app with App Folder access, scopes `files.content.write`, `files.metadata.write`, `account_info.read`, and redirect URI `http://127.0.0.1:53682/callback`. Apply for production access.
@@ -49,17 +49,17 @@ npm test
 # build with the vendor configuration from the Runtime section (licensing, OAuth, SU_FEED_URL, SU_PUBLIC_ED_KEY)
 npm run build:mac
 DEVELOPER_ID_APPLICATION="Developer ID Application: Your Name (TEAMID)" \
-NOTARY_PROFILE="highlightdesk-notary" \
+NOTARY_PROFILE="chatclip-notary" \
 ./mac/release.sh --check    # before signing; must pass
 DEVELOPER_ID_APPLICATION="Developer ID Application: Your Name (TEAMID)" \
-NOTARY_PROFILE="highlightdesk-notary" \
+NOTARY_PROFILE="chatclip-notary" \
 ./mac/release.sh            # sign, notarize, staple
 ./mac/release.sh --verify   # after notarizing; must pass
 ```
 
 `--check` runs before anything is signed. It verifies the signing identity, notary credentials, bundled runtime, Sparkle, a public HTTPS `SUFeedURL`, `SUPublicEDKey`, license enforcement, product ID, checkout URL, and the Dropbox and Google OAuth client ID and secret in the built `Info.plist`. Any missing value fails it, so run it in every release pipeline, including CI. `--verify [DMG]` runs after notarization: it checks the stapled ticket and that Gatekeeper accepts the DMG and the app inside it. Unsigned CI artifacts are built by [docs/CI.md](CI.md).
 
-`mac/release.sh` signs nested Node/FFmpeg/Streamlink binaries, then Sparkle's helper bundles (`Updater.app`, XPC services) and the framework inside-out, signs the app with hardened runtime and `mac/Chatclip.entitlements`, builds a DMG, submits it to `notarytool`, staples it, and verifies Gatekeeper.
+`mac/release.sh` signs nested Node/FFmpeg/Streamlink binaries, then Sparkle's helper bundles (`Updater.app`, XPC services) and the framework inside-out, signs the app with hardened runtime and `mac/ChatClip.entitlements`, builds a DMG, submits it to `notarytool`, staples it, and verifies Gatekeeper.
 
 Before release, confirm:
 
@@ -109,4 +109,4 @@ R2 setup: create a bucket, attach a custom domain, and create an R2 API token sc
 
 ## Licensing
 
-Chatclip activates against Lemon Squeezy with the Mac's hardware UUID in `instance_name`. The key, instance ID and last-validated time are stored in the login Keychain (service `com.highlightdesk.app.license`). A license stays valid offline for 14 days after the last successful validation; a refunded, revoked or deleted key clears the Keychain on the next check and returns the app to the free plan.
+ChatClip activates against Lemon Squeezy with the Mac's hardware UUID in `instance_name`. The key, instance ID and last-validated time are stored in the login Keychain (service `com.chatclip.app.license`). A license stays valid offline for 14 days after the last successful validation; a refunded, revoked or deleted key clears the Keychain on the next check and returns the app to the free plan.

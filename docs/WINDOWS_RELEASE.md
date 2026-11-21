@@ -18,7 +18,7 @@ or push a `win-v*` tag), which builds with `win/electron-builder.release.yml`.
 ## Auto-update
 `win/main/updater.js` uses `electron-updater`. It checks at startup and installs on quit,
 only for a packaged app whose `app-update.yml` exists (so dev, smoke and the CI installer never update).
-Set `HIGHLIGHT_DESK_NO_UPDATE=1` to disable. **You must host** the installer and `latest.yml`
+Set `CHATCLIP_NO_UPDATE=1` to disable. **You must host** the installer and `latest.yml`
 at `WIN_UPDATE_URL` (copy them from the draft release or the workflow artifact); the workflow
 does not upload to your host. Unsigned builds update only if you do not set a publisher name.
 

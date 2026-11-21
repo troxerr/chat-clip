@@ -16,7 +16,7 @@ jobs:
     name: Build Windows release installer
     runs-on: windows-latest
     env:
-      HIGHLIGHT_DESK_KEYCHAIN: "0"
+      CHATCLIP_KEYCHAIN: "0"
       RUNTIME_MIRROR_URL: ${{ vars.RUNTIME_MIRROR_URL }}
       WIN_UPDATE_URL: ${{ vars.WIN_UPDATE_URL }}
       # electron-builder signs automatically when these are set.

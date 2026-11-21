@@ -13,9 +13,9 @@ test("priority defaults to below normal on Windows only", () => {
 test("config and environment override the platform default, env first", () => {
   assert.equal(resolvePriority("normal", {}, "win32"), "normal");
   assert.equal(resolvePriority("belowNormal", {}, "darwin"), "belowNormal");
-  assert.equal(resolvePriority("normal", { HIGHLIGHT_DESK_PRIORITY: "belowNormal" }, "darwin"), "belowNormal");
-  assert.equal(resolvePriority("belowNormal", { HIGHLIGHT_DESK_PRIORITY: "normal" }, "win32"), "normal");
-  assert.equal(resolvePriority("garbage", { HIGHLIGHT_DESK_PRIORITY: "garbage" }, "win32"), "belowNormal");
+  assert.equal(resolvePriority("normal", { CHATCLIP_PRIORITY: "belowNormal" }, "darwin"), "belowNormal");
+  assert.equal(resolvePriority("belowNormal", { CHATCLIP_PRIORITY: "normal" }, "win32"), "normal");
+  assert.equal(resolvePriority("garbage", { CHATCLIP_PRIORITY: "garbage" }, "win32"), "belowNormal");
 });
 
 test("applyPriority only lowers priority when asked and never throws", () => {

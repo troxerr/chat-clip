@@ -1,4 +1,4 @@
-# Chatclip
+# ChatClip
 
 Kick live automatic highlights are being integrated. See [Kick setup and live
 validation status](docs/KICK.md) before using the separate Kick-enabled build. Kick capture needs Google Chrome or Chromium installed.
@@ -7,7 +7,7 @@ validation status](docs/KICK.md) before using the separate Kick-enabled build. K
 
 Open **Monitor…** on Capture (or Command–Shift–M) for live recorder health, chat decisions and per-channel learning. Rate clips with thumbs up/down; right-click for Duplicate / Started Late / Ended Early. **Mark Missed Moment** records a review timestamp. A separate worker logs decisions and tests bounded settings; validated changes apply only on a future capture after enough explicit ratings and later-session validation. Pause or roll back tuning from the monitor. See [Monitoring](docs/MONITORING.md) for evaluation limits, retention and CLI commands.
 
-Chatclip watches a Twitch channel's chat and saves the moments chat reacts to. A desktop clip is exported, reframed to 1080×1920 with the full video centered over a blurred background, and then either kept on the Mac or uploaded to Dropbox or Google Drive.
+ChatClip watches a Twitch channel's chat and saves the moments chat reacts to. A desktop clip is exported, reframed to 1080×1920 with the full video centered over a blurred background, and then either kept on the Mac or uploaded to Dropbox or Google Drive.
 
 - **Local only** — no cloud account; clips stay on the Mac.
 - **Dropbox** — upload, verify the remote byte size, then delete the local videos.
@@ -32,9 +32,21 @@ Chatclip watches a Twitch channel's chat and saves the moments chat reacts to. A
 |---|---|---|
 | Local only | None | Keeps the vertical MP4 + JSON sidecar in the output folder. The raw landscape intermediate is removed unless `storage.keepRaw` is true. |
 | Dropbox | Dropbox | Uploads the vertical MP4, confirms the byte size, then removes the local raw/vertical MP4s if `deleteAfterUpload` is true. |
-| Google Drive | Google | Same flow through a `Highlight Desk/<channel>` folder in Drive. |
+| Google Drive | Google | Same flow through a `ChatClip/<channel>` folder in Drive. |
 
 `keepLocalCopy` keeps the vertical clip after a successful cloud upload. `keepRaw` keeps the landscape intermediate. The JSON sidecar is always kept as the local record of the clip and its remote location.
+
+### Upgrading from Highlight Desk
+
+ChatClip was previously named Highlight Desk. On first launch it migrates an existing install, never deleting the old data:
+
+- `~/.highlight-desk.json` is copied to `~/.chatclip.json`.
+- The `Highlight Desk` state/app-data folder is moved to `ChatClip`. On macOS and Windows this is `Application Support` / `%APPDATA%`.
+- macOS Keychain items (`com.highlightdesk.app.credentials`, `.license`) are copied to `com.chatclip.app.*`. Windows credentials are re-encrypted and verified.
+- Preferences are copied from the old bundle ID.
+- An existing `~/Movies/Highlight Desk` output folder keeps being used until a `ChatClip` folder exists.
+- Dropbox and Google Drive folders named `Highlight Desk` are reused when no `ChatClip` folder exists.
+- `HIGHLIGHT_DESK_*` environment variables are still honored when the `CHATCLIP_*` name is unset.
 
 ## Web dashboard
 
@@ -47,7 +59,7 @@ Or open the deployed dashboard URL. The Twitch embed needs a real `parent` hostn
 
 1. Enter a Twitch username and load the channel.
 2. Play and unmute the Twitch player.
-3. Select **Start capture**, choose this Chatclip tab, and enable **Share tab audio**.
+3. Select **Start capture**, choose this ChatClip tab, and enable **Share tab audio**.
 4. Leave the page open. A clip appears in **Session highlights** when chat spikes or someone triggers one.
 
 Browser clips are saved as captured in IndexedDB. They survive a refresh, but clearing site data removes them. Use **Download** or **Download all** for anything you want to keep. The browser dashboard is a separate local tool; 9:16 reframing and cloud storage are handled by the desktop recorder.
@@ -73,7 +85,7 @@ The recorder:
 - Queues failed cloud uploads and retries them across restarts.
 - Exports asynchronously, so chat/progress handling continues while FFmpeg encodes.
 
-Output defaults to `~/Movies/Highlight Desk/<channel>/`:
+Output defaults to `~/Movies/ChatClip/<channel>/`:
 
 ```text
 your_channel-20261114-214106-auto.mp4          # landscape intermediate
@@ -94,9 +106,9 @@ The detector samples unique chatters per 5-second window and uses a median/MAD b
 
 ### Configuration
 
-Non-secret settings live in `~/.highlight-desk.json` (or `HIGHLIGHT_DESK_CONFIG`). The macOS app stores OAuth refresh tokens (and a legacy Dropbox app secret) in Keychain and clears those secrets from the config after migration. The CLI reads Keychain tokens through `security` by default; set `HIGHLIGHT_DESK_KEYCHAIN=0` to force config/env-only credentials.
+Non-secret settings live in `~/.chatclip.json` (or `CHATCLIP_CONFIG`). The macOS app stores OAuth refresh tokens (and a legacy Dropbox app secret) in Keychain and clears those secrets from the config after migration. The CLI reads Keychain tokens through `security` by default; set `CHATCLIP_KEYCHAIN=0` to force config/env-only credentials.
 
-On Windows, secrets are encrypted with the signed-in user's Windows DPAPI key (through the built-in `powershell.exe`) and saved in `%APPDATA%\Highlight Desk\credentials.json`; other Windows users and other PCs cannot decrypt them. Manage them with `node tools/credentials.js set|has|delete|list <name>`. The names the app reads are `dropbox.refresh`, `dropbox.appSecret`, `google.refresh`, `google.clientSecret`, `kick.clientSecret`, `kick.relayToken` and `license.key` (names are case-sensitive). On Windows, `npm run dropbox:auth` and `npm run google:auth` save their tokens in the store and leave those config fields blank; if the store is unavailable they fall back to the 0600 config file with a warning, so a token is never lost. `node tools/credentials.js migrate [--config <file>]` moves secrets already in the config file (including `license.key`) into the store and blanks them there. `set` reads the secret from a hidden prompt or from stdin, and there is no command that prints a secret. Environment variables and the config file still take precedence over the store.
+On Windows, secrets are encrypted with the signed-in user's Windows DPAPI key (through the built-in `powershell.exe`) and saved in `%APPDATA%\ChatClip\credentials.json`; other Windows users and other PCs cannot decrypt them. Manage them with `node tools/credentials.js set|has|delete|list <name>`. The names the app reads are `dropbox.refresh`, `dropbox.appSecret`, `google.refresh`, `google.clientSecret`, `kick.clientSecret`, `kick.relayToken` and `license.key` (names are case-sensitive). On Windows, `npm run dropbox:auth` and `npm run google:auth` save their tokens in the store and leave those config fields blank; if the store is unavailable they fall back to the 0600 config file with a warning, so a token is never lost. `node tools/credentials.js migrate [--config <file>]` moves secrets already in the config file (including `license.key`) into the store and blanks them there. `set` reads the secret from a hidden prompt or from stdin, and there is no command that prints a secret. Environment variables and the config file still take precedence over the store.
 
 ```json
 {
@@ -117,7 +129,7 @@ On Windows, secrets are encrypted with the signed-in user's Windows DPAPI key (t
   },
   "storage": {
     "mode": "local",
-    "folder": "/Highlight Desk",
+    "folder": "/ChatClip",
     "deleteAfterUpload": true,
     "keepLocalCopy": false,
     "keepRaw": false
@@ -127,40 +139,40 @@ On Windows, secrets are encrypted with the signed-in user's Windows DPAPI key (t
     "appKey": "",
     "appSecret": "",
     "refreshToken": "",
-    "folder": "/Highlight Desk"
+    "folder": "/ChatClip"
   },
   "googleDrive": {
     "enabled": true,
     "clientId": "",
     "clientSecret": "",
     "refreshToken": "",
-    "folder": "/Highlight Desk"
+    "folder": "/ChatClip"
   }
 }
 ```
 
-Set `reframe.layout` to `"split"` (or set `HIGHLIGHT_DESK_REFRAME_LAYOUT=split`) to stack a cropped facecam pane on top of the gameplay instead of the default `"blur"` background:
+Set `reframe.layout` to `"split"` (or set `CHATCLIP_REFRAME_LAYOUT=split`) to stack a cropped facecam pane on top of the gameplay instead of the default `"blur"` background:
 
 - `camHeightRatio` — fraction of the vertical frame height reserved for the facecam (`0.2`–`0.5`, default `0.35`).
 - `facecamCorner` — corner preset when `facecam` is `null`: `"top-left"`, `"top-right"`, `"bottom-left"` (default), or `"bottom-right"`.
 - `facecam` / `gameplay` — optional normalized `[0, 1]` crop rectangles (`{ "x": 0.015, "y": 0.70, "w": 0.25, "h": 0.28 }`) to override the corner preset or focus on a specific gameplay region.
 
-The default encoder is hardware H.264 (`h264_videotoolbox`) so a bundled commercial app does not require GPL `libx264`. Set `HIGHLIGHT_DESK_ENCODER=<encoder>` (for example `libx264`, only where your FFmpeg has it, or `libopenh264`) to force one; any other value, or `auto`, is ignored. On Windows the app probes `h264_nvenc`, `h264_qsv`, `h264_amf`, `h264_mf` and then the software `libopenh264`, and uses the first that really encodes.
+The default encoder is hardware H.264 (`h264_videotoolbox`) so a bundled commercial app does not require GPL `libx264`. Set `CHATCLIP_ENCODER=<encoder>` (for example `libx264`, only where your FFmpeg has it, or `libopenh264`) to force one; any other value, or `auto`, is ignored. On Windows the app probes `h264_nvenc`, `h264_qsv`, `h264_amf`, `h264_mf` and then the software `libopenh264`, and uses the first that really encodes.
 
-`reframe.priority` is `normal` or `belowNormal` and sets the CPU priority of the clip export and 9:16 encodes (`HIGHLIGHT_DESK_PRIORITY` overrides it). It defaults to `belowNormal` on Windows, where the app shares a PC with a game and streaming software, and to `normal` elsewhere. The live recorder only stream-copies and always runs at normal priority. This lowers CPU priority only; a GPU encoder (NVENC, QSV, AMF) still shares the GPU with the game.
+`reframe.priority` is `normal` or `belowNormal` and sets the CPU priority of the clip export and 9:16 encodes (`CHATCLIP_PRIORITY` overrides it). It defaults to `belowNormal` on Windows, where the app shares a PC with a game and streaming software, and to `normal` elsewhere. The live recorder only stream-copies and always runs at normal priority. This lowers CPU priority only; a GPU encoder (NVENC, QSV, AMF) still shares the GPU with the game.
 
 `storage.mode` is `local`, `dropbox`, or `googleDrive`. If it is omitted, a configured Dropbox connection is used first, then Google Drive, otherwise local.
 
-Queue and history live under `~/Library/Application Support/Highlight Desk/` by default. Set `HIGHLIGHT_DESK_STATE=/some/folder` to override. Failed uploads are retried with exponential backoff; the retry delay and listener interval can be shortened for development with `HIGHLIGHT_DESK_RETRY_MS` and `HIGHLIGHT_DESK_QUEUE_MS`.
+Queue and history live under `~/Library/Application Support/ChatClip/` by default. Set `CHATCLIP_STATE=/some/folder` to override. Failed uploads are retried with exponential backoff; the retry delay and listener interval can be shortened for development with `CHATCLIP_RETRY_MS` and `CHATCLIP_QUEUE_MS`.
 
-`HIGHLIGHT_DESK_INPUT=/path/to/video.mp4` lets the recorder use a local file instead of Streamlink for development and pipeline tests. `HIGHLIGHT_DESK_OUTPUT` changes the output root.
+`CHATCLIP_INPUT=/path/to/video.mp4` lets the recorder use a local file instead of Streamlink for development and pipeline tests. `CHATCLIP_OUTPUT` changes the output root.
 
-The JSONL event protocol is enabled with `HIGHLIGHT_DESK_EVENTS=1` and is used by the macOS app.
+The JSONL event protocol is enabled with `CHATCLIP_EVENTS=1` and is used by the macOS app.
 
 ### Local-only mode
 
 ```sh
-HIGHLIGHT_DESK_STORAGE=local npm start -- your_channel
+CHATCLIP_STORAGE=local npm start -- your_channel
 ```
 
 No account or network storage is involved. Keep or remove the landscape intermediate with `storage.keepRaw`.
@@ -199,13 +211,13 @@ Uploads go to `<folder>/<channel>/<filename>`. A failed upload leaves local clip
 
    The helper saves the client ID/secret, refresh token, and switches `storage.mode` to `googleDrive`. Publish the OAuth consent screen for unattended use; refresh tokens issued in Google's "Testing" mode expire after 7 days.
 
-Google Drive uses the `drive.file` scope, so the app can only see files it creates. Clips go to `Highlight Desk/<channel>` in My Drive.
+Google Drive uses the `drive.file` scope, so the app can only see files it creates. Clips go to `ChatClip/<channel>` in My Drive.
 
 ## macOS app
 
 ```sh
 npm run build:mac
-open "mac/build/Chatclip.app"
+open "mac/build/ChatClip.app"
 ```
 
 `mac/build.sh` compiles the Cocoa wrapper, bundles Node, copies the engine modules and `Contents/Resources/runtime`, generates the app icon, and ad-hoc signs the bundle. Set `NODE_BIN=/path/to/node` to use a specific Node.
@@ -240,7 +252,7 @@ Unsigned QA DMGs are produced by:
 
 ```sh
 FORMAT=dmg ARCH=arm64 ./tools/package-unsigned.sh
-FORMAT=dmg ARCH=x86_64 APP="mac/build/Chatclip x86_64.app" ./tools/package-unsigned.sh
+FORMAT=dmg ARCH=x86_64 APP="mac/build/ChatClip x86_64.app" ./tools/package-unsigned.sh
 ```
 
 Both are ad-hoc signed and will be rejected by Gatekeeper on another Mac until notarized.
@@ -257,7 +269,7 @@ The CI matrix builds both architectures. For QA packages:
 
 ```sh
 ARCH=arm64 FORMAT=zip ./tools/package-unsigned.sh
-ARCH=x86_64 APP="mac/build/Chatclip x86_64.app" FORMAT=zip ./tools/package-unsigned.sh
+ARCH=x86_64 APP="mac/build/ChatClip x86_64.app" FORMAT=zip ./tools/package-unsigned.sh
 ```
 
 `FORMAT=dmg` uses `hdiutil` and requires an unsandboxed terminal/CI runner. The apps are ad-hoc signed for local use and are **not notarized**; a commercial release requires Developer ID signing and notarization.
@@ -266,7 +278,7 @@ ARCH=x86_64 APP="mac/build/Chatclip x86_64.app" FORMAT=zip ./tools/package-unsig
 
 - No Twitch account or OAuth is used. Chat is read anonymously; 7TV emote data is fetched from `7tv.io` and images from `cdn.7tv.app`.
 - Local clips stay on the Mac. Dropbox/Google Drive clips are uploaded to the user's own account; the app has no vendor server and does not receive clip data.
-- Cloud credentials are stored in `~/.highlight-desk.json` with `0600` permissions in the current build. Treat that file as a credential. The planned commercial app moves tokens to Keychain and uses vendor OAuth apps.
+- Cloud credentials are stored in `~/.chatclip.json` with `0600` permissions in the current build. Treat that file as a credential. The planned commercial app moves tokens to Keychain and uses vendor OAuth apps.
 - The desktop recorder depends on Streamlink and FFmpeg and on Twitch/Streamlink continuing to work. Ads embedded in the stream can appear in clips.
 - Run one capture path per channel at a time.
 - Respect the streamer's and Twitch's terms when recording or redistributing content.
@@ -312,7 +324,7 @@ docs/THIRD_PARTY_NOTICES.md Licenses and source-offer notes
 mac/main.m               Cocoa wrapper
 mac/build.sh             macOS app build
 mac/release.sh           Developer ID signing, notarization, DMG
-mac/Chatclip.entitlements Hardened-runtime entitlements
+mac/ChatClip.entitlements Hardened-runtime entitlements
 docs/RELEASE.md          Production release path
 docs/CI.md               macOS CI matrix for both architectures
 test/                    Node tests
@@ -322,7 +334,7 @@ test/                    Node tests
 
 - `test/exporter.test.js` and `test/reframe.test.js` generate small videos with FFmpeg and skip when FFmpeg/ffprobe are unavailable.
 - `test/dropbox.test.js` and `test/google-drive.test.js` use injected fake fetch implementations and never contact the real providers.
-- Live Twitch capture and Streamlink behavior are not automated; a manual pass needs a real channel. `HIGHLIGHT_DESK_INPUT` provides a local-file pipeline test. A self-contained check runs the bundled engine with `PATH=/usr/bin:/bin`, proving it does not fall back to Homebrew FFmpeg/Streamlink.
+- Live Twitch capture and Streamlink behavior are not automated; a manual pass needs a real channel. `CHATCLIP_INPUT` provides a local-file pipeline test. A self-contained check runs the bundled engine with `PATH=/usr/bin:/bin`, proving it does not fall back to Homebrew FFmpeg/Streamlink.
 
 ## Troubleshooting
 
@@ -335,11 +347,11 @@ test/                    Node tests
 - **Google `redirect_uri_mismatch`:** add `http://127.0.0.1:53683/oauth2callback` to the Desktop OAuth client.
 - **Google 403/quota:** check Drive API enablement, scopes, and storage quota; local clips and the queue are kept.
 - **Google refresh token expires every 7 days:** publish the OAuth consent screen; testing-mode tokens are short-lived.
-- **macOS asks for the login keychain password:** allow it once. Ad-hoc development rebuilds change the code signature, so Keychain may ask again; a signed release with a stable Developer ID has a stable identity. Set `HIGHLIGHT_DESK_KEYCHAIN=0` for a dev run that must not touch Keychain.
+- **macOS asks for the login keychain password:** allow it once. Ad-hoc development rebuilds change the code signature, so Keychain may ask again; a signed release with a stable Developer ID has a stable identity. Set `CHATCLIP_KEYCHAIN=0` for a dev run that must not touch Keychain.
 - **Trial expired / license not active:** open **License…**, paste the key from the purchase email, and activate. Check that `LEMON_PRODUCT_ID` matches the product and that the Mac can reach the Lemon Squeezy API.
-- **No notifications:** enable **Notify When Clips Finish** in the app menu and allow Chatclip in System Settings → Notifications. Ad-hoc development builds may not register with Notification Center; a signed/notarized release does. Set `HIGHLIGHT_DESK_NOTIFICATIONS=0` for a dev run without the permission prompt.
+- **No notifications:** enable **Notify When Clips Finish** in the app menu and allow ChatClip in System Settings → Notifications. Ad-hoc development builds may not register with Notification Center; a signed/notarized release does. Set `CHATCLIP_NOTIFICATIONS=0` for a dev run without the permission prompt.
 - **Need support:** use **Export Diagnostics…** from the app menu, review the zip, and send it with what happened. OAuth tokens, app secrets, and license keys are redacted from the config copy.
-- **A clip is queued, not uploaded:** inspect the active storage mode and `~/Library/Application Support/Highlight Desk/queue.json`; retries run every minute with exponential backoff.
+- **A clip is queued, not uploaded:** inspect the active storage mode and `~/Library/Application Support/ChatClip/queue.json`; retries run every minute with exponential backoff.
 - **A local video disappeared:** expected when cloud mode has `deleteAfterUpload: true` and the upload was confirmed. The sidecar and history retain the remote path.
 - **Upload too large:** the current Dropbox adapter caps single-request uploads at 150 MB; Google uses resumable upload.
 
@@ -360,8 +372,8 @@ Generate a signed appcast after notarizing the DMG:
 
 ```sh
 ARCH=arm64 VERSION=3.1.0 BUILD=5 \
-DOWNLOAD_URL="https://your-domain.example/Chatclip-3.1.0-arm64.dmg" \
-DMG="mac/build/Chatclip-3.1.0-arm64.dmg" \
+DOWNLOAD_URL="https://your-domain.example/ChatClip-3.1.0-arm64.dmg" \
+DMG="mac/build/ChatClip-3.1.0-arm64.dmg" \
 OUTPUT=site/appcast.xml \
 ./tools/make-appcast.sh
 ```

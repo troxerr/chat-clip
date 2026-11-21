@@ -21,7 +21,7 @@ function build({ licenseState = { valid: true, message: "ok", checkoutUrl: "http
     license: { state: () => licenseState, activate: async (k) => ({ activated: k }), validate: async () => licenseState, deactivate: async () => ({ valid: false }) },
     settings: { get: () => ({ permissionAcknowledged: ack, launchAtLogin: false }), set: (c) => ({ ...c }), acknowledgePermission: () => { ack = true; calls.ack += 1; } },
     clips: { list: () => [], open: async () => true, reveal: () => true, rate: () => "" },
-    openExternal: (u) => calls.external.push(u), openFolder: (p) => calls.folder.push(p), version: "0.1.0", outputFolder: "C:\\Videos\\Highlight Desk"
+    openExternal: (u) => calls.external.push(u), openFolder: (p) => calls.folder.push(p), version: "0.1.0", outputFolder: "C:\\Videos\\ChatClip"
   });
   return { app, engine, calls };
 }
@@ -122,5 +122,5 @@ test("the license cannot be removed while a capture runs", async () => {
 test("the clip folder opens from the app's own setting, not a path the window sends", () => {
   const { app, calls } = build();
   app.openClipFolder();
-  assert.deepEqual(calls.folder, ["C:\\Videos\\Highlight Desk"]);
+  assert.deepEqual(calls.folder, ["C:\\Videos\\ChatClip"]);
 });
