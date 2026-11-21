@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { FEATURED_STREAMER } from '../data/clips'
 
 const links = [
   { to: '/', label: 'Home', end: true },
@@ -9,20 +10,25 @@ const links = [
 export default function Layout() {
   return (
     <div className="layout">
-      <header className="header">
-        <span className="brand">ChatClip</span>
-        <nav className="nav">
+      <aside className="sidebar">
+        <span className="brand">Chat<b>Clip</b></span>
+        <nav className="nav" aria-label="Main">
           {links.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.end}>
               {l.label}
             </NavLink>
           ))}
         </nav>
-      </header>
+        <div className="following">
+          <span className="meta">Featured streamer</span>
+          <span className="streamer">{FEATURED_STREAMER}</span>
+        </div>
+      </aside>
       <main className="main">
-        <Outlet />
+        <div className="content">
+          <Outlet />
+        </div>
       </main>
-      <footer className="footer">© ChatClip</footer>
     </div>
   )
 }

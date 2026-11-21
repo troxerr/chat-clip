@@ -2,7 +2,10 @@ export default function About() {
   return (
     <>
       <h1>About</h1>
-      <p>Vite + React + TypeScript, React Router and Zustand starter.</p>
+      <p>
+        ChatClip is a live highlight detector for Twitch. This preview runs on mock data; scores combine chat
+        velocity, audio peaks and in-game events.
+      </p>
     </>
   )
 }
