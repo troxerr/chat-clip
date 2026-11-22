@@ -13,6 +13,30 @@ export function parseStatus(json: unknown, names: string[]): StatusMap | null {
   return out
 }
 
+export interface StreamDetails {
+  title?: string
+  game?: string
+  viewers?: number
+}
+
+/** Extracts title/game/viewers for live streamers, keyed by the configured names. */
+export function parseStreamDetails(json: unknown, names: string[]): Record<string, StreamDetails> {
+  const streamers = (json as { streamers?: unknown } | null)?.streamers
+  if (!streamers || typeof streamers !== 'object') return {}
+  const byLogin = new Map(Object.entries(streamers as Record<string, Record<string, unknown>>).map(([k, v]) => [k.toLowerCase(), v]))
+  const out: Record<string, StreamDetails> = {}
+  for (const name of names) {
+    const s = byLogin.get(name.toLowerCase())
+    if (s?.status !== 'live') continue
+    out[name] = {
+      title: typeof s.title === 'string' ? s.title : undefined,
+      game: typeof s.game === 'string' ? s.game : undefined,
+      viewers: typeof s.viewers === 'number' ? s.viewers : undefined,
+    }
+  }
+  return out
+}
+
 interface RawClip {
   id: string
   title: string
