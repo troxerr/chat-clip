@@ -5,6 +5,7 @@ import { parseClips, parseStatus } from '../lib/twitchData'
 
 export type { Clip }
 export type DataSource = 'live' | 'demo'
+export type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 type Id = Clip['id']
 
@@ -17,6 +18,7 @@ interface ClipState {
   timelineIndex: number
   dataSource: DataSource
   generatedAt: string | null
+  loadState: LoadState
   setStreamStatus: (status: StatusMap) => void
   advanceMockStatus: () => void
   refreshData: () => Promise<void>
@@ -40,6 +42,7 @@ export const useClipStore = create<ClipState>((set, get) => ({
   timelineIndex: 0,
   dataSource: 'demo',
   generatedAt: null,
+  loadState: 'idle',
   setStreamStatus: (status) => set({ streamStatus: status }),
   advanceMockStatus: () =>
     set((s) => {
@@ -49,6 +52,8 @@ export const useClipStore = create<ClipState>((set, get) => ({
     }),
   /** Loads generated Twitch JSON; keeps demo data (or the last live data) if the fetch or parse fails. */
   refreshData: async () => {
+    // Background polls stay quiet; only the first load (or a retry after an error) shows skeletons.
+    if (get().loadState !== 'ready') set({ loadState: 'loading' })
     try {
       const [statusJson, clipsJson] = await Promise.all([fetchJson('status.json'), fetchJson('clips.json')])
       const status = parseStatus(statusJson, NAMES)
@@ -60,11 +65,14 @@ export const useClipStore = create<ClipState>((set, get) => ({
         streamStatus: status,
         clips: fresh.filter((c) => !dismissed.includes(c.id)).map((c) => ({ ...c, favorite: favorites.has(c.id) })),
         dataSource: 'live',
+        loadState: 'ready',
         generatedAt: (statusJson as { generatedAt?: string }).generatedAt ?? null,
       })
     } catch {
       // Never loaded live data: stay on (or return to) bundled demo data.
-      if (get().dataSource !== 'live') set({ dataSource: 'demo' })
+      // After a successful load, keep showing last live data and don't flag an error.
+      if (get().dataSource !== 'live') set({ dataSource: 'demo', loadState: 'error' })
+      else set({ loadState: 'ready' })
     }
   },
 }))

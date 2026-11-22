@@ -1,11 +1,11 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { useClipStore } from './store/useClipStore'
 
-const initial = useClipStore.getState()
+const initial = { ...useClipStore.getState(), refreshData: async () => {} }
 
 function renderAt(path: string) {
   return render(
@@ -90,5 +90,49 @@ describe('backup streamer', () => {
     expect(screen.getByText(/Switched to backup/)).toBeInTheDocument()
     act(() => useClipStore.getState().setStreamStatus({ Jynxzi: 'live' }))
     expect(screen.queryByText(/Switched to backup/)).not.toBeInTheDocument()
+  })
+})
+
+describe('data states', () => {
+  beforeEach(() => useClipStore.setState(initial, true))
+
+  it('shows skeletons while loading', () => {
+    useClipStore.setState({ loadState: 'loading' })
+    renderAt('/clips')
+    expect(screen.getByTestId('skeleton-grid')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /1v4 ace/ })).not.toBeInTheDocument()
+  })
+
+  it('shows an error with a working retry', async () => {
+    const user = userEvent.setup()
+    const refreshData = vi.fn(async () => {})
+    useClipStore.setState({ loadState: 'error', refreshData })
+    renderAt('/clips')
+    expect(screen.getByRole('alert')).toHaveTextContent(/Couldn’t load live Twitch data/)
+    const before = refreshData.mock.calls.length
+    await user.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(refreshData).toHaveBeenCalledTimes(before + 1)
+  })
+
+  it('shows an empty state with clear filters', async () => {
+    const user = userEvent.setup()
+    renderAt('/clips')
+    await user.type(screen.getByLabelText('Search clips'), 'zzz')
+    expect(screen.getByText('No highlights match your filters.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(screen.getByRole('status')).toHaveTextContent('10 highlights')
+  })
+
+  it('shows an updated-ago indicator from generatedAt', () => {
+    useClipStore.setState({ generatedAt: new Date(Date.now() - 5 * 60_000).toISOString() })
+    renderAt('/')
+    expect(screen.getByText('5 min ago')).toBeInTheDocument()
+  })
+
+  it('exposes landmarks', () => {
+    renderAt('/')
+    expect(screen.getByRole('banner')).toBeInTheDocument()
+    expect(screen.getByRole('main')).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
   })
 })
