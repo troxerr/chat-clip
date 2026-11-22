@@ -1,43 +1,36 @@
-// Single source of truth for monetization. Everything is off by default:
-// no ad/sponsor markup, no third-party scripts, no tracking.
-// See docs/MONETIZATION.md before enabling anything.
+// Single source of truth for monetization. Everything is OFF unless the matching
+// VITE_* env var is set at build time: no ads, no third-party scripts, no tracking.
+// Setup steps per provider: docs/MONETIZATION.md
 
 export type SlotProvider = 'sponsor' | 'adsense'
 
+export interface AffiliateItem {
+  id: string
+  name: string
+  blurb: string
+  url: string
+  cta?: string
+}
+
 export interface MonetizationConfig {
-  /** Master switch. When false, SponsorSlot renders nothing and loads nothing. */
+  /** Master switch for ad/sponsor slots. */
   adsEnabled: boolean
   slot: {
     provider: SlotProvider
     /** 'sponsor': static, first-party link (no scripts, no tracking). */
     sponsor: { name: string; url: string; text: string }
-    /** 'adsense': loads Google's script, only after consent. Needs both ids. */
-    adsense: { client: string; slot: string }
+    /** 'adsense': loads Google's script only after ad consent. client = ca-pub-..., slots are ad unit ids. */
+    adsense: { client: string; gridSlot: string; sidebarSlot: string }
   }
-  /** Placeholder donation/support URL; the link is hidden while empty. */
+  affiliatesEnabled: boolean
+  affiliates: AffiliateItem[]
+  /** Ko-fi / Buy Me a Coffee / GitHub Sponsors URL; links are hidden while empty. */
   supportUrl: string
+  waitlist: { endpoint: string; email: string }
+  analytics: { provider: 'none' | 'plausible'; domain: string; src: string }
 }
 
-export const monetization: MonetizationConfig = {
-  adsEnabled: false,
-  slot: {
-    provider: 'sponsor',
-    sponsor: { name: '', url: '', text: '' },
-    adsense: { client: '', slot: '' },
-  },
-  supportUrl: '',
-}
-
-export const AD_CONSENT_KEY = 'clipspike:ad-consent'
-
-/** Third-party ad scripts must only run after explicit opt-in (value "granted"). */
-export function hasAdConsent(): boolean {
-  try {
-    return localStorage.getItem(AD_CONSENT_KEY) === 'granted'
-  } catch {
-    return false
-  }
-}
+type Env = Record<string, string | undefined>
 
 export function isHttpUrl(u: string): boolean {
   try {
@@ -45,4 +38,49 @@ export function isHttpUrl(u: string): boolean {
   } catch {
     return false
   }
+}
+
+const httpOrEmpty = (v: string | undefined) => (v && isHttpUrl(v.trim()) ? v.trim() : '')
+const flag = (v: string | undefined) => v === 'true'
+
+export function buildConfig(env: Env, affiliates: AffiliateItem[]): MonetizationConfig {
+  const client = /^ca-pub-\d+$/.test(env.VITE_ADSENSE_CLIENT ?? '') ? env.VITE_ADSENSE_CLIENT! : ''
+  const sponsorUrl = httpOrEmpty(env.VITE_SPONSOR_URL)
+  const wantsAdsense = env.VITE_AD_PROVIDER === 'adsense'
+  const plausibleDomain = (env.VITE_PLAUSIBLE_DOMAIN ?? '').trim()
+  const email = (env.VITE_WAITLIST_EMAIL ?? '').trim()
+  return {
+    adsEnabled: flag(env.VITE_ADS_ENABLED),
+    slot: {
+      provider: wantsAdsense ? 'adsense' : 'sponsor',
+      sponsor: { name: env.VITE_SPONSOR_NAME ?? '', url: sponsorUrl, text: env.VITE_SPONSOR_TEXT ?? '' },
+      adsense: {
+        client,
+        gridSlot: /^\d+$/.test(env.VITE_ADSENSE_SLOT_GRID ?? '') ? env.VITE_ADSENSE_SLOT_GRID! : '',
+        sidebarSlot: /^\d+$/.test(env.VITE_ADSENSE_SLOT_SIDEBAR ?? '') ? env.VITE_ADSENSE_SLOT_SIDEBAR! : '',
+      },
+    },
+    affiliatesEnabled: flag(env.VITE_AFFILIATES_ENABLED),
+    affiliates: affiliates.filter((a) => a.name && isHttpUrl(a.url)),
+    supportUrl: httpOrEmpty(env.VITE_SUPPORT_URL),
+    waitlist: {
+      endpoint: httpOrEmpty(env.VITE_WAITLIST_ENDPOINT),
+      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '',
+    },
+    analytics: {
+      provider: env.VITE_ANALYTICS_PROVIDER === 'plausible' && plausibleDomain ? 'plausible' : 'none',
+      domain: plausibleDomain,
+      src: httpOrEmpty(env.VITE_PLAUSIBLE_SRC) || 'https://plausible.io/js/script.js',
+    },
+  }
+}
+
+/** True when ads or analytics are configured, i.e. a consent choice is meaningful. */
+export function consentRequired(c: MonetizationConfig): boolean {
+  const adsOn = c.adsEnabled && (c.slot.provider === 'adsense' ? !!c.slot.adsense.client : false)
+  return adsOn || c.analytics.provider !== 'none'
+}
+
+export function adsenseReady(c: MonetizationConfig): boolean {
+  return c.adsEnabled && c.slot.provider === 'adsense' && !!c.slot.adsense.client
 }

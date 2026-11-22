@@ -1,0 +1,4 @@
+# ads.txt for clipspike.com (served at https://clipspike.com/ads.txt)
+# PLACEHOLDER: no ad network is active. After AdSense approval, replace the line below
+# with the one Google gives you (AdSense > Sites > ads.txt), using YOUR publisher id:
+# google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
