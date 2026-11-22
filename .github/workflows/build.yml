@@ -239,6 +239,12 @@ jobs:
           $p = Start-Process -FilePath $exe -PassThru -Wait
           if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
           $failed = $p.ExitCode -ne 0
+          $diagnosticLog = Join-Path $out "electron\logs\clipspike.log"
+          if (-not (Test-Path -LiteralPath $diagnosticLog -PathType Leaf) -or
+              -not (Select-String -LiteralPath $diagnosticLog -SimpleMatch '"event":"startup.ready"' -Quiet)) {
+            Write-Host "::error::The installed app did not write its startup diagnostic log"
+            $failed = $true
+          }
           $uninstall = Join-Path $dir "Uninstall ClipSpike.exe"
           if (Test-Path $uninstall) { Start-Process -FilePath $uninstall -ArgumentList "/S" -Wait }
           # The uninstaller hands off to a copy of itself, so wait for the folder to go.
