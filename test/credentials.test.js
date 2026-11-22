@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { createCredentialStore } = require("../lib/credentials.js");
+const { createCredentialStore, dpapiRunner } = require("../lib/credentials.js");
 const cli = require("../tools/credentials.js");
 
 const tempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), "hd-cred-"));
@@ -42,6 +42,33 @@ test("a secret round-trips and is not stored in plain text", () => {
     // a fresh store (a new process) reads the same file
     const again = createCredentialStore({ platform: "win32", env: {}, dir, run: fakeRun().run, respectDisableFlag: false });
     assert.equal(again.get("google.refresh"), "1//refresh-token-value");
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("PowerShell reads one newline-terminated secret over stdin", () => {
+  const input = Buffer.from("test secret").toString("base64");
+  const run = dpapiRunner({
+    platform: "win32",
+    spawn: (_binary, args, options) => {
+      const script = Buffer.from(args.at(-1), "base64").toString("utf16le");
+      assert.match(script, /Console\]::In\.ReadLine\(\)/);
+      assert.equal(options.input, input + "\n");
+      assert.ok(!args.includes(input));
+      return { status: 0, stdout: "encrypted" };
+    }
+  });
+  assert.equal(run("protect", "license.key", input), "encrypted");
+});
+
+test("preparing a credential does not write it until committed", () => {
+  const { dir, store, calls } = make();
+  try {
+    const commit = store.prepareSet("license.key", "secret");
+    assert.deepEqual(calls, ["protect"]);
+    assert.equal(store.has("license.key"), false);
+    commit();
+    assert.equal(store.get("license.key"), "secret");
+    assert.deepEqual(calls, ["protect"]);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 

@@ -3,14 +3,22 @@ const assert = require("node:assert/strict");
 const { createLicenseManager, looksOffline } = require("../main/license.js");
 
 const DAY = 86400000;
-function harness({ build = { licenseRequired: true }, start = "2026-11-01T00:00:00.000Z", request, env = {} } = {}) {
+function harness({ build = { licenseRequired: true }, start = "2026-11-01T00:00:00.000Z", request, env = {}, prepareSet, writeConfig } = {}) {
   let now = new Date(start);
   const db = { config: {}, secrets: new Map() };
   const calls = [];
   const manager = createLicenseManager({
     readConfig: () => JSON.parse(JSON.stringify(db.config)),
-    writeConfig: (config) => { db.config = JSON.parse(JSON.stringify(config)); },
-    store: { get: (n) => db.secrets.get(n) || "", set: (n, v) => db.secrets.set(n, v), delete: (n) => db.secrets.delete(n), writable: () => true },
+    writeConfig: (config) => {
+      if (writeConfig) writeConfig(config);
+      db.config = JSON.parse(JSON.stringify(config));
+    },
+    store: {
+      get: (n) => db.secrets.get(n) || "",
+      set: (n, v) => db.secrets.set(n, v),
+      prepareSet: prepareSet || ((n, v) => () => db.secrets.set(n, v)),
+      delete: (n) => db.secrets.delete(n)
+    },
     request: async (action, options) => { calls.push({ action, options }); return request ? request(action, options) : { ok: true, valid: true, instanceId: "inst-1", customerEmail: "a@b.c", productName: "ClipSpike" }; },
     now: () => now,
     build,
@@ -84,6 +92,36 @@ test("activation failures reach the user and change nothing", async () => {
   await assert.rejects(() => h.manager.activate("   "), /Enter your license key/);
   const odd = harness({ request: async () => ({ ok: true, valid: false }) });
   await assert.rejects(() => odd.manager.activate("KEY"), /could not be activated/);
+});
+
+test("a credential encryption timeout leaves the remote activation slot untouched", async () => {
+  const h = harness({ prepareSet: () => { throw new Error("PowerShell ETIMEDOUT"); } });
+  await assert.rejects(() => h.manager.activate("KEY"), /PowerShell ETIMEDOUT/);
+  assert.deepEqual(h.calls, []);
+  assert.equal(h.db.secrets.size, 0);
+});
+
+test("a failed credential commit releases the newly allocated activation", async () => {
+  const h = harness({
+    build: { licenseRequired: true, provider: "polar", apiBase: "https://sandbox-api.polar.sh", productId: "org" },
+    prepareSet: () => () => { throw new Error("The credential store could not be written."); }
+  });
+  await assert.rejects(() => h.manager.activate("KEY"), /credential store could not be written/);
+  assert.deepEqual(h.calls.map(({ action }) => action), ["activate", "deactivate"]);
+  assert.deepEqual(h.calls[1].options, {
+    licenseKey: "KEY", productId: "org", provider: "polar", apiBase: "https://sandbox-api.polar.sh", instanceId: "inst-1"
+  });
+  assert.equal(h.manager.state().mode, "trial");
+});
+
+test("a settings write failure preserves the previous license and releases the new slot", async () => {
+  const h = harness({ writeConfig: () => { throw new Error("Settings write failed."); } });
+  h.db.config.license = { instance: "previous", trialStartedAt: "2026-11-01T00:00:00.000Z" };
+  h.db.secrets.set("license.key", "PREVIOUS-KEY");
+  await assert.rejects(() => h.manager.activate("NEXT-KEY"), /Settings write failed/);
+  assert.equal(h.db.secrets.get("license.key"), "PREVIOUS-KEY");
+  assert.equal(h.db.config.license.instance, "previous");
+  assert.equal(h.calls[1].options.instanceId, "inst-1");
 });
 
 test("a licensed copy stays valid offline for 14 days, then needs a check", async () => {
