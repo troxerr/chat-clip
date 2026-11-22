@@ -18,6 +18,8 @@ export interface Clip {
   thumbnailUrl?: string
   /** Twitch clip slug; required for the embedded player. */
   slug?: string
+  /** Looks sexual/explicit (heuristic); previews are blurred. */
+  mature?: boolean
 }
 
 const clip = (

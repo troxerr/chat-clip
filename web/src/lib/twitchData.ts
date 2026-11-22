@@ -85,8 +85,7 @@ function hueFor(id: string): number {
 export function parseClips(json: unknown, names: string[]): Clip[] | null {
   const list = (json as { clips?: unknown } | null)?.clips
   if (!Array.isArray(list)) return null
-  // Hide likely-mature clips before scoring so they can't skew the relative scores.
-  const raw = list.filter(isRawClip).filter((c) => !isLikelyMature(c))
+  const raw = list.filter(isRawClip)
   const max = Math.max(0, ...raw.map((c) => c.views))
   const canonical = new Map(names.map((n) => [n.toLowerCase(), n]))
   return raw.map((c) => ({
@@ -106,5 +105,6 @@ export function parseClips(json: unknown, names: string[]): Clip[] | null {
     url: c.url,
     thumbnailUrl: c.thumbnailUrl,
     slug: clipSlug(c),
+    mature: isLikelyMature(c),
   }))
 }

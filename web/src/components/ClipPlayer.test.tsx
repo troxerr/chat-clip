@@ -26,6 +26,20 @@ describe('ClipPlayer', () => {
     expect(screen.getByTitle('Twitch clip: Big play')).toHaveAttribute('src', clipEmbedUrl('AbcSlug'))
   })
 
+  it('blurs the poster for mature clips and still plays on click', async () => {
+    render(<ClipPlayer clip={{ ...base, mature: true }} />)
+    const btn = screen.getByRole('button', { name: 'Play clip: Big play' })
+    expect(btn).toHaveClass('player-poster-mature')
+    expect(btn).toHaveTextContent('Mature content')
+    await userEvent.click(btn)
+    expect(screen.getByTitle('Twitch clip: Big play')).toBeInTheDocument()
+  })
+
+  it('does not blur normal clips', () => {
+    render(<ClipPlayer clip={base} />)
+    expect(screen.getByRole('button')).not.toHaveClass('player-poster-mature')
+  })
+
   it('shows no play button without a slug', () => {
     render(<ClipPlayer clip={{ ...base, slug: undefined }} />)
     expect(screen.queryByRole('button')).toBeNull()
