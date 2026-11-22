@@ -270,31 +270,6 @@ jobs:
             if (Test-Path "$src\result.json") { Copy-Item "$src\result.json" "$env:RUNNER_TEMP\upload\screenshots\$name-result.json" }
           }
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ClipSpike-windows-installer-unsigned
-          path: win/dist/ClipSpike-*-x64-unsigned.exe
-          if-no-files-found: error
-          retention-days: 14
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ClipSpike-windows-screenshots
-          path: ${{ runner.temp }}/upload/screenshots
-          if-no-files-found: warn
-          retention-days: 14
-
-  preflight:
-    name: Release preflight docs
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Show release gate
-        run: |
-          echo "Signed release is manual: ./mac/release.sh --check then ./mac/release.sh"
-          echo "See docs/RELEASE.md and docs/UPDATE.md."
-
       # The Portable build is one self-extracting exe. Run it from a fresh temp
       # folder (path with a space), like a user running it from Downloads, and
       # check it makes a clip, reports where it writes data, and leaves nothing
@@ -336,8 +311,27 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ClipSpike-windows-unsigned
+          name: ClipSpike-windows-installer-unsigned
           path: |
             win/dist/ClipSpike-*-x64-unsigned.exe
             win/dist/ClipSpike-*-x64-portable-unsigned.exe
           if-no-files-found: error
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ClipSpike-windows-screenshots
+          path: ${{ runner.temp }}/upload/screenshots
+          if-no-files-found: warn
+          retention-days: 14
+
+  preflight:
+    name: Release preflight docs
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show release gate
+        run: |
+          echo "Signed release is manual: ./mac/release.sh --check then ./mac/release.sh"
+          echo "See docs/RELEASE.md and docs/UPDATE.md."
