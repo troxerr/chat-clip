@@ -4,7 +4,7 @@ export default function Terms() {
   return (
     <article className="legal">
       <h1>Terms of Service</h1>
-      <p className="meta">Last updated: [DATE] · Operator: [LEGAL ENTITY / CONTACT EMAIL]. Template: have it reviewed before relying on it.</p>
+      <p className="meta">Last updated: 2026-11-22 · Operator: AST Labs (ast.labs@outlook.com). Template: have it reviewed before relying on it.</p>
       <h2>Use of the service</h2>
       <p>ClipSpike is provided &quot;as is&quot; for personal, non-commercial browsing of Twitch highlights. Don&apos;t abuse, scrape or overload it.</p>
       <h2>Third-party content</h2>
