@@ -3,7 +3,7 @@
 // Auto-update for the installed Windows app (electron-updater, generic feed).
 // The feed URL is baked into resources/app-update.yml by electron-builder only
 // for release builds (WIN_UPDATE_URL). Without that file (dev, unit tests, the
-// unsigned CI installer) updating stays off. Everything is injected for tests.
+// unsigned CI installer) updating stays off, as it does for the portable exe. Everything is injected for tests.
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -14,6 +14,7 @@ function feedConfigured({ resourcesPath, exists = fs.existsSync } = {}) {
 
 function startAutoUpdate({ app, autoUpdater, resourcesPath, env = process.env, log = () => {}, exists }) {
   if (!app.isPackaged || env.CLIPSPIKE_SMOKE || env.CLIPSPIKE_NO_UPDATE === "1") return { enabled: false, reason: "not a normal packaged run" };
+  if (env.PORTABLE_EXECUTABLE_FILE) return { enabled: false, reason: "portable build does not self-update" };
   if (!feedConfigured({ resourcesPath, exists })) return { enabled: false, reason: "no update feed configured" };
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;

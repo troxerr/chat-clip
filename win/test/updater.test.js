@@ -18,8 +18,8 @@ test("checks for updates when packaged with a feed", async () => {
   assert.equal(au.autoInstallOnAppQuit, true);
 });
 
-test("stays off without a feed, unpackaged, or in smoke runs", () => {
-  for (const over of [{ exists: () => false }, { app: { isPackaged: false } }, { env: { CLIPSPIKE_SMOKE: "x" } }]) {
+test("stays off without a feed, unpackaged, portable, or in smoke runs", () => {
+  for (const over of [{ exists: () => false }, { app: { isPackaged: false } }, { env: { CLIPSPIKE_SMOKE: "x" } }, { env: { PORTABLE_EXECUTABLE_FILE: "C:\\t\\ClipSpike.exe" } }]) {
     const { au, result } = setup(over);
     assert.equal(result.enabled, false);
     assert.equal(au.checks, 0);

@@ -22,8 +22,14 @@ win:
   target:
     - target: nsis
       arch: x64
+    - target: portable
+      arch: x64
   artifactName: ClipSpike-${version}-x64-unsigned.exe
   signAndEditExecutable: false
+# Single self-extracting exe; needs no install and no admin rights. Data still
+# lives in %APPDATA%\ClipSpike (not next to the exe).
+portable:
+  artifactName: ClipSpike-${version}-x64-portable-unsigned.exe
 nsis:
   oneClick: true
   perMachine: false

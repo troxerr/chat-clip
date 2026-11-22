@@ -1,6 +1,6 @@
 name: Windows release
 
-# Manual or tag-triggered. Builds the Windows installer; signs it when a
+# Manual or tag-triggered. Builds the Windows installer and the Portable exe; signs it when a
 # code-signing certificate is configured (otherwise builds an UNSIGNED installer),
 # attaches it to a draft GitHub release for tag builds, and uploads it to
 # Cloudflare R2 for tag builds when R2 credentials are configured.
@@ -81,10 +81,13 @@ jobs:
         if: env.SIGNED == 'true'
         shell: pwsh
         run: |
-          $exe = Get-ChildItem win\dist -Filter "ClipSpike-*-x64.exe" | Select-Object -First 1
-          $sig = Get-AuthenticodeSignature $exe.FullName
-          $sig.Status
-          if ($sig.Status -ne "Valid") { Write-Host "::error::Installer signature is $($sig.Status)"; exit 1 }
+          $bad = $false
+          foreach ($exe in @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64*.exe")) {
+            $sig = Get-AuthenticodeSignature $exe.FullName
+            "$($exe.Name): $($sig.Status)"
+            if ($sig.Status -ne "Valid") { Write-Host "::error::$($exe.Name) signature is $($sig.Status)"; $bad = $true }
+          }
+          if ($bad) { exit 1 }
 
       - name: Verify the update feed file
         shell: pwsh
@@ -98,6 +101,7 @@ jobs:
           name: ClipSpike-windows-release
           path: |
             win/dist/ClipSpike-*-x64.exe
+            win/dist/ClipSpike-*-x64-portable.exe
             win/dist/latest.yml
           if-no-files-found: error
 
@@ -107,7 +111,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $files = @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64.exe") + @(Get-ChildItem win\dist -Filter latest.yml -ErrorAction SilentlyContinue)
+          $files = @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64.exe") + @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64-portable.exe") + @(Get-ChildItem win\dist -Filter latest.yml -ErrorAction SilentlyContinue)
           $notes = "Windows build"
           if ($env:SIGNED -ne "true") {
             $notes = "Windows build. **UNSIGNED**: no code-signing certificate was configured, so Windows SmartScreen will show an 'unknown publisher' warning (More info, then Run anyway)."

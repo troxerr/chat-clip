@@ -4,6 +4,44 @@ CI (`build.yml`) builds an **unsigned** installer for testing (no update feed,
 updater off). Releases use `.github/workflows/windows-release.yml` (manual run,
 or push a `win-v*` tag), which builds with `win/electron-builder.release.yml`.
 
+## Names and versions
+Everything Windows is **ClipSpike**: `productName` and `appId` (`com.clipspike.app`) in
+`win/electron-builder.yml`, the install folder, `%APPDATA%\ClipSpike`, and the artifacts. The
+Windows app version is `win/package.json` `version`, currently **0.1.1** (the root `package.json`
+3.0.0 is the Mac/engine version; the two are independent). Bump `win/package.json` before tagging.
+The pre-rename names "ChatClip" and "Highlight Desk" (and `Twitch-Highlight-Desk`) appear only in
+migration code and docs; a package still carrying them predates the rename.
+
+| Build | CI (`build.yml`, unsigned) | Release (`windows-release.yml`) |
+|---|---|---|
+| Installer (NSIS, per-user) | `ClipSpike-<version>-x64-unsigned.exe` | `ClipSpike-<version>-x64.exe` |
+| Portable (single exe, no install, no admin) | `ClipSpike-<version>-x64-portable-unsigned.exe` | `ClipSpike-<version>-x64-portable.exe` |
+
+The Portable exe never self-updates (the updater is off when `PORTABLE_EXECUTABLE_FILE` is set)
+and is not in `latest.yml`; users replace the file to upgrade. Like the installer it keeps its
+data in `%APPDATA%\ClipSpike`, not next to the exe. CI launches it from a temp folder, makes a
+clip from the simulated chat spike, and fails if it writes anything beside the exe or its data
+folder is not where expected.
+
+## Setting up code signing
+1. Get an Authenticode code-signing certificate (OV or EV) exported as a password-protected
+   `.pfx`. EV certificates usually live on a hardware token or cloud HSM and cannot be exported;
+   they need a different signing step (e.g. Azure Trusted Signing) that this workflow does not implement.
+2. Base64-encode the file in PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("cert.pfx")) | Set-Clipboard`.
+3. In `troxerr/chat-clip` (Settings, Secrets and variables, Actions) add the secrets
+   `WIN_CSC_LINK` (the base64 text, or an https URL to the `.pfx`) and `WIN_CSC_KEY_PASSWORD`.
+   The workflow maps them to electron-builder's `CSC_LINK` / `CSC_KEY_PASSWORD`. Both must be
+   set; if either is missing the build is unsigned.
+4. Run the workflow. It signs the installer and the Portable exe, then fails unless every
+   `ClipSpike-*-x64*.exe` reports `Valid` from `Get-AuthenticodeSignature`. Never commit the
+   certificate or password.
+
+**SmartScreen:** even a signed build can show "Windows protected your PC" until it has
+reputation. An OV certificate builds reputation over downloads and time; EV generally avoids
+the warning immediately. Unsigned builds always warn ("Unknown publisher", then More info, Run
+anyway), and the Portable exe is the most likely to be flagged (a freshly downloaded,
+self-extracting exe). Manual verification: [WINDOWS_TEST_CHECKLIST.md](WINDOWS_TEST_CHECKLIST.md).
+
 ## What the release workflow enforces
 - `WIN_UPDATE_URL` must be set (https). It is baked into the app as a generic
   electron-updater feed (`resources/app-update.yml`); the build also writes `latest.yml`.
