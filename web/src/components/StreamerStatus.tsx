@@ -8,12 +8,12 @@ export default function StreamerStatus() {
   const sel = selectStreamer(FEATURED_STREAMER, BACKUP_STREAMERS, status)
   const live = !sel.allOffline
   return (
-    <div className="following" aria-label="Current streamer">
+    <div className="following" role="group" aria-label="Current streamer" aria-live="polite">
       <span className="meta">Now monitoring</span>
       <span className="streamer">{sel.streamer}</span>
       <span className={`status-pill ${live ? 'on' : 'off'}`}>{live ? '● Live' : '○ Offline'}</span>
       {sel.usingBackup && (
-        <span className="backup-note" role="status">
+        <span className="backup-note">
           Switched to backup — {FEATURED_STREAMER} is offline
         </span>
       )}
@@ -22,7 +22,7 @@ export default function StreamerStatus() {
           Demo data — live Twitch data unavailable
         </span>
       )}
-      {sel.allOffline && <span className="backup-note" role="status">No backup streamers are live</span>}
+      {sel.allOffline && <span className="backup-note">No backup streamers are live</span>}
     </div>
   )
 }
