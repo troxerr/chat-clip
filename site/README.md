@@ -6,7 +6,7 @@ Static site for the macOS app. No build step.
 
 `.github/workflows/pages.yml` publishes `site/` to GitHub Pages on a push to `main` that changes `site/`. Enable Pages in the repository settings (Source: GitHub Actions) and set the custom domain there.
 
-The download and checkout links remain placeholders until the notarized DMG and Lemon Squeezy product exist.
+Mac download CTAs read "Mac release coming soon" and the Windows page shows "Windows release coming soon" until public, signed/notarized installers exist. Restore real links then.
 
 ## Preview
 
