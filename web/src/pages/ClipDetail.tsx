@@ -1,13 +1,29 @@
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { formatOffset, formatViews } from '../lib/clips'
 import ClipPlayer from '../components/ClipPlayer'
 import { useClipStore } from '../store/useClipStore'
+import { shareClip } from '../lib/share'
 
 export default function ClipDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const clip = useClipStore((s) => s.clips.find((c) => String(c.id) === id))
   const { toggleFavorite, removeClip } = useClipStore()
+  const [toast, setToast] = useState('')
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(''), 3000)
+    return () => clearTimeout(t)
+  }, [toast])
+
+  async function onShare() {
+    if (!clip) return
+    const result = await shareClip(clip)
+    if (result === 'copied') setToast('Link copied to clipboard')
+    else if (result === 'failed') setToast('Could not share — copy the link manually')
+  }
 
   if (!clip) {
     return (
@@ -44,6 +60,9 @@ export default function ClipDetail() {
         <button className="btn" onClick={() => toggleFavorite(clip.id)} aria-pressed={clip.favorite}>
           {clip.favorite ? '★ Saved' : '☆ Save'}
         </button>
+        <button className="btn" onClick={onShare}>
+          Share
+        </button>
         <button
           className="btn btn-ghost"
           onClick={() => {
@@ -54,6 +73,7 @@ export default function ClipDetail() {
           Dismiss
         </button>
       </div>
+      <p className="toast" role="status" aria-live="polite">{toast}</p>
     </>
   )
 }

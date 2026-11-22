@@ -55,3 +55,14 @@ gitignored and generated at deploy time, so nothing is committed on each run.
   If the fetch fails it shows the bundled mock data with a "Demo data" badge.
 - Twitch exposes no highlight score, so scores are derived from clip views; clip text/thumbnail/link come from Twitch.
 - Locally: `TWITCH_CLIENT_ID=… TWITCH_CLIENT_SECRET=… node scripts/fetch-twitch-data.mjs`, then `npm run dev`.
+
+## Sharing and link previews
+
+`index.html` carries Open Graph / Twitter card tags (absolute URLs under
+`https://troxerr.github.io/chat-clip/app/`) and `public/og-image.png` (1200x630, regenerate with
+`python3 scripts/generate-og-image.py`).
+
+**Crawlers don't see hash routes.** Everything after `#` is never sent to the server, so every
+`#/clips/...` URL previews as the app root. The clip-detail **Share** button therefore shares the
+Twitch clip URL (rich Twitch preview) when the clip has one, else the app root. It uses
+`navigator.share` and falls back to copying the link to the clipboard with a short confirmation.
