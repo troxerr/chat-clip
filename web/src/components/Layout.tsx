@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { useClipStore } from '../store/useClipStore'
 import { ErrorBanner, UpdatedAt } from './DataStatus'
 import StreamerStatus from './StreamerStatus'
+import SponsorSlot from '../monetization/SponsorSlot'
+import SupportLink from '../monetization/SupportLink'
 
 const links = [
   { to: '/', label: 'Home', end: true },
@@ -56,6 +58,8 @@ export default function Layout() {
           <ErrorBanner />
           <UpdatedAt />
           <Outlet />
+          <SponsorSlot />
+          <SupportLink />
         </div>
       </main>
     </div>
