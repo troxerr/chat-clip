@@ -35,7 +35,7 @@ When you add a new `VITE_*` variable to `web/.env.example`, also add it to the b
 
 ### 1. Consent and legal
 - `ConsentBanner` appears only when ads (AdSense) or analytics are configured. Choices (Accept all / Reject all / Customize) are stored in localStorage `clipspike:consent`; "Cookie settings" in the footer reopens it. Ads and analytics scripts load **only after** the matching consent.
-- `/privacy` and `/terms` are routed in the app and linked in the footer. They are templates with `[DATE]` / `[LEGAL ENTITY]` placeholders: fill them in and get legal review. They cover Twitch embeds, ads/analytics and affiliate disclosure.
+- `/privacy` and `/terms` are routed in the app and linked in the footer. They are templates (operator: AST Labs, last updated 2026-11-22): update the date when you change them, and get legal review. They cover Twitch embeds, ads/analytics and affiliate disclosure.
 - For EU/UK traffic Google requires a certified CMP for AdSense; the built-in banner is a basic consent gate, not a certified CMP. Use one before serving ads there.
 
 ### 2. Display ads (Google AdSense)
