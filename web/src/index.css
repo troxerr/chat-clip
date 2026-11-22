@@ -113,3 +113,4 @@ main:focus-visible { outline: none; }
 .row-actions { display: flex; gap: .35rem; flex-wrap: wrap; }
 .row-actions .btn:disabled, form .btn:disabled { opacity: .5; cursor: not-allowed; }
 .field-error { color: #ff6b6b; margin: .4rem 0 0; font-size: .85rem; }
+.toast { min-height: 1.4rem; margin-top: .75rem; color: var(--accent-2); font-size: .9rem; }
