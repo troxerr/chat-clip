@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useClipStore } from '../store/useClipStore'
 import { ErrorBanner, UpdatedAt } from './DataStatus'
+import LiveNotifier from './LiveNotifier'
 import StreamerStatus from './StreamerStatus'
 
 const links = [
@@ -28,6 +29,7 @@ export default function Layout() {
   const [open, setOpen] = useState(false)
   return (
     <div className="layout">
+      <LiveNotifier />
       <a className="skip-link" href="#main">Skip to content</a>
       <header className="sidebar">
         <div className="brand-row">

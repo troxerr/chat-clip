@@ -3,7 +3,7 @@ import { mockClips, MOCK_STATUS_TIMELINE, type Clip } from '../data/clips'
 import type { StatusMap } from '../lib/streamers'
 import { allStreamers } from '../lib/streamerConfig'
 import { useStreamerStore } from './useStreamerStore'
-import { parseClips, parseStatus } from '../lib/twitchData'
+import { parseClips, parseStatus, parseStreamDetails, type StreamDetails } from '../lib/twitchData'
 
 export type { Clip }
 export type DataSource = 'live' | 'demo'
@@ -17,6 +17,7 @@ interface ClipState {
   toggleFavorite: (id: Id) => void
   removeClip: (id: Id) => void
   streamStatus: StatusMap
+  streamDetails: Record<string, StreamDetails>
   timelineIndex: number
   dataSource: DataSource
   generatedAt: string | null
@@ -43,6 +44,7 @@ export const useClipStore = create<ClipState>((set, get) => ({
     set((s) => ({ clips: s.clips.map((c) => (c.id === id ? { ...c, favorite: !c.favorite } : c)) })),
   removeClip: (id) => set((s) => ({ clips: s.clips.filter((c) => c.id !== id), dismissed: [...s.dismissed, id] })),
   streamStatus: MOCK_STATUS_TIMELINE[0],
+  streamDetails: {},
   timelineIndex: 0,
   dataSource: 'demo',
   generatedAt: null,
@@ -68,6 +70,7 @@ export const useClipStore = create<ClipState>((set, get) => ({
       const favorites = new Set(clips.filter((c) => c.favorite).map((c) => c.id))
       set({
         streamStatus: status,
+        streamDetails: parseStreamDetails(statusJson, currentNames()),
         clips: fresh.filter((c) => !dismissed.includes(c.id)).map((c) => ({ ...c, favorite: favorites.has(c.id) })),
         pipelineLogins: Object.keys((statusJson as { streamers: object }).streamers).map((k) => k.toLowerCase()),
         dataSource: 'live',

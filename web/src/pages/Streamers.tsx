@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { allStreamers, DEFAULT_CONFIG, MAX_STREAMERS } from '../lib/streamerConfig'
+import NotifyToggle from '../components/NotifyToggle'
 import { useClipStore } from '../store/useClipStore'
 import { useStreamerStore } from '../store/useStreamerStore'
 
@@ -117,6 +118,7 @@ export default function Streamers() {
         <code>config/streamers.json</code>. Streamers you add here are saved in this browser and show “No data yet”
         until they’re added to that file.
       </p>
+      <NotifyToggle />
       <button type="button" className="btn btn-ghost" onClick={() => { reset(); setError(null) }}>
         Reset to defaults
       </button>
