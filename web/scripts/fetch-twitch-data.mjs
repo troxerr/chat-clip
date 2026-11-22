@@ -1,10 +1,12 @@
 // Fetches live status + recent clips from the Twitch Helix API and writes static JSON
 // to public/data/. Needs TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET in the environment.
 // Never logs credentials or tokens. Run from web/: `node scripts/fetch-twitch-data.mjs`.
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
-const STREAMERS = ['jynxzi', 'kaicenat', 'xqc', 'ishowspeed', 'pokimane']
+// The shared default list (config/streamers.json) drives which streamers get live data.
+const config = JSON.parse(await readFile(new URL('../../config/streamers.json', import.meta.url), 'utf8'))
+const STREAMERS = [...new Set([config.primary, ...config.backups].map((l) => String(l).toLowerCase()))]
 const CLIPS_PER_STREAMER = 12
 const CLIP_WINDOW_DAYS = 7
 const HELIX = 'https://api.twitch.tv/helix'

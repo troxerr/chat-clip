@@ -31,10 +31,20 @@ links work on GitHub Pages without server rewrites or a 404 fallback.
 Pages is already enabled with the "GitHub Actions" source. To test locally:
 `VITE_BASE=/chat-clip/app/ npm run build && VITE_BASE=/chat-clip/app/ npm run preview`.
 
+## Streamers
+
+The `#/streamers` page lets you add/remove streamers, pick the primary and reorder backups. Choices
+are saved in this browser (`localStorage`, key `clipspike.streamers`). Defaults live in one shared
+file, `../config/streamers.json`, read by both the app and `scripts/fetch-twitch-data.mjs`.
+
+**`config/streamers.json` is what drives live data.** The scheduled job only fetches the streamers
+listed there; streamers added in the UI are local-only and show "No data yet" until you add them to
+that file and redeploy.
+
 ## Real Twitch data
 
 `scripts/fetch-twitch-data.mjs` gets an app access token (client-credentials) and calls Helix
-Get Streams, Get Users, Get Clips and Get Games for Jynxzi plus the backups, writing
+Get Streams, Get Users, Get Clips and Get Games for the streamers in `config/streamers.json`, writing
 `public/data/status.json` and `public/data/clips.json` (both with `generatedAt`). These files are
 gitignored and generated at deploy time, so nothing is committed on each run.
 

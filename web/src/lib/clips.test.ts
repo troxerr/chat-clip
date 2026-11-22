@@ -8,7 +8,7 @@ describe('filterClips', () => {
     expect(scores).toEqual([...scores].sort((a, b) => b - a))
   })
   it('filters by streamer and min score', () => {
-    const r = filterClips(mockClips, { ...defaultFilters, streamer: 'Jynxzi', minScore: 90 })
+    const r = filterClips(mockClips, { ...defaultFilters, streamer: 'jynxzi', minScore: 90 })
     expect(r.map((c) => c.id)).toEqual([1, 2])
   })
   it('searches title, game and signal', () => {

@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom'
 import ClipCard from '../components/ClipCard'
-import { FEATURED_STREAMER } from '../data/clips'
 import { SkeletonGrid } from '../components/DataStatus'
 import { useClipStore } from '../store/useClipStore'
+import { useStreamerStore } from '../store/useStreamerStore'
 
 export default function Home() {
   const clips = useClipStore((s) => s.clips)
+  const primary = useStreamerStore((s) => s.primary)
   const loading = useClipStore((s) => s.loadState === 'loading')
   const top = [...clips].sort((a, b) => b.score - a.score).slice(0, 3)
-  const featured = clips.filter((c) => c.streamer === FEATURED_STREAMER).length
+  const featured = clips.filter((c) => c.streamer === primary).length
   const avg = clips.length ? Math.round(clips.reduce((n, c) => n + c.score, 0) / clips.length) : 0
   return (
     <>
@@ -26,7 +27,7 @@ export default function Home() {
       <section className="stats">
         <div className="stat"><strong>{clips.length}</strong><span>highlights</span></div>
         <div className="stat"><strong>{avg}</strong><span>avg score</span></div>
-        <div className="stat"><strong>{featured}</strong><span>from {FEATURED_STREAMER}</span></div>
+        <div className="stat"><strong>{featured}</strong><span>from {primary}</span></div>
       </section>
       <h2>Top highlights</h2>
       {loading ? (

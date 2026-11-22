@@ -6,6 +6,7 @@ on:
     paths:
       - "site/**"
       - "web/**"
+      - "config/**"
       - ".github/workflows/pages.yml"
   schedule:
     - cron: "*/5 * * * *" # refresh Twitch data (GitHub may delay scheduled runs)
