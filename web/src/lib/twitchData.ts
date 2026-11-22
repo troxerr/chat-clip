@@ -1,5 +1,6 @@
 import type { Clip } from '../data/clips'
 import type { StatusMap } from './streamers'
+import { isLikelyMature } from './matureFilter'
 
 /** Maps the generated status.json onto the configured streamer names; null if the payload is invalid. */
 export function parseStatus(json: unknown, names: string[]): StatusMap | null {
@@ -84,7 +85,8 @@ function hueFor(id: string): number {
 export function parseClips(json: unknown, names: string[]): Clip[] | null {
   const list = (json as { clips?: unknown } | null)?.clips
   if (!Array.isArray(list)) return null
-  const raw = list.filter(isRawClip)
+  // Hide likely-mature clips before scoring so they can't skew the relative scores.
+  const raw = list.filter(isRawClip).filter((c) => !isLikelyMature(c))
   const max = Math.max(0, ...raw.map((c) => c.views))
   const canonical = new Map(names.map((n) => [n.toLowerCase(), n]))
   return raw.map((c) => ({

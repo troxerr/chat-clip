@@ -34,6 +34,15 @@ describe('parseClips', () => {
     expect(clips[1].score).toBeLessThan(clips[0].score)
   })
 
+  it('hides clips with mature titles before scoring', () => {
+    const clips = parseClips(
+      { clips: [{ ...raw('a', 50), title: 'GYATT OMG THAT CRAZY' }, { ...raw('b', 10), title: 'Insane clutch' }] },
+      NAMES,
+    )!
+    expect(clips.map((c) => c.id)).toEqual(['b'])
+    expect(clips[0].score).toBe(99)
+  })
+
   it('rejects invalid payloads', () => {
     expect(parseClips({}, NAMES)).toBeNull()
   })
