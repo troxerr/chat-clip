@@ -45,6 +45,23 @@ jobs:
         working-directory: web
         env:
           VITE_BASE: /app/
+          # Monetization config from repository Variables (public values, not secrets).
+          # Undefined variables resolve to "" and leave the feature off.
+          VITE_ADS_ENABLED: ${{ vars.VITE_ADS_ENABLED }}
+          VITE_AD_PROVIDER: ${{ vars.VITE_AD_PROVIDER }}
+          VITE_ADSENSE_CLIENT: ${{ vars.VITE_ADSENSE_CLIENT }}
+          VITE_ADSENSE_SLOT_GRID: ${{ vars.VITE_ADSENSE_SLOT_GRID }}
+          VITE_ADSENSE_SLOT_SIDEBAR: ${{ vars.VITE_ADSENSE_SLOT_SIDEBAR }}
+          VITE_SPONSOR_NAME: ${{ vars.VITE_SPONSOR_NAME }}
+          VITE_SPONSOR_URL: ${{ vars.VITE_SPONSOR_URL }}
+          VITE_SPONSOR_TEXT: ${{ vars.VITE_SPONSOR_TEXT }}
+          VITE_AFFILIATES_ENABLED: ${{ vars.VITE_AFFILIATES_ENABLED }}
+          VITE_SUPPORT_URL: ${{ vars.VITE_SUPPORT_URL }}
+          VITE_WAITLIST_ENDPOINT: ${{ vars.VITE_WAITLIST_ENDPOINT }}
+          VITE_WAITLIST_EMAIL: ${{ vars.VITE_WAITLIST_EMAIL }}
+          VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
+          VITE_PLAUSIBLE_DOMAIN: ${{ vars.VITE_PLAUSIBLE_DOMAIN }}
+          VITE_PLAUSIBLE_SRC: ${{ vars.VITE_PLAUSIBLE_SRC }}
         run: |
           npm ci
           npm run build

@@ -4,6 +4,33 @@ Everything is **off by default**. With no env vars set the web app has no ads, n
 
 Config lives in `web/src/monetization/config.ts` (`buildConfig` validates every value; invalid URLs/IDs are dropped). The app is served at `https://clipspike.com/app/`.
 
+## Setting config from GitHub repository variables
+`.github/workflows/pages.yml` passes every variable below to the web build as `${{ vars.NAME }}`. They are public build-time values, so use repository **Variables**, never Secrets. Variables you don't define become empty strings, which behave exactly like unset (feature off).
+
+1. In the repo go to **Settings > Secrets and variables > Actions > Variables > New repository variable**.
+2. Enter the name and value from the table and click **Add variable**; repeat for each.
+3. Redeploy, because values are baked in at build time: **Actions > pages > Run workflow** on `main` (`workflow_dispatch`), or `gh workflow run pages.yml --ref main`.
+
+| Variable | Value |
+|---|---|
+| `VITE_ADS_ENABLED` | `true` to enable ad/sponsor slots. Anything else (or unset) = off. |
+| `VITE_AD_PROVIDER` | `sponsor` (default) or `adsense`. |
+| `VITE_ADSENSE_CLIENT` | AdSense publisher id, `ca-pub-` plus digits. |
+| `VITE_ADSENSE_SLOT_GRID` | Ad unit id (digits) for the in-grid slot. |
+| `VITE_ADSENSE_SLOT_SIDEBAR` | Ad unit id (digits) for the sidebar slot. |
+| `VITE_SPONSOR_NAME` | Sponsor name (sponsor provider). |
+| `VITE_SPONSOR_URL` | Sponsor `http(s)://` link. |
+| `VITE_SPONSOR_TEXT` | Optional short tagline. |
+| `VITE_AFFILIATES_ENABLED` | `true` to show affiliate cards from `affiliates.json`. |
+| `VITE_SUPPORT_URL` | Ko-fi / Buy Me a Coffee / GitHub Sponsors `http(s)://` URL. |
+| `VITE_WAITLIST_ENDPOINT` | Formspree-style JSON POST URL for `/pro`. |
+| `VITE_WAITLIST_EMAIL` | Fallback mailto address for `/pro`. |
+| `VITE_ANALYTICS_PROVIDER` | `plausible` to enable analytics (needs the domain too); else off. |
+| `VITE_PLAUSIBLE_DOMAIN` | Site domain, e.g. `clipspike.com`. |
+| `VITE_PLAUSIBLE_SRC` | Optional self-hosted Plausible script URL. |
+
+When you add a new `VITE_*` variable to `web/.env.example`, also add it to the build step's `env` in `pages.yml`.
+
 ## Pieces and setup
 
 ### 1. Consent and legal
