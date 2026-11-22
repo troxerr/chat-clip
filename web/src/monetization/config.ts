@@ -84,3 +84,10 @@ export function consentRequired(c: MonetizationConfig): boolean {
 export function adsenseReady(c: MonetizationConfig): boolean {
   return c.adsEnabled && c.slot.provider === 'adsense' && !!c.slot.adsense.client
 }
+
+/** True when the site actually shows sponsored, ad or affiliate content (drives the disclosure text). */
+export function hasSponsoredContent(c: MonetizationConfig): boolean {
+  const sponsor = c.adsEnabled && c.slot.provider === 'sponsor' && !!c.slot.sponsor.name && !!c.slot.sponsor.url
+  const affiliates = c.affiliatesEnabled && c.affiliates.length > 0
+  return sponsor || adsenseReady(c) || affiliates
+}

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { monetization } from '../monetization'
+import { hasSponsoredContent } from '../monetization/config'
 
 export default function Privacy() {
   return (
@@ -29,10 +31,17 @@ export default function Privacy() {
         footer. California residents: we do not sell personal information; rejecting disables ad personalization on our side.
       </p>
       <h2>Affiliate and sponsored links</h2>
-      <p>
-        Some links are sponsored or affiliate links. If you buy through them we may earn a commission at no extra cost to you. They are labeled
-        &quot;Sponsored&quot; and use <code>rel=&quot;sponsored&quot;</code>. The destination sites have their own privacy practices.
-      </p>
+      {hasSponsoredContent(monetization) ? (
+        <p>
+          Some links are sponsored or affiliate links. If you buy through them we may earn a commission at no extra cost to you. They are
+          labeled &quot;Sponsored&quot; and use <code>rel=&quot;sponsored&quot;</code>. The destination sites have their own privacy practices.
+        </p>
+      ) : (
+        <p>
+          ClipSpike does not currently show sponsored or affiliate links. If that changes, they will be labeled &quot;Sponsored&quot; and this
+          section will say so.
+        </p>
+      )}
       <h2>Pro waitlist</h2>
       <p>
         If you join the waitlist, your email address is sent to our form provider (for example Formspree) or to our inbox and used only to

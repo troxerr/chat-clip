@@ -6,6 +6,8 @@ import LiveNotifier from './LiveNotifier'
 import StreamerStatus from './StreamerStatus'
 import SponsorSlot from '../monetization/SponsorSlot'
 import SupportLink from '../monetization/SupportLink'
+import { monetization } from '../monetization'
+import { hasSponsoredContent } from '../monetization/config'
 import ConsentBanner, { CookieSettingsButton } from '../monetization/ConsentBanner'
 import { Link } from 'react-router-dom'
 
@@ -68,7 +70,8 @@ export default function Layout() {
         </div>
         <footer className="site-footer">
           <p className="meta">
-            Some links on ClipSpike are sponsored or affiliate links; we may earn a commission. Not affiliated with or endorsed by Twitch.
+            {hasSponsoredContent(monetization) && 'Some links on ClipSpike are sponsored or affiliate links; we may earn a commission. '}
+            Not affiliated with or endorsed by Twitch.
           </p>
           <nav aria-label="Footer" className="footer-links">
             <Link to="/privacy">Privacy</Link>
