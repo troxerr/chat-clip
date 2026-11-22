@@ -41,10 +41,10 @@ jobs:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
         run: node scripts/fetch-twitch-data.mjs
-      - name: Build web app (served under /chat-clip/app/)
+      - name: Build web app (served under /app/)
         working-directory: web
         env:
-          VITE_BASE: /chat-clip/app/
+          VITE_BASE: /app/
         run: |
           npm ci
           npm run build
@@ -52,6 +52,7 @@ jobs:
         run: |
           mkdir _site
           cp -R site/. _site/
+          echo clipspike.com > _site/CNAME
           cp -R web/dist _site/app
       - uses: actions/upload-pages-artifact@v3
         with:
