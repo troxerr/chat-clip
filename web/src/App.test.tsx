@@ -136,3 +136,15 @@ describe('data states', () => {
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
   })
 })
+
+describe('legal and pro routes', () => {
+  it('renders privacy, terms and pro, with footer links', () => {
+    const { unmount } = renderAt('/privacy')
+    expect(screen.getByRole('heading', { name: 'Privacy Policy' })).toBeInTheDocument()
+    expect(screen.getByText(/Twitch embeds and content/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms')
+    unmount()
+    renderAt('/terms')
+    expect(screen.getByRole('heading', { name: 'Terms of Service' })).toBeInTheDocument()
+  })
+})

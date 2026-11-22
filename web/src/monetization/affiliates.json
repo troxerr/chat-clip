@@ -1,0 +1,23 @@
+[
+  {
+    "id": "gear-example",
+    "name": "Example Gaming Headset",
+    "blurb": "Placeholder: replace with a real partner product (clear audio for long streams).",
+    "url": "https://example.com/replace-with-your-affiliate-link",
+    "cta": "View deal"
+  },
+  {
+    "id": "vpn-example",
+    "name": "Example VPN",
+    "blurb": "Placeholder: replace with a partner VPN offer.",
+    "url": "https://example.com/replace-with-your-vpn-link",
+    "cta": "Learn more"
+  },
+  {
+    "id": "twitch-example",
+    "name": "Twitch Turbo / Prime Gaming",
+    "blurb": "Placeholder: replace with your Twitch/Amazon Associates referral link.",
+    "url": "https://example.com/replace-with-your-twitch-link",
+    "cta": "Check it out"
+  }
+]

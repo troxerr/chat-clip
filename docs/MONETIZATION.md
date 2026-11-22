@@ -1,28 +1,47 @@
-# Monetization options
+# Monetization
 
-Groundwork only. Nothing here is enabled; ClipSpike ships with no ads, no affiliate links, and no tracking.
+Everything is **off by default**. With no env vars set the web app has no ads, no affiliate cards, no tip links, no analytics, no consent banner and loads no third-party scripts. Configure at build time with `VITE_*` variables (see `web/.env.example`; set them as repository/CI variables for the Pages build). These are public values: never put secrets in them, and never commit real IDs.
 
-## What exists in the code
-- `web/src/monetization/config.ts` is the single config. `adsEnabled` is `false` by default, and the sponsor slot (`SponsorSlot`) renders nothing and loads no third-party script until it is flipped. `supportUrl` is empty, which hides `SupportLink`.
-- Providers: `sponsor` (a first-party, static, labelled link; no scripts) and `adsense` (loads Google's script only if ids are set **and** the user has consented: localStorage `clipspike:ad-consent` = `granted`). A real consent banner must set that key before AdSense is used.
-- `site/windows.html` links to GitHub Releases `latest`; no binaries are committed.
+Config lives in `web/src/monetization/config.ts` (`buildConfig` validates every value; invalid URLs/IDs are dropped). The app is served at `https://clipspike.com/app/`.
 
-## Options
-| Option | Fit | Notes |
-|---|---|---|
-| Direct sponsorships | Best first step | One labelled `sponsor` slot, no third-party code, flat monthly fee. Use `rel="sponsored"` (already set). |
-| Display ads (Google AdSense) | Later, needs traffic | Needs site approval, consent banner, privacy policy updates, `ads.txt`. Only on the web app/site, never in the desktop app. |
-| Affiliate links (Twitch/Amazon Associates, gaming gear/software programs) | Low effort | Disclose clearly (e.g. "affiliate link"); each program has its own terms (Amazon requires a specific disclosure statement). Do not place inside clip embeds. |
-| Support/donation link | Simplest | Set `supportUrl` (Ko-fi, GitHub Sponsors, etc.). |
-| Pro tier for the desktop app | Strongest | Mac already has a Lemon Squeezy license flow and a free-tier module (`lib/freetier.js`). Extend to Windows via the same licensing; keep a useful free tier. |
+## Pieces and setup
+
+### 1. Consent and legal
+- `ConsentBanner` appears only when ads (AdSense) or analytics are configured. Choices (Accept all / Reject all / Customize) are stored in localStorage `clipspike:consent`; "Cookie settings" in the footer reopens it. Ads and analytics scripts load **only after** the matching consent.
+- `/privacy` and `/terms` are routed in the app and linked in the footer. They are templates with `[DATE]` / `[LEGAL ENTITY]` placeholders: fill them in and get legal review. They cover Twitch embeds, ads/analytics and affiliate disclosure.
+- For EU/UK traffic Google requires a certified CMP for AdSense; the built-in banner is a basic consent gate, not a certified CMP. Use one before serving ads there.
+
+### 2. Display ads (Google AdSense)
+1. Get the site approved in AdSense, create two ad units.
+2. Set `VITE_ADS_ENABLED=true`, `VITE_AD_PROVIDER=adsense`, `VITE_ADSENSE_CLIENT=ca-pub-…`, `VITE_ADSENSE_SLOT_GRID`, `VITE_ADSENSE_SLOT_SIDEBAR`.
+3. Replace the placeholder in `site/ads.txt` (deployed at `https://clipspike.com/ads.txt`) with the line AdSense gives you.
+- Placement: one full-row unit after every 8 clips on `/clips`, and one in the sidebar (desktop only). Slots reserve their height so nothing shifts. No ads on the clip player page or over embeds.
+- Alternative: `VITE_AD_PROVIDER=sponsor` with `VITE_ADS_ENABLED=true`, `VITE_SPONSOR_NAME/URL/TEXT` shows a first-party labelled link, no scripts.
+
+### 3. Affiliate / sponsor cards
+- Edit `web/src/monetization/affiliates.json` (shipped with placeholder `example.com` links) and set `VITE_AFFILIATES_ENABLED=true`. Cards show on the clip page with a "Sponsored" tag, `rel="sponsored noopener noreferrer"` and an FTC-style disclosure. Check each program's terms (Amazon Associates needs its exact statement).
+
+### 4. Support / tip jar
+- Set `VITE_SUPPORT_URL` to your Ko-fi, Buy Me a Coffee or GitHub Sponsors page. Shown in the sidebar, footer and on the clip page.
+
+### 5. Pro tier teaser (`/pro`)
+- Set `VITE_WAITLIST_ENDPOINT` (e.g. `https://formspree.io/f/<your-form-id>`; JSON POST) and/or `VITE_WAITLIST_EMAIL` (mailto fallback). With neither, the page says the waitlist is not open. No payments are processed.
+
+### 6. Analytics hooks
+- `track()` in `web/src/monetization/analytics.ts` is a no-op unless `VITE_ANALYTICS_PROVIDER=plausible`, `VITE_PLAUSIBLE_DOMAIN` is set and the user accepted analytics. Events: `support_click`, `affiliate_click`, `sponsor_click`, `pro_waitlist_view`, `pro_waitlist_submit`, `pro_cta_click`. No personal data is sent. Self-host via `VITE_PLAUSIBLE_SRC`.
+
+## Other options
+| Option | Notes |
+|---|---|
+| Pro for the desktop app | Mac has a Lemon Squeezy license flow and `lib/freetier.js`; extend to Windows. Strongest long-term revenue. |
+| Direct sponsorships | Best first step: one labelled `sponsor` slot, no third-party code. |
 
 ## Compliance checklist (before enabling anything)
-- **Twitch Developer Services Agreement**: review it and the Developer Guidelines. Do not imply Twitch affiliation or endorsement; do not sell or monetize Twitch data/API access itself; follow rules on use of Twitch content, branding, and embeds (embeds must stay unobstructed; don't put ads over or inside the player). Confirm that showing ads next to a clip browser is permitted for your API usage.
-- **Clip content and copyright**: clips belong to their streamers and may contain third-party music or game content. ClipSpike links/embeds clips rather than rehosting them; keep it that way, honor takedown requests, and get legal review before monetizing a site that surfaces other people's content.
-- **Privacy policy**: `site/privacy.html` is a template and says no analytics. Update it to name every ad/affiliate provider, the data they collect, and retention, before launch.
-- **Cookie consent**: ad networks set cookies and process personal data. For EU/UK/etc. visitors, obtain prior opt-in consent (and use a Google-certified CMP for AdSense in those regions). The default must be "no third-party scripts".
-- **Disclosures**: label sponsored and affiliate content (FTC and similar rules). Keep ads clearly separate from content.
-- **Children**: the service is not directed at children; do not enable personalized ads for under-13 users.
-- Other: update Terms/EULA for paid tiers, refund policy, tax setup (Lemon Squeezy handles VAT as merchant of record).
+- **Twitch Developer Services Agreement**: don't imply affiliation, don't monetize Twitch data/API access itself, keep embeds unobstructed (no ads over/inside the player), confirm ads next to a clip browser are permitted.
+- **Clip content**: clips belong to their streamers. Link/embed, never rehost; honor takedowns; get legal review.
+- **Privacy/consent**: finalize `/privacy` and `/terms`; `site/privacy.html` (desktop app) is separate and says no analytics.
+- **Disclosures**: label sponsored/affiliate content (FTC and similar).
+- **Children**: not directed at children; no personalized ads for under-13s.
+- Paid tiers later: Terms/refund policy and tax (Lemon Squeezy is merchant of record).
 
 This document is not legal advice.

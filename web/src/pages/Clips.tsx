@@ -1,8 +1,11 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
+import SponsorSlot from '../monetization/SponsorSlot'
 import ClipCard from '../components/ClipCard'
 import { SkeletonGrid } from '../components/DataStatus'
 import { defaultFilters, filterClips, type SortKey } from '../lib/clips'
 import { useClipStore } from '../store/useClipStore'
+
+const AD_EVERY = 8
 
 export default function Clips() {
   const clips = useClipStore((s) => s.clips)
@@ -64,8 +67,13 @@ export default function Clips() {
         <SkeletonGrid />
       ) : shown.length ? (
         <div className="grid">
-          {shown.map((c) => (
-            <ClipCard key={c.id} clip={c} />
+          {shown.map((c, i) => (
+            <Fragment key={c.id}>
+              <ClipCard clip={c} />
+              {(i + 1) % AD_EVERY === 0 && i + 1 < shown.length && (
+                <div className="grid-ad"><SponsorSlot placement="grid" /></div>
+              )}
+            </Fragment>
           ))}
         </div>
       ) : (

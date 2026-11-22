@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { formatOffset, formatViews } from '../lib/clips'
 import ClipPlayer from '../components/ClipPlayer'
 import { useClipStore } from '../store/useClipStore'
+import SupportCard from '../monetization/SupportCard'
+import AffiliateCards from '../monetization/AffiliateCards'
 import { shareClip } from '../lib/share'
 
 export default function ClipDetail() {
@@ -74,6 +76,8 @@ export default function ClipDetail() {
         </button>
       </div>
       <p className="toast" role="status" aria-live="polite">{toast}</p>
+      <SupportCard />
+      <AffiliateCards />
     </>
   )
 }

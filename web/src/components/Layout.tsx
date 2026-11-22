@@ -6,11 +6,14 @@ import LiveNotifier from './LiveNotifier'
 import StreamerStatus from './StreamerStatus'
 import SponsorSlot from '../monetization/SponsorSlot'
 import SupportLink from '../monetization/SupportLink'
+import ConsentBanner, { CookieSettingsButton } from '../monetization/ConsentBanner'
+import { Link } from 'react-router-dom'
 
 const links = [
   { to: '/', label: 'Home', end: true },
   { to: '/clips', label: 'Clips' },
   { to: '/streamers', label: 'Streamers' },
+  { to: '/pro', label: 'Pro' },
   { to: '/about', label: 'About' },
 ]
 
@@ -54,16 +57,29 @@ export default function Layout() {
           ))}
         </nav>
         <StreamerStatus />
+        <SupportLink placement="sidebar" className="support-link support-sidebar" />
+        <SponsorSlot placement="sidebar" />
       </header>
       <main className="main" id="main" tabIndex={-1}>
         <div className="content">
           <ErrorBanner />
           <UpdatedAt />
           <Outlet />
-          <SponsorSlot />
-          <SupportLink />
         </div>
+        <footer className="site-footer">
+          <p className="meta">
+            Some links on ClipSpike are sponsored or affiliate links; we may earn a commission. Not affiliated with or endorsed by Twitch.
+          </p>
+          <nav aria-label="Footer" className="footer-links">
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/terms">Terms</Link>
+            <Link to="/pro">Pro</Link>
+            <SupportLink placement="footer" />
+            <CookieSettingsButton />
+          </nav>
+        </footer>
       </main>
+      <ConsentBanner />
     </div>
   )
 }
