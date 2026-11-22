@@ -16,6 +16,8 @@ export interface Clip {
   favorite: boolean
   url?: string
   thumbnailUrl?: string
+  /** Twitch clip slug; required for the embedded player. */
+  slug?: string
 }
 
 export const FEATURED_STREAMER = 'Jynxzi'

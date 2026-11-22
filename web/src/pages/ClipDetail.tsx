@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { formatOffset, formatViews, scoreTier } from '../lib/clips'
+import { formatOffset, formatViews } from '../lib/clips'
+import ClipPlayer from '../components/ClipPlayer'
 import { useClipStore } from '../store/useClipStore'
 
 export default function ClipDetail() {
@@ -20,9 +21,7 @@ export default function ClipDetail() {
   return (
     <>
       <Link to="/clips" className="back">← All highlights</Link>
-      <div className="player" style={{ ['--hue' as string]: clip.hue }}>
-        <span className={`score score-${scoreTier(clip.score)}`}>{clip.score}</span>
-      </div>
+      <ClipPlayer clip={clip} />
       <h1>{clip.title}</h1>
       <p className="meta">
         <span className="streamer">{clip.streamer}</span> · {clip.game} ·{' '}
@@ -39,7 +38,7 @@ export default function ClipDetail() {
       <div className="row">
         {clip.url && (
           <a className="btn" href={clip.url} target="_blank" rel="noreferrer">
-            Watch on Twitch
+            Open on Twitch
           </a>
         )}
         <button className="btn" onClick={() => toggleFavorite(clip.id)} aria-pressed={clip.favorite}>

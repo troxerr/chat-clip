@@ -86,6 +86,7 @@ async function main() {
     generatedAt,
     clips: rawClips.map((c) => ({
       id: c.id,
+      slug: c.id, // Helix clip ids are the clips.twitch.tv slugs
       title: c.title,
       streamer: c.broadcaster_name,
       game: gameName.get(c.game_id) ?? 'Unknown',

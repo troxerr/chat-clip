@@ -24,6 +24,7 @@ interface RawClip {
   views: number
   url?: string
   thumbnailUrl?: string
+  slug?: string
 }
 
 const isRawClip = (c: unknown): c is RawClip => {
@@ -42,6 +43,11 @@ const isRawClip = (c: unknown): c is RawClip => {
 export function scoreFromViews(views: number, maxViews: number): number {
   if (maxViews <= 0) return 50
   return Math.round(50 + 49 * (Math.log1p(Math.max(views, 0)) / Math.log1p(maxViews)))
+}
+
+/** Prefers the explicit slug; falls back to the Helix clip id, which is the slug. */
+function clipSlug(c: RawClip): string | undefined {
+  return typeof c.slug === 'string' && c.slug ? c.slug : c.id || undefined
 }
 
 function hueFor(id: string): number {
@@ -73,5 +79,6 @@ export function parseClips(json: unknown, names: string[]): Clip[] | null {
     favorite: false,
     url: c.url,
     thumbnailUrl: c.thumbnailUrl,
+    slug: clipSlug(c),
   }))
 }
