@@ -19,6 +19,7 @@ const { createLicenseManager } = require("./license.js");
 const { createSettings } = require("./settings.js");
 const { createClips } = require("./clips.js");
 const { createApp } = require("./app.js");
+const { createDiagnostics } = require("./diagnostics.js");
 
 require("../../lib/legacy.js").mirrorLegacyEnv();
 const SMOKE = process.env.CLIPSPIKE_SMOKE || "";
@@ -30,6 +31,7 @@ const INDEX = path.join(__dirname, "..", "renderer", "index.html");
 const userData = SMOKE ? path.join(SMOKE, "electron") : path.join(app.getPath("appData"), "ClipSpike");
 fs.mkdirSync(userData, { recursive: true });
 app.setPath("userData", userData);
+const record = createDiagnostics(userData);
 
 if (SMOKE) {
   // Self-test runs keep everything inside the given folder and need no GPU.
@@ -98,6 +100,7 @@ function createServices() {
 }
 
 function main() {
+  record("startup.begin");
   let services;
   let win = null;
 
@@ -119,25 +122,39 @@ function main() {
       return { action: "deny" };
     });
     win.webContents.on("will-navigate", (event, url) => { if (url !== win.webContents.getURL()) event.preventDefault(); });
+    win.webContents.on("did-fail-load", (_event, code, _description, _url, isMainFrame) => {
+      if (isMainFrame && code !== -3) record("renderer.load_failed");
+    });
+    win.webContents.on("render-process-gone", () => record("renderer.exited"));
     win.loadFile(INDEX);
     return win;
   }
 
   const calls = () => {
     const c = services.core;
+    const tracked = (event, handler) => async (...args) => {
+      try {
+        const result = await handler(...args);
+        record(event);
+        return result;
+      } catch (error) {
+        record(event, error);
+        throw error;
+      }
+    };
     return {
       getState: () => c.snapshot(),
-      start: (input, options) => c.start(input, options),
-      stop: () => c.stop(),
-      saveHighlight: () => c.saveHighlight(),
+      start: tracked("capture.start", (input, options) => c.start(input, options)),
+      stop: tracked("capture.stop", () => c.stop()),
+      saveHighlight: tracked("capture.save_highlight", () => c.saveHighlight()),
       markMissed: () => c.markMissed(),
       "clips.list": () => c.clips.list(),
       "clips.open": (id) => c.clips.open(id),
       "clips.reveal": (id) => c.clips.reveal(id),
       "clips.rate": (id, rating) => c.clips.rate(id, rating),
-      "license.activate": (key) => c.license.activate(key),
-      "license.validate": () => c.license.validate(),
-      "license.deactivate": () => c.license.deactivate(),
+      "license.activate": tracked("license.activate", (key) => c.license.activate(key)),
+      "license.validate": tracked("license.validate", () => c.license.validate()),
+      "license.deactivate": tracked("license.deactivate", () => c.license.deactivate()),
       "license.buy": () => c.license.buy(),
       "settings.set": (changes) => c.settings.set(changes),
       openClipFolder: () => c.openClipFolder(),
@@ -173,10 +190,21 @@ function main() {
       if (!handler) throw new Error("Unknown request.");
       return handler(...args);
     });
+    const engineErrors = new Map([
+      ["clip-failed", "capture.clip_failed"], ["error", "capture.error"], ["fatal", "capture.fatal"]
+    ]);
+    services.engine.on("event", (event) => {
+      const name = engineErrors.get(event.type);
+      if (name) record(name, event.error || event.message || "");
+    });
+    services.engine.on("exit", ({ unexpected, detail }) => {
+      if (unexpected) record("capture.exited", detail);
+    });
     services.core.on("capture", (state) => send("capture", state));
     services.core.on("clips", () => send("clips"));
     buildMenu();
     createWindow();
+    record("startup.ready");
     app.on("second-instance", () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
     if (!SMOKE) {
       try {
@@ -186,6 +214,9 @@ function main() {
       } catch (error) { console.log(`[updater] disabled: ${error.message}`); }
     }
     if (SMOKE) require("./smoke.js").run({ win, services, dir: SMOKE, send });
+  }).catch((error) => {
+    record("startup.failed", error);
+    throw error;
   });
 
   app.on("window-all-closed", () => app.quit());
