@@ -270,10 +270,51 @@ jobs:
             if (Test-Path "$src\result.json") { Copy-Item "$src\result.json" "$env:RUNNER_TEMP\upload\screenshots\$name-result.json" }
           }
 
+      # The Portable build is one self-extracting exe. Run it from a fresh temp
+      # folder (path with a space), like a user running it from Downloads, and
+      # check it makes a clip, reports where it writes data, and leaves nothing
+      # next to the exe. The hosted runner is an admin account, so the log
+      # records whether the process was elevated; a clean non-admin machine
+      # still needs the manual pass in docs/WINDOWS_TEST_CHECKLIST.md.
+      - name: Smoke test the portable build
+        shell: pwsh
+        run: |
+          $portable = Get-ChildItem win\dist -Filter "ClipSpike-*-x64-portable-unsigned.exe"
+          if ($portable.Count -ne 1) { Write-Host "::error::expected exactly one portable exe, found $($portable.Count)"; exit 1 }
+          $folder = "$env:RUNNER_TEMP\Portable Test"
+          New-Item -ItemType Directory -Force $folder | Out-Null
+          $exe = Join-Path $folder $portable.Name
+          Copy-Item $portable.FullName $exe
+          $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+          "portable: $exe (runner elevated: $admin)"
+          $out = "$env:RUNNER_TEMP\smoke\portable"
+          $env:PATH = "C:\Windows\System32;C:\Windows"
+          $env:CLIPSPIKE_SMOKE = $out
+          $env:CLIPSPIKE_INPUT = "$env:RUNNER_TEMP\smoke\input.ts"
+          $p = Start-Process -FilePath $exe -PassThru -Wait
+          if (Test-Path "$out\result.json") { Get-Content "$out\result.json" }
+          $failed = $p.ExitCode -ne 0
+          if ($failed) { Write-Host "::error::portable smoke test exit code $($p.ExitCode)" }
+          if (-not $failed) {
+            $result = Get-Content "$out\result.json" -Raw | ConvertFrom-Json
+            if (-not $result.ok -or -not $result.clip.path -or -not (Test-Path -LiteralPath $result.clip.path -PathType Leaf)) {
+              Write-Host "::error::the portable app did not save a highlight"; $failed = $true
+            }
+            if ($result.portableFile -ne $exe) { Write-Host "::error::not running as the portable exe (PORTABLE_EXECUTABLE_FILE='$($result.portableFile)')"; $failed = $true }
+            if ($result.userData -ne "$out\electron") { Write-Host "::error::unexpected data folder $($result.userData)"; $failed = $true }
+            if (-not $result.defaultDataDir.StartsWith($env:APPDATA, [StringComparison]::OrdinalIgnoreCase)) { Write-Host "::error::default data folder $($result.defaultDataDir) is not under %APPDATA%"; $failed = $true }
+            "data (smoke): $($result.userData); data (normal runs): $($result.defaultDataDir)"
+          }
+          $extra = @(Get-ChildItem $folder | Where-Object { $_.Name -ne $portable.Name })
+          if ($extra.Count -gt 0) { Write-Host "::error::portable run wrote next to the exe: $($extra.Name -join ', ')"; $failed = $true }
+          if ($failed) { exit 1 }
+
       - uses: actions/upload-artifact@v4
         with:
           name: ClipSpike-windows-installer-unsigned
-          path: win/dist/ClipSpike-*-x64-unsigned.exe
+          path: |
+            win/dist/ClipSpike-*-x64-unsigned.exe
+            win/dist/ClipSpike-*-x64-portable-unsigned.exe
           if-no-files-found: error
           retention-days: 14
 

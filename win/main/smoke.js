@@ -45,7 +45,9 @@ async function waitFor(check, ms, label) {
 }
 
 async function run({ win, services, dir, send }) {
-  const result = { steps: [], ok: false, node: process.versions.node, electron: process.versions.electron, execPath: process.execPath, dir };
+  const result = { steps: [], ok: false, node: process.versions.node, electron: process.versions.electron, execPath: process.execPath, dir,
+    portableFile: process.env.PORTABLE_EXECUTABLE_FILE || "", portableDir: process.env.PORTABLE_EXECUTABLE_DIR || "",
+    userData: app.getPath("userData"), defaultDataDir: path.join(app.getPath("appData"), "ClipSpike") };
   const shots = path.join(dir, "screenshots");
   fs.mkdirSync(shots, { recursive: true });
   const step = (name, detail) => { result.steps.push({ name, detail: detail || "" }); console.log(`[smoke] ${name}${detail ? `: ${detail}` : ""}`); };

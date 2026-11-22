@@ -7,8 +7,8 @@
   "author": "ClipSpike",
   "scripts": {
     "stage": "node tools/stage.js",
-    "pack": "node tools/stage.js && electron-builder --config electron-builder.yml --win nsis --x64 --publish never",
-    "pack:release": "node tools/stage.js && electron-builder --config electron-builder.release.yml --win nsis --x64 --publish never"
+    "pack": "node tools/stage.js && electron-builder --config electron-builder.yml --win nsis portable --x64 --publish never",
+    "pack:release": "node tools/stage.js && electron-builder --config electron-builder.release.yml --win nsis portable --x64 --publish never"
   },
   "devDependencies": {
     "electron": "45.3.4",
