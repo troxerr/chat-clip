@@ -36,6 +36,21 @@ describe('config defaults', () => {
     expect(consentRequired(monetization)).toBe(false)
   })
 
+  it('treats empty-string env values (unset GitHub repo variables) the same as unset', () => {
+    const names = ['VITE_ADS_ENABLED', 'VITE_AD_PROVIDER', 'VITE_ADSENSE_CLIENT', 'VITE_ADSENSE_SLOT_GRID', 'VITE_ADSENSE_SLOT_SIDEBAR', 'VITE_SPONSOR_NAME', 'VITE_SPONSOR_URL', 'VITE_SPONSOR_TEXT', 'VITE_AFFILIATES_ENABLED', 'VITE_SUPPORT_URL', 'VITE_WAITLIST_ENDPOINT', 'VITE_WAITLIST_EMAIL', 'VITE_ANALYTICS_PROVIDER', 'VITE_PLAUSIBLE_DOMAIN', 'VITE_PLAUSIBLE_SRC']
+    const empty = Object.fromEntries(names.map((n) => [n, '']))
+    expect(buildConfig(empty, aff)).toEqual(buildConfig({}, aff))
+    const c = buildConfig(empty, [])
+    expect(c.adsEnabled).toBe(false)
+    expect(c.affiliatesEnabled).toBe(false)
+    expect(c.slot.provider).toBe('sponsor')
+    expect(c.analytics.provider).toBe('none')
+    expect(c.supportUrl).toBe('')
+    expect(consentRequired(c)).toBe(false)
+    const { container } = render(<SponsorSlot config={c} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
   it('validates env values and drops unsafe ones', () => {
     const c = buildConfig(
       { VITE_ADSENSE_CLIENT: 'nope', VITE_SUPPORT_URL: 'javascript:alert(1)', VITE_WAITLIST_EMAIL: 'bad', VITE_PLAUSIBLE_DOMAIN: 'x' },
