@@ -1,4 +1,4 @@
-export const APP_URL = 'https://troxerr.github.io/chat-clip/app/'
+export const APP_URL = 'https://clipspike.com/app/'
 
 export type ShareResult = 'shared' | 'copied' | 'cancelled' | 'failed'
 

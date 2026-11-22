@@ -1,4 +1,4 @@
-export const EMBED_PARENTS = ['troxerr.github.io', 'localhost']
+export const EMBED_PARENTS = ['clipspike.com', 'www.clipspike.com', 'troxerr.github.io', 'localhost']
 
 export function clipEmbedUrl(slug: string): string {
   const params = new URLSearchParams({ clip: slug })

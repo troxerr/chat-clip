@@ -15,7 +15,7 @@ const base: Clip = {
 describe('ClipPlayer', () => {
   it('builds the embed url with both parents', () => {
     expect(clipEmbedUrl('AbcSlug')).toBe(
-      'https://clips.twitch.tv/embed?clip=AbcSlug&parent=troxerr.github.io&parent=localhost&autoplay=true',
+      'https://clips.twitch.tv/embed?clip=AbcSlug&parent=clipspike.com&parent=www.clipspike.com&parent=troxerr.github.io&parent=localhost&autoplay=true',
     )
   })
 

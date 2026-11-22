@@ -20,16 +20,16 @@ npm run preview  # serve the production build
 
 `.github/workflows/pages.yml` runs on pushes to `main` that touch `web/**` or `site/**`
 (or manually). Pages allows one deployment per repo, so the workflow builds this app with
-`VITE_BASE=/chat-clip/app/` and publishes it alongside the marketing `site/`:
+`VITE_BASE=/app/` and publishes it alongside the marketing `site/`:
 
-- Marketing site: https://troxerr.github.io/chat-clip/
-- Web app: https://troxerr.github.io/chat-clip/app/
+- Marketing site: https://clipspike.com/
+- Web app: https://clipspike.com/app/
 
-Client-side routing: the app uses `HashRouter` (URLs like `/chat-clip/app/#/clips`), so deep
+Client-side routing: the app uses `HashRouter` (URLs like `/app/#/clips`), so deep
 links work on GitHub Pages without server rewrites or a 404 fallback.
 
 Pages is already enabled with the "GitHub Actions" source. To test locally:
-`VITE_BASE=/chat-clip/app/ npm run build && VITE_BASE=/chat-clip/app/ npm run preview`.
+`VITE_BASE=/app/ npm run build && VITE_BASE=/app/ npm run preview`.
 
 ## Streamers
 
@@ -59,7 +59,7 @@ gitignored and generated at deploy time, so nothing is committed on each run.
 ## Sharing and link previews
 
 `index.html` carries Open Graph / Twitter card tags (absolute URLs under
-`https://troxerr.github.io/chat-clip/app/`) and `public/og-image.png` (1200x630, regenerate with
+`https://clipspike.com/app/`) and `public/og-image.png` (1200x630, regenerate with
 `python3 scripts/generate-og-image.py`).
 
 **Crawlers don't see hash routes.** Everything after `#` is never sent to the server, so every
