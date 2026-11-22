@@ -114,3 +114,6 @@ main:focus-visible { outline: none; }
 .row-actions .btn:disabled, form .btn:disabled { opacity: .5; cursor: not-allowed; }
 .field-error { color: #ff6b6b; margin: .4rem 0 0; font-size: .85rem; }
 .toast { min-height: 1.4rem; margin-top: .75rem; color: var(--accent-2); font-size: .9rem; }
+.sponsor-slot { margin-top: 2rem; padding: .75rem 1rem; border: 1px dashed var(--border); border-radius: 8px; font-size: .85rem; color: var(--muted); }
+.sponsor-label { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .25rem; }
+.support-link { font-size: .85rem; }
