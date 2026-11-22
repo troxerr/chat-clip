@@ -1,11 +1,13 @@
-import { BACKUP_STREAMERS, FEATURED_STREAMER } from '../data/clips'
 import { selectStreamer } from '../lib/streamers'
 import { useClipStore } from '../store/useClipStore'
+import { useStreamerStore } from '../store/useStreamerStore'
 
 export default function StreamerStatus() {
   const status = useClipStore((s) => s.streamStatus)
   const source = useClipStore((s) => s.dataSource)
-  const sel = selectStreamer(FEATURED_STREAMER, BACKUP_STREAMERS, status)
+  const primary = useStreamerStore((s) => s.primary)
+  const backups = useStreamerStore((s) => s.backups)
+  const sel = selectStreamer(primary, backups, status)
   const live = !sel.allOffline
   return (
     <div className="following" role="group" aria-label="Current streamer" aria-live="polite">
@@ -14,7 +16,7 @@ export default function StreamerStatus() {
       <span className={`status-pill ${live ? 'on' : 'off'}`}>{live ? '● Live' : '○ Offline'}</span>
       {sel.usingBackup && (
         <span className="backup-note">
-          Switched to backup — {FEATURED_STREAMER} is offline
+          Switched to backup — {primary} is offline
         </span>
       )}
       {source === 'demo' && (

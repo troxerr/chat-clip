@@ -1,6 +1,8 @@
 import { create } from 'zustand'
-import { BACKUP_STREAMERS, FEATURED_STREAMER, mockClips, MOCK_STATUS_TIMELINE, type Clip } from '../data/clips'
+import { mockClips, MOCK_STATUS_TIMELINE, type Clip } from '../data/clips'
 import type { StatusMap } from '../lib/streamers'
+import { allStreamers } from '../lib/streamerConfig'
+import { useStreamerStore } from './useStreamerStore'
 import { parseClips, parseStatus } from '../lib/twitchData'
 
 export type { Clip }
@@ -18,13 +20,15 @@ interface ClipState {
   timelineIndex: number
   dataSource: DataSource
   generatedAt: string | null
+  /** Logins present in the generated status.json (what the data pipeline covers); null until live data loads. */
+  pipelineLogins: string[] | null
   loadState: LoadState
   setStreamStatus: (status: StatusMap) => void
   advanceMockStatus: () => void
   refreshData: () => Promise<void>
 }
 
-const NAMES = [FEATURED_STREAMER, ...BACKUP_STREAMERS]
+const currentNames = () => allStreamers(useStreamerStore.getState())
 
 async function fetchJson(file: string): Promise<unknown> {
   const res = await fetch(`${import.meta.env.BASE_URL}data/${file}`, { cache: 'no-store' })
@@ -42,6 +46,7 @@ export const useClipStore = create<ClipState>((set, get) => ({
   timelineIndex: 0,
   dataSource: 'demo',
   generatedAt: null,
+  pipelineLogins: null,
   loadState: 'idle',
   setStreamStatus: (status) => set({ streamStatus: status }),
   advanceMockStatus: () =>
@@ -56,14 +61,15 @@ export const useClipStore = create<ClipState>((set, get) => ({
     if (get().loadState !== 'ready') set({ loadState: 'loading' })
     try {
       const [statusJson, clipsJson] = await Promise.all([fetchJson('status.json'), fetchJson('clips.json')])
-      const status = parseStatus(statusJson, NAMES)
-      const fresh = parseClips(clipsJson, NAMES)
+      const status = parseStatus(statusJson, currentNames())
+      const fresh = parseClips(clipsJson, currentNames())
       if (!status || !fresh) throw new Error('Invalid data')
       const { clips, dismissed } = get()
       const favorites = new Set(clips.filter((c) => c.favorite).map((c) => c.id))
       set({
         streamStatus: status,
         clips: fresh.filter((c) => !dismissed.includes(c.id)).map((c) => ({ ...c, favorite: favorites.has(c.id) })),
+        pipelineLogins: Object.keys((statusJson as { streamers: object }).streamers).map((k) => k.toLowerCase()),
         dataSource: 'live',
         loadState: 'ready',
         generatedAt: (statusJson as { generatedAt?: string }).generatedAt ?? null,

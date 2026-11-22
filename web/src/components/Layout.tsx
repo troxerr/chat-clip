@@ -7,6 +7,7 @@ import StreamerStatus from './StreamerStatus'
 const links = [
   { to: '/', label: 'Home', end: true },
   { to: '/clips', label: 'Clips' },
+  { to: '/streamers', label: 'Streamers' },
   { to: '/about', label: 'About' },
 ]
 

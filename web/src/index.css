@@ -106,3 +106,10 @@ main:focus-visible { outline: none; }
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .card:hover { transform: none; }
 }
+
+.streamer-list { list-style: none; padding: 0; margin: .5rem 0 1.25rem; display: flex; flex-direction: column; gap: .5rem; }
+.streamer-list li { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .5rem .75rem; }
+.streamer-list .streamer { font-weight: 600; margin-right: auto; }
+.row-actions { display: flex; gap: .35rem; flex-wrap: wrap; }
+.row-actions .btn:disabled, form .btn:disabled { opacity: .5; cursor: not-allowed; }
+.field-error { color: #ff6b6b; margin: .4rem 0 0; font-size: .85rem; }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { FEATURED_STREAMER } from '../data/clips'
+import { DEFAULT_CONFIG } from '../lib/streamerConfig'
 import { useClipStore } from './useClipStore'
 
 const initial = useClipStore.getState()
@@ -10,7 +10,7 @@ describe('useClipStore', () => {
   it('starts with mock highlights including Jynxzi', () => {
     const clips = useClipStore.getState().clips
     expect(clips.length).toBeGreaterThan(5)
-    expect(clips.some((c) => c.streamer === FEATURED_STREAMER)).toBe(true)
+    expect(clips.some((c) => c.streamer === DEFAULT_CONFIG.primary)).toBe(true)
   })
 
   it('toggles favorite', () => {
