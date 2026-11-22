@@ -6,8 +6,13 @@ import { readFileSync } from 'node:fs'
 const html = readFileSync('../site/windows.html', 'utf8')
 
 describe('site/windows.html', () => {
-  it('links to GitHub Releases latest and describes both builds', () => {
-    expect(html).toContain('href="https://github.com/troxerr/chat-clip/releases/latest"')
+  it('shows a coming-soon status instead of a download link until a signed release is public', () => {
+    expect(html).toContain('Windows release coming soon')
+    expect(html).not.toContain('releases/latest')
+    expect(html).not.toMatch(/href="[^"]*\.exe"/)
+  })
+
+  it('still describes both builds and the SmartScreen warning', () => {
     expect(html).toMatch(/Setup/)
     expect(html).toMatch(/Portable/)
     expect(html).toMatch(/SmartScreen/)
