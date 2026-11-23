@@ -28,6 +28,13 @@
     { id: "4", channel: "somestreamer", createdAt: "2026-11-17T18:30:00Z", reason: "Chat spike: 47 chatters", available: true, rating: "" }
   ];
   const state = { capture, license, settings: { launchAtLogin: false, permissionAcknowledged: params.has("ack"), outputFolder: "C:\\Users\\streamer\\Videos\\ClipSpike" }, version: "0.1.0", versions: { electron: "45.3.4", node: "24.1.0" } };
+  const updateStatus = params.get("update") || "idle";
+  let updateState = {
+    status: updateStatus,
+    version: ["downloading", "ready"].includes(updateStatus) ? "0.1.1" : null,
+    percent: updateStatus === "downloading" ? 42 : null,
+    error: updateStatus === "error" ? "net::ERR_INTERNET_DISCONNECTED" : null
+  };
   const fire = (name, value) => (listeners[name] || []).forEach((fn) => fn(value));
   window.__hdStub = { state, fire };
   window.hd = {
@@ -44,6 +51,12 @@
     clips: { list: async () => structuredClone(clips), open: async () => true, reveal: async () => true, rate: async (id, r) => { const c = clips.find((x) => x.id === id); c.rating = c.rating === r ? "" : r; return c.rating; } },
     license: { activate: async () => { throw new Error("That license key could not be activated."); }, validate: async () => structuredClone(state.license), deactivate: async () => structuredClone(state.license), buy: async () => true },
     settings: { set: async (c) => { Object.assign(state.settings, c); return structuredClone(state.settings); } },
+    // ?update=disabled|idle|checking|downloading|ready|up-to-date|error picks the starting state.
+    update: {
+      state: async () => structuredClone(updateState),
+      check: async () => { updateState = { status: "up-to-date", version: null, percent: null, error: null }; fire("update", updateState); return structuredClone(updateState); },
+      install: async () => true
+    },
     openClipFolder: async () => true,
     openLink: async () => true,
     on: (name, fn) => { (listeners[name] = listeners[name] || []).push(fn); return () => {}; }

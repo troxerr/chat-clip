@@ -6,7 +6,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 const call = (name, ...args) => ipcRenderer.invoke("hd:call", name, ...args);
-const EVENTS = new Set(["capture", "clips", "navigate", "notice"]);
+const EVENTS = new Set(["capture", "clips", "navigate", "notice", "update"]);
 
 contextBridge.exposeInMainWorld("hd", {
   getState: () => call("getState"),
@@ -27,6 +27,11 @@ contextBridge.exposeInMainWorld("hd", {
     buy: () => call("license.buy")
   },
   settings: { set: (changes) => call("settings.set", { launchAtLogin: Boolean(changes && changes.launchAtLogin) }) },
+  update: {
+    state: () => call("update.state"),
+    check: () => call("update.check"),
+    install: () => call("update.install")
+  },
   openClipFolder: () => call("openClipFolder"),
   openLink: (url) => call("openLink", String(url)),
   on: (name, fn) => {

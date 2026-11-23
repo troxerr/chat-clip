@@ -103,6 +103,7 @@ function main() {
   record("startup.begin");
   let services;
   let win = null;
+  let updater = null;
 
   const send = (name, value) => { if (win && !win.isDestroyed()) win.webContents.send("hd:event", name, value); };
 
@@ -157,6 +158,9 @@ function main() {
       "license.deactivate": tracked("license.deactivate", () => c.license.deactivate()),
       "license.buy": () => c.license.buy(),
       "settings.set": (changes) => c.settings.set(changes),
+      "update.state": () => (updater ? updater.getState() : { status: "disabled", version: null, percent: null, error: null }),
+      "update.check": () => (updater ? updater.check() : null),
+      "update.install": () => (updater ? updater.install() : false),
       openClipFolder: () => c.openClipFolder(),
       openLink: (url) => c.openLink(url)
     };
@@ -208,9 +212,10 @@ function main() {
     app.on("second-instance", () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
     if (!SMOKE) {
       try {
-        require("./updater.js").startAutoUpdate({
+        updater = require("./updater.js").startAutoUpdate({
           app, autoUpdater: require("electron-updater").autoUpdater, resourcesPath: process.resourcesPath, log: (m) => console.log(`[updater] ${m}`)
         });
+        updater.onChange((state) => send("update", state));
       } catch (error) { console.log(`[updater] disabled: ${error.message}`); }
     }
     if (SMOKE) require("./smoke.js").run({ win, services, dir: SMOKE, send });

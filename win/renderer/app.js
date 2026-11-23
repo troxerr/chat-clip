@@ -8,6 +8,7 @@
   const PAGES = ["capture", "clips", "settings"];
   let hd = null;
   let snap = null;
+  let upd = { status: "disabled" };
   let clipList = [];
   let clipQuery = "";
   const ui = {};
@@ -160,12 +161,37 @@
     ui.launch = el("input", { type: "checkbox", id: "launch", onchange: () => guarded(async () => { await hd.settings.set({ launchAtLogin: ui.launch.checked }); await refresh(); }) });
     ui.folder = el("dd");
     ui.about = el("dl", { class: "kv" });
+    ui.updText = el("p", { id: "update-status", role: "status" });
+    ui.updBtn = el("button", { class: "btn", type: "button", id: "update-btn", onclick: () => guarded(async () => {
+      if (upd.status === "ready") await hd.update.install(); else await hd.update.check();
+    }) });
     $("page-settings").replaceChildren(el("h1", { id: "h-settings", text: "Settings" }), ui.licenseCard,
       el("div", { class: "card" }, el("h2", { text: "General" }),
         el("label", { class: "check", for: "launch" }, ui.launch, el("span", { text: "Start ClipSpike when I sign in to Windows" })),
         el("dl", { class: "kv" }, el("dt", { text: "Clip folder" }), ui.folder),
         el("div", { class: "row", style: false }, el("button", { class: "btn", type: "button", text: "Open clip folder", onclick: () => guarded(() => hd.openClipFolder()) }))),
+      el("div", { class: "card", id: "update-card" }, el("h2", { text: "Updates" }), ui.updText, el("div", { class: "row", style: false }, ui.updBtn)),
       el("div", { class: "card" }, el("h2", { text: "About" }), ui.about));
+  }
+
+  // Updates are checked at launch and download in the background; this card shows where that stands
+  // and lets people check now or restart into a downloaded version.
+  function updateUpdates() {
+    const { status, version, percent, error } = upd;
+    const label = {
+      disabled: "Automatic updates are not available in this build.",
+      idle: "ClipSpike checks for updates when it starts.",
+      checking: "Checking for updates…",
+      downloading: `Downloading version ${version}${Number.isFinite(percent) ? ` (${percent}%)` : ""}…`,
+      ready: `Version ${version} is ready. Restart ClipSpike to finish updating.`,
+      "up-to-date": `You have the latest version${snap && snap.version ? ` (${snap.version})` : ""}.`,
+      error: `Could not check for updates${error ? `: ${error}` : "."}`
+    }[status] || "";
+    ui.updText.textContent = label;
+    ui.updBtn.hidden = status === "disabled";
+    ui.updBtn.disabled = status === "checking" || status === "downloading";
+    ui.updBtn.classList.toggle("primary", status === "ready");
+    ui.updBtn.textContent = status === "ready" ? "Restart to update" : status === "error" ? "Try again" : "Check for updates";
   }
 
   function updateSettings() {
@@ -208,8 +234,10 @@
 
   async function refresh() {
     snap = await hd.getState();
+    upd = (await hd.update.state()) || upd;
     updateCapture();
     updateSettings();
+    updateUpdates();
   }
 
   async function loadClips() {
@@ -230,6 +258,7 @@
     hd.on("clips", () => loadClips());
     hd.on("navigate", (page) => { if (PAGES.includes(page)) show(page); });
     hd.on("notice", (message) => notify(message));
+    hd.on("update", (state) => { upd = state; updateUpdates(); });
     await refresh();
     await loadClips();
     show(new URLSearchParams(location.search).get("page") || "capture");
