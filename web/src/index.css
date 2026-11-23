@@ -55,6 +55,12 @@ main:focus-visible { outline: none; }
 .player { max-width: 720px; margin-bottom: 1rem; }
 .score { position: absolute; top: .5rem; left: .5rem; padding: .15rem .5rem; border-radius: 6px; font-weight: 700; font-size: .85rem; background: #000b; }
 .score-high { color: #00e08a; } .score-mid { color: #ffd23f; } .score-low { color: var(--muted); }
+.thumb-mature { overflow: hidden; }
+.thumb-mature::before { content: ''; position: absolute; inset: -12px; background: var(--thumb-img) center / cover; filter: blur(16px) brightness(.7); }
+.thumb-mature > * { position: absolute; }
+.mature-tag { top: .5rem; right: .5rem; padding: .1rem .4rem; border-radius: 4px; font-size: .7rem; font-weight: 700; background: #000b; z-index: 1; }
+.thumb-mature .score, .thumb-mature .dur { z-index: 1; }
+.player-poster-mature img { filter: blur(24px) brightness(.7); transform: scale(1.1); }
 .dur { position: absolute; bottom: .5rem; right: .5rem; background: #000b; padding: .1rem .4rem; border-radius: 4px; font-size: .75rem; }
 .player-frame { border: 0; width: 100%; height: 100%; border-radius: 8px; }
 .player-poster { all: unset; box-sizing: border-box; position: absolute; inset: 0; cursor: pointer; border-radius: 8px; overflow: hidden; display: grid; place-items: center; }

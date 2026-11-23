@@ -6,16 +6,17 @@ export default function ClipCard({ clip }: { clip: Clip }) {
   return (
     <Link to={`/clips/${clip.id}`} className="card">
       <div
-        className="thumb"
+        className={clip.mature ? 'thumb thumb-mature' : 'thumb'}
         style={{
           ['--hue' as string]: clip.hue,
-          ...(clip.thumbnailUrl && {
-            backgroundImage: `url(${clip.thumbnailUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }),
+          // Mature clips draw the image on a blurred ::before layer so the score/duration badges stay sharp.
+          ...(clip.thumbnailUrl &&
+            (clip.mature
+              ? { ['--thumb-img' as string]: `url(${clip.thumbnailUrl})` }
+              : { backgroundImage: `url(${clip.thumbnailUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' })),
         }}
       >
+        {clip.mature && <span className="mature-tag">Mature · blurred</span>}
         <span className={`score score-${scoreTier(clip.score)}`} title="Highlight score">
           {clip.score}
         </span>

@@ -1,5 +1,6 @@
 import type { Clip } from '../data/clips'
 import type { StatusMap } from './streamers'
+import { isLikelyMature } from './matureFilter'
 
 /** Maps the generated status.json onto the configured streamer names; null if the payload is invalid. */
 export function parseStatus(json: unknown, names: string[]): StatusMap | null {
@@ -104,5 +105,6 @@ export function parseClips(json: unknown, names: string[]): Clip[] | null {
     url: c.url,
     thumbnailUrl: c.thumbnailUrl,
     slug: clipSlug(c),
+    mature: isLikelyMature(c),
   }))
 }

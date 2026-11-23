@@ -20,9 +20,9 @@ export default function ClipPlayer({ clip }: { clip: Clip }) {
       ) : (
         <>
           {slug && (
-            <button type="button" className="player-poster" onClick={() => setPlaying(true)} aria-label={`Play clip: ${clip.title}`}>
+            <button type="button" className={clip.mature ? 'player-poster player-poster-mature' : 'player-poster'} onClick={() => setPlaying(true)} aria-label={`Play clip: ${clip.title}`}>
               {clip.thumbnailUrl && <img src={clip.thumbnailUrl} alt="" loading="lazy" />}
-              <span className="player-play">▶ Play clip</span>
+              <span className="player-play">{clip.mature ? '▶ Mature content: click to play' : '▶ Play clip'}</span>
             </button>
           )}
           <span className={`score score-${scoreTier(clip.score)}`}>{clip.score}</span>
