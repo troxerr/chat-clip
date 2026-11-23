@@ -4,6 +4,9 @@ import type { StatusMap } from '../lib/streamers'
 import { allStreamers } from '../lib/streamerConfig'
 import { useStreamerStore } from './useStreamerStore'
 import { parseClips, parseStatus, parseStreamDetails, type StreamDetails } from '../lib/twitchData'
+import { visibleClips } from '../lib/matureFilter'
+import { monetization } from '../monetization'
+import { hasSponsoredContent } from '../monetization/config'
 
 export type { Clip }
 export type DataSource = 'live' | 'demo'
@@ -71,7 +74,8 @@ export const useClipStore = create<ClipState>((set, get) => ({
       set({
         streamStatus: status,
         streamDetails: parseStreamDetails(statusJson, currentNames()),
-        clips: fresh.filter((c) => !dismissed.includes(c.id)).map((c) => ({ ...c, favorite: favorites.has(c.id) })),
+        // With ads, sponsors or affiliates on, flagged clips are hidden outright (blurred otherwise).
+        clips: visibleClips(fresh, hasSponsoredContent(monetization)).filter((c) => !dismissed.includes(c.id)).map((c) => ({ ...c, favorite: favorites.has(c.id) })),
         pipelineLogins: Object.keys((statusJson as { streamers: object }).streamers).map((k) => k.toLowerCase()),
         dataSource: 'live',
         loadState: 'ready',
