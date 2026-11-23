@@ -100,3 +100,24 @@ test("when updating is off the actions are safe no-ops with a disabled state", a
   assert.equal((await result.check()).status, "disabled");
   assert.equal(typeof result.onChange(() => {}), "function");
 });
+
+test("each update step is recorded by name, and failures carry the error for categorising", async () => {
+  const events = [];
+  const { au, result } = setup({ record: (event, error) => events.push(error === undefined ? event : [event, String(error.message || error)]) });
+  au.emit("checking-for-update");
+  au.emit("update-not-available");
+  au.emit("update-available", { version: "0.1.3" });
+  au.emit("update-downloaded", { version: "0.1.3" });
+  au.quitAndInstall = () => {};
+  result.install();
+  au.emit("error", new Error("sha512 checksum mismatch"));
+  assert.deepEqual(events, ["update.check", "update.not_available", "update.available", "update.downloaded", "update.install", ["update.error", "sha512 checksum mismatch"]]);
+});
+
+test("a rejected check is recorded once, not once per path", async () => {
+  const events = [];
+  const { au, result } = setup({ record: (event) => events.push(event) });
+  au.checkForUpdates = () => Promise.reject(new Error("net::ERR_INTERNET_DISCONNECTED"));
+  await result.check();
+  assert.equal(events.filter((e) => e === "update.error").length, 1);
+});
