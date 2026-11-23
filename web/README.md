@@ -25,8 +25,12 @@ npm run preview  # serve the production build
 - Marketing site: https://clipspike.com/
 - Web app: https://clipspike.com/app/
 
-Client-side routing: the app uses `HashRouter` (URLs like `/app/#/clips`), so deep
-links work on GitHub Pages without server rewrites or a 404 fallback.
+Client-side routing: the app uses `BrowserRouter` with the Vite base as basename (URLs like
+`/app/clips`). GitHub Pages has no rewrites, so the build emits `404.html` (see
+`spaFallback` in `vite.config.ts`), which stashes the requested path in `sessionStorage` and
+redirects to the app root; `src/lib/legacyRoutes.ts` restores it. Old `/app/#/clips` links
+are rewritten to `/app/clips` on load. The Twitch embed `parent` values are hostnames only,
+so they are unaffected by paths.
 
 Pages is already enabled with the "GitHub Actions" source. To test locally:
 `VITE_BASE=/app/ npm run build && VITE_BASE=/app/ npm run preview`.

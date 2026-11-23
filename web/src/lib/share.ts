@@ -8,8 +8,8 @@ interface Shareable {
   url?: string
 }
 
-// Crawlers don't execute HashRouter routes, so link previews can only come from the
-// app root (static OG tags) or the Twitch clip page. Prefer the clip URL when we have one.
+// Routes are client-rendered, so crawlers only see the static OG tags of the
+// app root or the Twitch clip page. Prefer the clip URL when we have one.
 export function shareUrl(clip: Shareable): string {
   return clip.url || APP_URL
 }
