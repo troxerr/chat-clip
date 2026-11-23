@@ -35,6 +35,12 @@ describe('routing', () => {
     expect(screen.getByText('No highlights match your filters.')).toBeInTheDocument()
   })
 
+  it('keeps the footer disclosure truthful when nothing is sponsored', () => {
+    renderAt('/')
+    expect(screen.getByText(/Not affiliated with or endorsed by Twitch/)).toBeInTheDocument()
+    expect(screen.queryByText(/sponsored or affiliate links/)).toBeNull()
+  })
+
   it('opens a clip detail and dismisses it', async () => {
     const user = userEvent.setup()
     renderAt('/clips')

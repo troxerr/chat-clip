@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { adsenseReady, buildConfig, consentRequired, type AffiliateItem, type MonetizationConfig } from './config'
+import { adsenseReady, buildConfig, hasSponsoredContent, consentRequired, type AffiliateItem, type MonetizationConfig } from './config'
 import { monetization } from './index'
 import { CONSENT_KEY, getConsent, reloadConsent, resetConsent, setConsent } from './consent'
 import { initAnalytics, track } from './analytics'
@@ -178,5 +178,21 @@ describe('waitlist', () => {
     await userEvent.type(screen.getByLabelText('Email address'), 'nope')
     await userEvent.click(screen.getByRole('button', { name: 'Notify me' }))
     expect(screen.getByRole('alert')).toHaveTextContent('valid email')
+  })
+})
+
+describe('hasSponsoredContent (disclosure)', () => {
+  it('is false by default and with only a tip link or analytics', () => {
+    expect(hasSponsoredContent(buildConfig({}, aff))).toBe(false)
+    expect(hasSponsoredContent(buildConfig({ VITE_SUPPORT_URL: 'https://ko-fi.com/x' }, aff))).toBe(false)
+    expect(hasSponsoredContent(plausible)).toBe(false)
+    expect(hasSponsoredContent(buildConfig({ VITE_AFFILIATES_ENABLED: 'true' }, []))).toBe(false)
+  })
+
+  it('is true for a configured sponsor, AdSense, or affiliates', () => {
+    const sponsor = { VITE_ADS_ENABLED: 'true', VITE_SPONSOR_NAME: 'Acme', VITE_SPONSOR_URL: 'https://acme.example' }
+    expect(hasSponsoredContent(buildConfig(sponsor, []))).toBe(true)
+    expect(hasSponsoredContent(adsense)).toBe(true)
+    expect(hasSponsoredContent(buildConfig({ VITE_AFFILIATES_ENABLED: 'true' }, aff))).toBe(true)
   })
 })
