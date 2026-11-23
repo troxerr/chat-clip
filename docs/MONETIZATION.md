@@ -72,3 +72,11 @@ When you add a new `VITE_*` variable to `web/.env.example`, also add it to the b
 - Paid tiers later: Terms/refund policy and tax (Lemon Squeezy is merchant of record).
 
 This document is not legal advice.
+
+## Mature-content filter
+
+Twitch's clips API has no mature flag, so `web/src/lib/matureFilter.ts` flags clips from their title (sexual and explicit terms, slurs, gore, star-masked profanity, plus elongated, leetspeak and dotted spellings) and from a manual `BLOCKED_CLIP_IDS` list.
+
+- Flagged clips are **blurred** with a "Mature" tag by default.
+- Once ads, a sponsor or affiliate links are configured (the same condition that shows the sponsored-links footer notice), flagged clips are **hidden entirely**, so no ad sits next to them.
+- It is a title heuristic: it cannot see the video. Review the top clips before applying to an ad network, and add reviewed ids to `BLOCKED_CLIP_IDS`.
