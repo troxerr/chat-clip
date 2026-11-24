@@ -32,6 +32,24 @@ redirects to the app root; `src/lib/legacyRoutes.ts` restores it. Old `/app/#/cl
 are rewritten to `/app/clips` on load. The Twitch embed `parent` values are hostnames only,
 so they are unaffected by paths.
 
+## SEO and prerendering
+
+GitHub Pages answers unknown paths with HTTP 404 (the root `404.html` fallback), so deep links
+would not be indexed. `scripts/prerender.ts` (a Vite plugin) therefore emits real
+`<route>/index.html` files (HTTP 200) after every build for `/`, `clips`, `streamers`, `pro`,
+`about`, `privacy`, `terms` and one `streamer/<login>/` page per login in `../config/streamers.json`.
+Each has its own `<title>`, description, canonical (trailing-slash URL), Open Graph/Twitter tags,
+JSON-LD (WebSite + Organization on home, BreadcrumbList, and an ItemList of VideoObject clips on
+`clips` and streamer pages when `dist/data/clips.json` exists; mature and thumbnail-less clips are skipped)
+and a crawlable static body inside `#root`, which React replaces on boot. It also writes
+`dist/sitemap.xml` (served at `/app/sitemap.xml`); `site/sitemap.xml` is a sitemap index pointing at it
+and `site/sitemap-site.xml`. Unknown paths still hit the 404 fallback; clip permalinks and
+unlisted streamers get `noindex`.
+
+Metadata lives in `src/lib/seo.ts` and is shared with `src/components/RouteHead.tsx`, which keeps
+the head in sync during client-side navigation. To add an indexable route, add it to `STATIC_PAGES`
+in `seo.ts` (and the router). Analytics setup: `../docs/MONETIZATION.md` section 6.
+
 Pages is already enabled with the "GitHub Actions" source. To test locally:
 `VITE_BASE=/app/ npm run build && VITE_BASE=/app/ npm run preview`.
 
