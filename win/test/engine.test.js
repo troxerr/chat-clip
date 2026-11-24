@@ -117,3 +117,83 @@ test("non-JSON output lines are ignored", async () => {
   await engine.stop();
   assert.ok(events.includes("ready"));
 });
+
+// ---- automatic restart after an unexpected exit ----
+const fs = require("node:fs");
+const os = require("node:os");
+const counterFile = () => path.join(fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-engine-")), "runs");
+const restartable = (mode, dieRuns, extra = {}) => {
+  const counter = counterFile();
+  const engine = make(mode, {
+    restartBaseMs: 40, minUptimeMs: 100, healthyUptimeMs: 60000, ...extra,
+    env: { ...process.env, FAKE_ENGINE: mode, FAKE_COUNTER: counter, FAKE_DIE_RUNS: String(dieRuns) }
+  });
+  return { engine, counter };
+};
+
+test("a recorder that dies after running a while is restarted and the capture continues", async () => {
+  const { engine, counter } = restartable("flaky", 1);
+  const events = [];
+  engine.on("event", (e) => events.push(e.type));
+  let exited = false;
+  engine.on("exit", () => { exited = true; });
+  const secondReady = new Promise((resolve) => {
+    let ready = 0;
+    engine.on("event", (e) => { if (e.type === "ready" && ++ready === 2) resolve(); });
+  });
+  engine.start("abc");
+  await secondReady;
+  assert.equal(exited, false, "an automatic restart is not a final exit");
+  assert.ok(events.includes("recorder-restarting"));
+  assert.equal(engine.running, true);
+  assert.equal(fs.readFileSync(counter, "utf8"), "2");
+  await engine.stop();
+});
+
+test("the restart event says which attempt it is and how many are allowed", async () => {
+  const { engine } = restartable("flaky", 1);
+  const restarting = once(engine, "event", (e) => e.type === "recorder-restarting");
+  engine.start("abc");
+  const event = await restarting;
+  assert.equal(event.attempt, 1);
+  assert.equal(event.max, 3);
+  assert.match(event.message, /attempt 1 of 3/);
+  await engine.stop();
+});
+
+test("it gives up after the retry limit and reports one final exit", async () => {
+  const { engine, counter } = restartable("flaky", 99, { restartMax: 2 });
+  const restarts = [];
+  engine.on("event", (e) => { if (e.type === "recorder-restarting") restarts.push(e.attempt); });
+  const exit = once(engine, "exit");
+  engine.start("abc");
+  const info = await exit;
+  assert.equal(info.unexpected, true);
+  assert.deepEqual(restarts, [1, 2]);
+  assert.equal(fs.readFileSync(counter, "utf8"), "3", "one start plus two restarts");
+  assert.equal(engine.running, false);
+});
+
+test("a recorder that dies at once is reported, not retried", async () => {
+  const { engine, counter } = restartable("quickdeath", 99, { minUptimeMs: 5000 });
+  const exit = once(engine, "exit");
+  engine.start("abc");
+  const info = await exit;
+  assert.equal(info.unexpected, true);
+  assert.equal(fs.readFileSync(counter, "utf8"), "1");
+});
+
+test("stopping while a restart is waiting cancels it", async () => {
+  const { engine, counter } = restartable("flaky", 99, { restartBaseMs: 600 });
+  const restarting = once(engine, "event", (e) => e.type === "recorder-restarting");
+  engine.start("abc");
+  await restarting;
+  assert.equal(engine.running, true, "still counts as running while it waits");
+  assert.throws(() => engine.start("abc"), /already running/);
+  const exit = once(engine, "exit");
+  await engine.stop();
+  assert.equal((await exit).unexpected, false);
+  assert.equal(engine.running, false);
+  await new Promise((resolve) => setTimeout(resolve, 800));
+  assert.equal(fs.readFileSync(counter, "utf8"), "1", "no relaunch after the stop");
+});

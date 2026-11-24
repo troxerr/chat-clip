@@ -11,7 +11,7 @@ const EVENTS = new Set([
   "startup.begin", "startup.ready", "startup.failed", "renderer.load_failed",
   "renderer.exited", "license.activate", "license.validate", "license.deactivate",
   "capture.start", "capture.stop", "capture.save_highlight",
-  "capture.clip_failed", "capture.error", "capture.fatal", "capture.exited",
+  "capture.clip_failed", "capture.error", "capture.fatal", "capture.exited", "capture.restarting",
   "credential.read_failed",
   "update.check", "update.available", "update.not_available", "update.downloaded", "update.install", "update.error"
 ]);

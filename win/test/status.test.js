@@ -71,3 +71,16 @@ test("unknown events and junk change nothing", () => {
   assert.equal(reduce(s, null), s);
   assert.equal(reduce(s, { nope: 1 }), s);
 });
+
+test("an automatic restart shows as starting with the reason, and clears once the recorder is ready", () => {
+  const { reduce, started } = require("../main/status.js");
+  let state = started({ clipsSaved: 0 }, "abc");
+  state = reduce(state, { type: "fatal", message: "boom" });
+  assert.equal(state.phase, "error");
+  state = reduce(state, { type: "recorder-restarting", message: "The recorder stopped unexpectedly. Restarting it (attempt 1 of 3)." });
+  assert.equal(state.phase, "starting");
+  assert.match(state.message, /attempt 1 of 3/);
+  state = reduce(state, { type: "ready", channel: "abc" });
+  assert.equal(state.phase, "buffering");
+  assert.equal(state.lastError, "");
+});

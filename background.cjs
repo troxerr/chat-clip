@@ -16,6 +16,7 @@ const monitorPolicy = require("./lib/monitor-policy.js");
 const { parseChatLine, isPrivileged, isClipCommand, roomId } = require("./dist/irc.js");
 const { settingsFor } = require("./dist/config.js");
 const platform = require("./lib/platform.js");
+const health = require("./lib/recorder-health.js");
 const { resolveEncoder } = require("./lib/encoder.js");
 const { parseSource } = require("./lib/stream-source.js");
 const { relaySettings, connectKickChat } = require("./lib/kick-chat.js");
@@ -90,6 +91,8 @@ let emoteCounts = new Map();
 let messageCount = 0;
 let mediaTime = 0;
 let lastFrameAt = 0;
+let recordFailures = 0;
+let stallHandledToken = 0;
 let recordToken = 0;
 let pending = null;
 let exporting = null;
@@ -291,7 +294,8 @@ function record() {
     ], { stdio: ["pipe", "ignore", "inherit", "pipe"] });
   } catch (error) {
     emit("error", { message: `Could not launch the recorder: ${error.message}` });
-    setTimeout(record, 15000);
+    recordFailures += 1;
+    scheduleRecord();
     return;
   }
 
@@ -306,6 +310,7 @@ function record() {
       if (Number.isFinite(seconds) && seconds >= 0 && seconds > mediaTime) {
         mediaTime = seconds;
         lastFrameAt = Date.now();
+        if (mediaTime >= health.HEALTHY_MEDIA_SECONDS) recordFailures = 0;
       }
     });
   }
@@ -340,9 +345,43 @@ async function waitForExport() {
   try { await current; } catch {}
 }
 
+// Relaunches the recorder after a wait that grows while it keeps failing.
+// record() runs from timers, so a throw (a full disk, a locked file) must not
+// escape as an unhandled error and end an unattended capture.
+function scheduleRecord() {
+  if (stopping) return;
+  setTimeout(() => {
+    if (stopping) return;
+    try {
+      record();
+    } catch (error) {
+      recordFailures += 1;
+      emit("error", { message: `Could not restart the recorder: ${error.message}` });
+      scheduleRecord();
+    }
+  }, health.restartDelay(recordFailures));
+}
+
+// Ends a recorder that is still running but no longer receiving video, so the
+// normal close handling restarts it.
+function killStalledRecorder() {
+  stallHandledToken = recordToken;
+  const enc = encoder;
+  const src = source;
+  emit("error", { message: "Video stopped arriving, so the recorder is restarting." });
+  try { src?.kill("SIGTERM"); } catch {}
+  try { enc?.kill("SIGTERM"); } catch {}
+  // A process that ignores SIGTERM is ended outright.
+  setTimeout(() => {
+    try { if (src && src.exitCode === null) src.kill("SIGKILL"); } catch {}
+    try { if (enc && enc.exitCode === null) enc.kill("SIGKILL"); } catch {}
+  }, 5000).unref?.();
+}
+
 async function handleEncoderClose() {
   if (restarting || stopping) return;
   restarting = true;
+  if (mediaTime < health.HEALTHY_MEDIA_SECONDS) recordFailures += 1;
   try {
     emit("status", { recording: false, joined, mediaTime: 0 });
     if (pending) await maybeExport(true);
@@ -360,7 +399,7 @@ async function handleEncoderClose() {
     lastFrameAt = 0;
   } finally {
     restarting = false;
-    if (!stopping) setTimeout(record, 15000);
+    scheduleRecord();
   }
 }
 
@@ -1019,6 +1058,7 @@ async function tick() {
   tickBusy = true;
   try {
     cleanupSegments();
+    if (stallHandledToken !== recordToken && health.isStalled({ hasEncoder: Boolean(encoder), restarting, stopping, lastFrameAt })) killStalledRecorder();
     if (pending) maybeExport().catch(error => emit("error", { message: `Exporter: ${error.message}` }));
     if (pending && Date.now() - lastFrameAt > 15000) {
       // The stream stalled after the trigger; save what exists instead of blocking forever.

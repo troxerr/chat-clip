@@ -195,7 +195,7 @@ function main() {
       return handler(...args);
     });
     const engineErrors = new Map([
-      ["clip-failed", "capture.clip_failed"], ["error", "capture.error"], ["fatal", "capture.fatal"]
+      ["clip-failed", "capture.clip_failed"], ["error", "capture.error"], ["fatal", "capture.fatal"], ["recorder-restarting", "capture.restarting"]
     ]);
     services.engine.on("event", (event) => {
       const name = engineErrors.get(event.type);

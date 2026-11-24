@@ -17,7 +17,7 @@ const INITIAL = Object.freeze({
 const BUFFER_SECONDS = 3;
 
 function describe(next) {
-  if (next.phase === "starting") return "Starting the recorder…";
+  if (next.phase === "starting") return next.lastError && /Restarting/.test(next.lastError) ? next.lastError : "Starting the recorder…";
   if (next.phase === "stopping") return "Stopping…";
   if (next.phase === "exporting") return "Saving a highlight…";
   if (next.phase === "buffering") return "Filling the video buffer. A highlight can be saved in a few seconds.";
@@ -62,6 +62,10 @@ function reduce(state, event) {
     case "clip-failed":
       next.lastError = event.error || "A highlight could not be saved.";
       if (next.phase === "exporting") next.phase = "watching";
+      break;
+    case "recorder-restarting":
+      next.phase = "starting";
+      next.lastError = event.message || next.lastError;
       break;
     case "error":
       next.lastError = event.message || next.lastError;
