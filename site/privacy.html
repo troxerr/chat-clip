@@ -15,16 +15,17 @@
   <main class="wrap legal">
     <div class="notice">Template only. Replace the placeholders, confirm the data practices, and have this reviewed by a lawyer before publishing.</div>
     <h1>Privacy Policy</h1>
-    <p>Effective date: [DATE] · Controller: [LEGAL ENTITY], [ADDRESS] · Contact: support@clipspike.example</p>
+    <p>Effective date: 2026-11-24 · Controller: Austin Taylor, doing business as AST Labs, [ADDRESS] · Contact: support@clipspike.com</p>
     <h2>What ClipSpike does</h2>
-    <p>ClipSpike is a macOS application that records a Twitch channel's video and chat, creates local highlight clips, and optionally uploads those clips to a storage account you choose. The app is sold and licensed through Lemon Squeezy.</p>
+    <p>ClipSpike is a desktop application for macOS and Windows that records a Twitch channel's video and chat, creates local highlight clips, and optionally uploads those clips to a storage account you choose. The app is sold and licensed through Polar, which acts as merchant of record.</p>
     <h2>Data the app processes</h2>
     <ul>
       <li><strong>Twitch chat and video:</strong> read anonymously to detect reactions and produce clips. No Twitch account or password is used.</li>
-      <li><strong>Clip files and sidecars:</strong> stored on your Mac and, if you choose, in your Dropbox or Google Drive account.</li>
-      <li><strong>OAuth credentials:</strong> Dropbox and Google Drive refresh tokens are stored in the macOS Keychain. Non-secret settings are stored in a local config file with restricted permissions.</li>
-      <li><strong>License data:</strong> a license key, activation instance, and last validation time, validated with Lemon Squeezy.</li>
-      <li><strong>Diagnostics:</strong> local logs and, if you opt in, crash reports. Tokens and credentials are scrubbed.</li>
+      <li><strong>Clip files and sidecars:</strong> stored on your computer and, if you choose, in your Dropbox or Google Drive account.</li>
+      <li><strong>OAuth credentials:</strong> Dropbox and Google Drive refresh tokens are stored in the macOS Keychain on a Mac, and on Windows are encrypted with Windows Data Protection (DPAPI) for your user account. Non-secret settings are stored in a local config file in your user profile.</li>
+      <li><strong>License data:</strong> a license key, activation instance, and last validation time, validated with Polar.</li>
+      <li><strong>Diagnostics:</strong> local logs and crash reports, written to a folder on your computer. They are not sent to us or to anyone else automatically. Tokens and credentials are scrubbed.</li>
+      <li><strong>Update checks (Windows):</strong> the installed Windows app checks a download server we operate (downloads.astlabs.dev) for new versions at startup, which reveals your IP address and app version to that server. The portable Windows version does not check for updates.</li>
     </ul>
     <h2>Data we do not collect</h2>
     <p>The app does not operate a clip server, does not receive your clips, and does not require your Twitch credentials. It does not post to TikTok or any social network.</p>
@@ -34,15 +35,17 @@
       <li><strong>Streamlink</strong> — local stream resolution.</li>
       <li><strong>7TV</strong> — public emote metadata and images.</li>
       <li><strong>Dropbox / Google Drive</strong> — only if you connect them; uploads go to your account.</li>
-      <li><strong>Lemon Squeezy</strong> — checkout, payment, tax, and license validation.</li>
-      <li><strong>Crash reporting provider</strong> — [PROVIDER], only if enabled.</li>
+      <li><strong>Polar</strong> — merchant of record: checkout, payment, tax, refunds, and license validation.</li>
+      <li><strong>Cloudflare</strong> — hosts the Windows download and update files.</li>
     </ul>
+    <h2>Web dashboard</h2>
+    <p>The web dashboard at clipspike.com/app is separate from the desktop apps and has its own <a href="app/privacy">privacy policy</a>. It shows public Twitch clips and can include a consent banner, optional ads, affiliate links, analytics (only after you consent), and a waitlist form.</p>
     <h2>Retention and deletion</h2>
-    <p>Local clips remain until you delete them or enable deletion after upload. Remote clips remain in your storage account until you delete them there. License records are retained as required for tax, fraud prevention, and support. Uninstalling the app does not delete clips or remote files.</p>
+    <p>Local clips remain until you delete them or enable deletion after upload. Remote clips remain in your storage account until you delete them there. License and order records are retained by us and by Polar as required for tax, fraud prevention, and support. Uninstalling the app does not delete clips or remote files.</p>
     <h2>Your choices</h2>
-    <p>You can use Local only mode, disconnect storage, clear local history, and disable diagnostics. Depending on your jurisdiction, you may have rights to access, correct, delete, or port personal data. Contact us at support@clipspike.example.</p>
+    <p>You can use Local only mode, disconnect storage, clear local history, and disable diagnostics. Depending on your jurisdiction, you may have rights to access, correct, delete, or port personal data. Contact us at support@clipspike.com.</p>
     <h2>Security</h2>
-    <p>Credentials are stored in Keychain, network calls use HTTPS, and the app is distributed with Developer ID signing and notarization. No method is perfectly secure.</p>
+    <p>Credentials are stored in the macOS Keychain or encrypted for your Windows user account, and network calls use HTTPS. The Mac app is distributed with Developer ID signing and notarization. Windows builds may not be code-signed yet, in which case Windows SmartScreen shows a warning on first run. No method is perfectly secure.</p>
     <h2>Children</h2>
     <p>The app is not directed at children under 13 (or the applicable age in your jurisdiction).</p>
     <h2>Changes</h2>
