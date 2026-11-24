@@ -7,7 +7,7 @@ or push a `win-v*` tag), which builds with `win/electron-builder.release.yml`.
 ## Names and versions
 Everything Windows is **ClipSpike**: `productName` and `appId` (`com.clipspike.app`) in
 `win/electron-builder.yml`, the install folder, `%APPDATA%\ClipSpike`, and the artifacts. The
-Windows app version is `win/package.json` `version`, currently **0.1.3** (the root `package.json`
+Windows app version is `win/package.json` `version`, currently **0.1.4** (the root `package.json`
 3.0.0 is the Mac/engine version; the two are independent). Bump `win/package.json` before tagging.
 The pre-rename names "ChatClip" and "Highlight Desk" (and `Twitch-Highlight-Desk`) appear only in
 migration code and docs; a package still carrying them predates the rename.
