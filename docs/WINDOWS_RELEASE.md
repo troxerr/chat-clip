@@ -48,6 +48,9 @@ self-extracting exe). Manual verification: [WINDOWS_TEST_CHECKLIST.md](WINDOWS_T
 - `node win/tools/check-release-config.js` fails unless `win/build-config.json` has
   `licenseRequired: true`, a `productId`, an https `checkoutUrl` and `trialDays > 0`.
   The committed file keeps licensing off for dev builds, so set these before releasing.
+  Sandbox Polar values (`apiBase` or `checkoutUrl` containing `sandbox`) only warn until the repo variable
+  `REQUIRE_PRODUCTION_LICENSING` is set to `true`; then they fail the build and `apiBase` must be
+  `https://api.polar.sh`. Set it when the production Polar product and checkout link are in `build-config.json`.
 - Code signing is **optional**. With both `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD` set the
   installer is signed and the signature verified. Otherwise the workflow logs a warning, writes
   an "Unsigned build" note to the run summary, builds an unsigned installer, and the draft
