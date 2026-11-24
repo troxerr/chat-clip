@@ -35,6 +35,15 @@ jobs:
         with:
           node-version: "22"
 
+      # Fail fast, before the long build: a tag that does not match win/package.json would
+      # publish an installer under the wrong version. Test builds use workflow_dispatch, not tags.
+      - name: Check the tag matches the app version
+        if: startsWith(github.ref, 'refs/tags/win-v')
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: node win/tools/release-guards.js tag "$env:REF_NAME"
+        shell: pwsh
+
       - name: Report signing status
         shell: pwsh
         run: |
@@ -136,8 +145,15 @@ jobs:
           $endpoint = "https://$($env:R2_ACCOUNT_ID).r2.cloudflarestorage.com"
           $prefix = $env:WIN_R2_PREFIX.Trim("/")
           $exe = Get-ChildItem win\dist -Filter "ClipSpike-*-x64.exe" | Select-Object -First 1
+          # Releases are immutable: never replace an installer clients may already have cached.
+          node win/tools/release-guards.js not-published $env:WIN_UPDATE_URL $exe.Name
+          if ($LASTEXITCODE -ne 0) { exit 1 }
           aws s3 cp $exe.FullName "s3://$($env:R2_BUCKET)/$prefix/$($exe.Name)" --endpoint-url $endpoint
           if ($LASTEXITCODE -ne 0) { exit 1 }
           aws s3 cp win\dist\latest.yml "s3://$($env:R2_BUCKET)/$prefix/latest.yml" --endpoint-url $endpoint --cache-control "no-cache"
           if ($LASTEXITCODE -ne 0) { exit 1 }
           Write-Host "Uploaded to $prefix/ in the R2 bucket. Check: $($env:WIN_UPDATE_URL.TrimEnd('/'))/latest.yml"
+          # Confirm what clients will actually get: the live latest.yml matches this build, and the
+          # installer they would download has the size and sha512 it promises.
+          node win/tools/release-guards.js verify $env:WIN_UPDATE_URL win\dist
+          if ($LASTEXITCODE -ne 0) { exit 1 }

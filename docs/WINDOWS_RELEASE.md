@@ -54,6 +54,14 @@ self-extracting exe). Manual verification: [WINDOWS_TEST_CHECKLIST.md](WINDOWS_T
   release notes say it is unsigned. A missing cert never fails the run.
 - `latest.yml` and the app feed config must exist. Tag builds attach installer + `latest.yml`
   to a draft GitHub release.
+- Tag builds also run `win/tools/release-guards.js` (unit-tested in `win/test/release-guards.test.js`):
+  1. **Tag matches version**: the tag must be exactly `win-v` + the `win/package.json` version, checked
+     before the build. Bump the version in its own PR first. For a test build use "Run workflow"
+     (workflow_dispatch), not a tag; a tag such as `win-v0.1.3-test` is refused.
+  2. **Releases are immutable**: the upload is refused if `ClipSpike-<version>-x64.exe` is already on the
+     feed, because replacing it would change the sha512 clients may have cached. Re-releasing means a new version.
+  3. **Feed verified after upload**: the live `latest.yml` must match the build (version, file, sha512, size),
+     and the installer a client would download is fetched and its size and sha512 checked.
 
 ## Licensing provider (Polar sandbox)
 The Windows app picks its provider from `win/build-config.json`: `provider` (`polar`) and
@@ -111,6 +119,24 @@ otherwise copy them from the draft release or the workflow artifact). Unsigned b
 | Optional runtime mirror | Variable `RUNTIME_MIRROR_URL` hosting the pinned assets from `tools/runtime-win.json` |
 | Decisions deferred | Version, app ID, product name |
 
-## Unverified
-Never run on Windows: the release workflow, signing, the updater against a real feed,
-and the packaged install of `electron-updater`, the R2 upload step (AWS CLI on the runner, R2 credentials), and unsigned-installer behaviour on a clean Windows machine.
+## Verification status
+Verified end to end on a clean Windows 11 ARM VM (2026-11-22), against the live feed at
+`https://downloads.astlabs.dev/win/`:
+- Release workflow on tag builds, the R2 upload (installer then `latest.yml`) and the unsigned installer.
+- The packaged install of `electron-updater`: 0.1.0 found, downloaded (sha512 and size matched
+  `latest.yml`) and installed 0.1.1, then 0.1.1 to 0.1.2, on quit. The trial state survived.
+- Settings > Updates ("Check for updates", then "Restart to update"): quits, runs the installer silently and
+  reopens the new version. This was tested with the 0.1.2 files over the installed 0.1.1; the first release
+  built with the card is 0.1.2, so the button from a published build still needs a release newer than 0.1.2.
+
+Not yet verified: code signing and the signature check, updating while a license is activated (only the
+trial was tested), and the new release guards on a real tag build (they pass against the live 0.1.2 feed).
+
+### Repeating the update test in a VM
+1. Revert the VM to the snapshot of the previously released version and start it (VMware Fusion:
+   `vmrun revertToSnapshot`, then `start`).
+2. Launch the app and wait for the installer to appear in `%LOCALAPPDATA%\clipspike-updater\pending`.
+   Compare its sha512 with `latest.yml`.
+3. Press "Restart to update" in Settings (older versions with no button: quit the app).
+4. Confirm the exe file version, the Windows uninstall entry version, and that the app reopened.
+Delete `pending` first so the test really downloads. Take a new snapshot of each released version.
