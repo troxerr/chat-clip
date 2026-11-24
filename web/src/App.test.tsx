@@ -32,7 +32,34 @@ describe('routing', () => {
     await user.selectOptions(screen.getByLabelText('Streamer'), 'jynxzi')
     expect(screen.getByRole('status')).toHaveTextContent('4 highlights')
     await user.type(screen.getByLabelText('Search clips'), 'zzz')
-    expect(screen.getByText('No highlights match your filters.')).toBeInTheDocument()
+    expect(screen.getByText('No highlights match “zzz”.')).toBeInTheDocument()
+  })
+
+  it('restores filters from URL params on /clips', () => {
+    renderAt('/clips?streamer=pixelmoth&game=Celeste&sort=views&q=cat')
+    expect(screen.getByRole('status')).toHaveTextContent('1 highlight')
+    expect(screen.getByLabelText('Streamer')).toHaveValue('pixelmoth')
+    expect(screen.getByLabelText('Game')).toHaveValue('Celeste')
+    expect(screen.getByLabelText('Sort by')).toHaveValue('views')
+    expect(screen.getByLabelText('Search clips')).toHaveValue('cat')
+  })
+
+  it('shows an empty state with a working clear button', async () => {
+    const user = userEvent.setup()
+    renderAt('/clips?q=zzz')
+    expect(screen.getByText('No highlights match “zzz”.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(screen.getByRole('status')).toHaveTextContent('10 highlights')
+    expect(screen.getByLabelText('Search clips')).toHaveValue('')
+  })
+
+  it('shows a Trending now section on Home', () => {
+    renderAt('/')
+    expect(screen.getByRole('heading', { name: 'Trending now' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'See all trending' })).toHaveAttribute(
+      'href',
+      '/clips?sort=trending&range=week',
+    )
   })
 
   it('keeps the footer disclosure truthful when nothing is sponsored', () => {
@@ -124,7 +151,7 @@ describe('data states', () => {
     const user = userEvent.setup()
     renderAt('/clips')
     await user.type(screen.getByLabelText('Search clips'), 'zzz')
-    expect(screen.getByText('No highlights match your filters.')).toBeInTheDocument()
+    expect(screen.getByText('No highlights match “zzz”.')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))
     expect(screen.getByRole('status')).toHaveTextContent('10 highlights')
   })

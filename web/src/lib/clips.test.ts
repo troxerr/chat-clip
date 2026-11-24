@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { mockClips } from '../data/clips'
-import { defaultFilters, filterClips, formatOffset, formatViews } from './clips'
+import {
+  defaultFilters,
+  filterClips,
+  filtersFromParams,
+  filtersToParams,
+  formatOffset,
+  formatViews,
+  trendingClips,
+  trendingScore,
+} from './clips'
+
+const NOW = Date.parse('2026-11-21T00:00:00Z')
 
 describe('filterClips', () => {
   it('sorts by score descending by default', () => {
@@ -16,6 +27,32 @@ describe('filterClips', () => {
   })
   it('sorts by recency', () => {
     expect(filterClips(mockClips, { ...defaultFilters, sort: 'recent' })[0].id).toBe(1)
+  })
+})
+
+describe('discovery', () => {
+  it('filters by game and time range', () => {
+    expect(filterClips(mockClips, { ...defaultFilters, game: 'Celeste' }, NOW)).toHaveLength(2)
+    const today = filterClips(mockClips, { ...defaultFilters, range: 'today' }, NOW).map((c) => c.id)
+    expect(today.sort()).toEqual([1, 2, 5, 7])
+    expect(filterClips(mockClips, { ...defaultFilters, range: 'week' }, NOW)).toHaveLength(10)
+  })
+  it('sorts by views', () => {
+    expect(filterClips(mockClips, { ...defaultFilters, sort: 'views' }, NOW)[0].id).toBe(1)
+  })
+  it('weights trending by recency', () => {
+    const old = { ...mockClips[0], views: 100000, createdAt: '2026-10-01T00:00:00Z' }
+    const fresh = { ...mockClips[1], views: 500, createdAt: '2026-11-20T23:00:00Z' }
+    expect(trendingScore(fresh, NOW)).toBeGreaterThan(trendingScore(old, NOW))
+    expect(trendingClips([old, fresh], 1, NOW)).toEqual([fresh])
+  })
+  it('round-trips filters through URL params, omitting defaults', () => {
+    expect(filtersToParams(defaultFilters).toString()).toBe('')
+    const f = { ...defaultFilters, query: 'ace', game: 'Valorant', range: 'week' as const, sort: 'trending' as const }
+    expect(filtersFromParams(filtersToParams(f))).toEqual(f)
+  })
+  it('ignores invalid params', () => {
+    expect(filtersFromParams(new URLSearchParams('sort=bogus&range=year&min=abc'))).toEqual(defaultFilters)
   })
 })
 
