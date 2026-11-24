@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { allStreamers, DEFAULT_CONFIG, MAX_STREAMERS } from '../lib/streamerConfig'
+import FollowButton from '../components/FollowButton'
 import NotifyToggle from '../components/NotifyToggle'
 import { useClipStore } from '../store/useClipStore'
 import { useStreamerStore } from '../store/useStreamerStore'
@@ -70,6 +71,7 @@ export default function Streamers() {
         <li>
           <span className="streamer">{primary}</span>
           <DataBadge login={primary} />
+          <FollowButton login={primary} />
         </li>
       </ul>
 
@@ -80,6 +82,7 @@ export default function Streamers() {
             <li key={login}>
               <span className="streamer">{login}</span>
               <DataBadge login={login} />
+              <FollowButton login={login} />
               <span className="row-actions">
                 <button type="button" className="btn btn-ghost" onClick={() => makePrimary(login)}>
                   Make primary

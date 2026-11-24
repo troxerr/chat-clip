@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import LiveAlertsSignup from '../components/LiveAlertsSignup'
 import { monetization } from '../monetization'
 import { track } from '../monetization/analytics'
 import type { MonetizationConfig } from '../monetization/config'
@@ -87,6 +88,7 @@ export default function Pro({ config = monetization }: { config?: MonetizationCo
           </form>
         )}
       </section>
+      <LiveAlertsSignup config={config} />
     </>
   )
 }

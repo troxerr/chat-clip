@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import type { Clip } from '../data/clips'
+import FollowButton from './FollowButton'
 import { formatOffset, formatViews, scoreTier } from '../lib/clips'
 
 export default function ClipCard({ clip }: { clip: Clip }) {
   return (
+    <div className="card-wrap">
     <Link to={`/clips/${clip.id}`} className="card">
       <div
         className={clip.mature ? 'thumb thumb-mature' : 'thumb'}
@@ -30,5 +32,7 @@ export default function ClipCard({ clip }: { clip: Clip }) {
         {clip.signal} · {formatViews(clip.views)} views · at {formatOffset(clip.vodOffset)}
       </p>
     </Link>
+    <FollowButton login={clip.streamer} className="card-follow" />
+    </div>
   )
 }

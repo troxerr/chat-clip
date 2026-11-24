@@ -162,3 +162,10 @@ main:focus-visible { outline: none; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .section-head a { font-size: .9rem; }
 @media (max-width: 640px) { .toolbar .field { flex: 1 1 140px; } }
+
+.card-wrap { position: relative; }
+.card-wrap > .card { display: block; height: 100%; }
+.follow-btn { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: .2rem .6rem; font: inherit; font-size: .8rem; cursor: pointer; }
+.follow-btn:hover { background: var(--border); }
+.follow-btn.on { border-color: var(--accent, currentColor); }
+.card-follow { position: absolute; top: .9rem; left: .9rem; }

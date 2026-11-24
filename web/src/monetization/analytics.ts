@@ -9,6 +9,8 @@ export type AnalyticsEvent =
   | 'pro_waitlist_view'
   | 'pro_waitlist_submit'
   | 'pro_cta_click'
+  | 'alerts_signup_submit'
+  | 'discord_join_click'
 
 type Plausible = ((name: string, opts?: { props?: Record<string, string> }) => void) & { q?: unknown[] }
 declare global {

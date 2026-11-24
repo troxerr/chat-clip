@@ -6,8 +6,15 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export const isEmail = (v: string) => EMAIL_RE.test(v.trim())
 
-export function mailtoHref(address: string, email: string) {
-  const body = `Please add ${email} to the ClipSpike Pro waitlist.`
+export interface WaitlistExtras {
+  /** Twitch logins the visitor wants live alerts for. */
+  streamers?: string[]
+  source?: string
+}
+
+export function mailtoHref(address: string, email: string, streamers: string[] = []) {
+  const alerts = streamers.length ? ` I want live alerts for: ${streamers.join(', ')}.` : ''
+  const body = `Please add ${email} to the ClipSpike Pro waitlist.${alerts}`
   return `mailto:${address}?subject=${encodeURIComponent('ClipSpike Pro waitlist')}&body=${encodeURIComponent(body)}`
 }
 
@@ -16,6 +23,7 @@ export async function joinWaitlist(
   email: string,
   config: MonetizationConfig,
   fetchImpl: typeof fetch = fetch,
+  extras: WaitlistExtras = {},
 ): Promise<WaitlistResult> {
   const { endpoint, email: address } = config.waitlist
   if (endpoint) {
@@ -23,7 +31,11 @@ export async function joinWaitlist(
       const res = await fetchImpl(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ email, source: 'clipspike-web-pro' }),
+        body: JSON.stringify({
+          email,
+          source: extras.source ?? 'clipspike-web-pro',
+          ...(extras.streamers?.length ? { streamers: extras.streamers.join(',') } : {}),
+        }),
       })
       if (res.ok) return 'sent'
     } catch {
