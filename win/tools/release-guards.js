@@ -9,7 +9,8 @@
 //       Refuses to upload an installer whose name is already on the feed: overwriting it would
 //       change the sha512 that clients may already have cached.
 //   node win/tools/release-guards.js verify <feed base url> <dist dir>
-//       After the upload, the live latest.yml and installer must match the build exactly.
+//       After the upload, the live latest.yml, installer and (when the build made one) blockmap must
+//       match the build exactly.
 //
 // Problems print as GitHub ::error:: lines and exit 1.
 
@@ -94,9 +95,29 @@ async function verifyFeed({ base, distDir, fetchImpl = fetch, attempts = 6, dela
     const problems = [];
     if (bytes !== entry.size) problems.push(`Downloaded ${entry.url} is ${bytes} bytes, latest.yml says ${entry.size}.`);
     if (hash.digest("base64") !== entry.sha512) problems.push(`Downloaded ${entry.url} does not match the sha512 in latest.yml.`);
-    return problems;
+    return problems.concat(await verifyBlockmap({ root, distDir, name: entry.url, fetchImpl }));
   } catch (error) {
     return [`Could not download ${entry.url} to verify it (${error.message}).`];
+  }
+}
+
+// Differential updates fetch <installer>.blockmap from the feed. If the build made one, the feed must serve
+// exactly that file; without it, clients silently fall back to the full download.
+async function verifyBlockmap({ root, distDir, name, fetchImpl }) {
+  const local = path.join(distDir, `${name}.blockmap`);
+  if (!fs.existsSync(local)) return [];
+  const expected = fs.readFileSync(local);
+  try {
+    const res = await fetchImpl(`${root}/${name}.blockmap`);
+    if (res.status !== 200) return [`${name}.blockmap returned HTTP ${res.status}; differential updates would be lost.`];
+    const hash = crypto.createHash("sha512");
+    let bytes = 0;
+    for await (const chunk of res.body) { hash.update(chunk); bytes += chunk.length; }
+    const wanted = crypto.createHash("sha512").update(expected).digest("base64");
+    if (bytes !== expected.length || hash.digest("base64") !== wanted) return [`The published ${name}.blockmap does not match the one the build made.`];
+    return [];
+  } catch (error) {
+    return [`Could not download ${name}.blockmap to verify it (${error.message}).`];
   }
 }
 
