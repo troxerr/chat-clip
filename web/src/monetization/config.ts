@@ -27,6 +27,8 @@ export interface MonetizationConfig {
   /** Ko-fi / Buy Me a Coffee / GitHub Sponsors URL; links are hidden while empty. */
   supportUrl: string
   waitlist: { endpoint: string; email: string }
+  /** Public Discord invite for the live-alerts channel; the link is hidden while empty. */
+  discordInviteUrl: string
   analytics: { provider: 'none' | 'plausible'; domain: string; src: string }
 }
 
@@ -42,6 +44,17 @@ export function isHttpUrl(u: string): boolean {
 
 const httpOrEmpty = (v: string | undefined) => (v && isHttpUrl(v.trim()) ? v.trim() : '')
 const flag = (v: string | undefined) => v === 'true'
+
+/** Only https links on Discord's own invite hosts are accepted. */
+function discordInvite(v: string | undefined): string {
+  try {
+    const u = new URL((v ?? '').trim())
+    const ok = u.protocol === 'https:' && ['discord.gg', 'discord.com', 'www.discord.com'].includes(u.hostname)
+    return ok ? u.toString() : ''
+  } catch {
+    return ''
+  }
+}
 
 export function buildConfig(env: Env, affiliates: AffiliateItem[]): MonetizationConfig {
   const client = /^ca-pub-\d+$/.test(env.VITE_ADSENSE_CLIENT ?? '') ? env.VITE_ADSENSE_CLIENT! : ''
@@ -67,6 +80,7 @@ export function buildConfig(env: Env, affiliates: AffiliateItem[]): Monetization
       endpoint: httpOrEmpty(env.VITE_WAITLIST_ENDPOINT),
       email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '',
     },
+    discordInviteUrl: discordInvite(env.VITE_DISCORD_INVITE_URL),
     analytics: {
       provider: env.VITE_ANALYTICS_PROVIDER === 'plausible' && plausibleDomain ? 'plausible' : 'none',
       domain: plausibleDomain,

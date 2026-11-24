@@ -1,0 +1,49 @@
+name: discord-live-alerts
+
+# Optional. Posts "X went live" to Discord when the deployed status.json flips offline -> live.
+# Does nothing unless the repository secret DISCORD_WEBHOOK_URL exists. See docs/ALERTS.md.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discord-live-alerts
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      STATUS_URL: ${{ vars.ALERTS_STATUS_URL }}
+      STATE_FILE: .alerts-state/status.json
+    steps:
+      - name: Skip when no webhook secret is configured
+        if: env.DISCORD_WEBHOOK_URL == ''
+        run: echo "DISCORD_WEBHOOK_URL not set; nothing to do."
+      - uses: actions/checkout@v4
+        if: env.DISCORD_WEBHOOK_URL != ''
+      - uses: actions/setup-node@v4
+        if: env.DISCORD_WEBHOOK_URL != ''
+        with:
+          node-version: 22
+      - name: Restore previous status snapshot
+        if: env.DISCORD_WEBHOOK_URL != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: .alerts-state
+          key: alerts-state-${{ github.run_id }}
+          restore-keys: alerts-state-
+      - name: Post went-live alerts
+        if: env.DISCORD_WEBHOOK_URL != ''
+        run: node web/scripts/discord-live-alerts.mjs
+      - name: Save status snapshot
+        if: env.DISCORD_WEBHOOK_URL != '' && always()
+        uses: actions/cache/save@v4
+        with:
+          path: .alerts-state
+          key: alerts-state-${{ github.run_id }}

@@ -1,3 +1,4 @@
+import FollowButton from '../components/FollowButton'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { formatOffset, formatViews } from '../lib/clips'
@@ -45,6 +46,7 @@ export default function ClipDetail() {
         <span className="streamer">{clip.streamer}</span> · {clip.game} ·{' '}
         {new Date(clip.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' })}
       </p>
+      <FollowButton login={clip.streamer} />
       <dl className="facts">
         <div><dt>Highlight score</dt><dd>{clip.score}/100</dd></div>
         <div><dt>Detected signal</dt><dd>{clip.signal}</dd></div>

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { mockClips, MOCK_STATUS_TIMELINE, type Clip } from '../data/clips'
 import type { StatusMap } from '../lib/streamers'
 import { allStreamers } from '../lib/streamerConfig'
+import { useFollowStore } from './useFollowStore'
 import { useStreamerStore } from './useStreamerStore'
 import { parseClips, parseStatus, parseStreamDetails, type StreamDetails } from '../lib/twitchData'
 import { visibleClips } from '../lib/matureFilter'
@@ -33,6 +34,8 @@ interface ClipState {
 }
 
 const currentNames = () => allStreamers(useStreamerStore.getState())
+/** Status names also cover followed streamers so alerts work for streamers outside the monitored list. */
+const statusNames = () => [...new Set([...currentNames(), ...useFollowStore.getState().follows])]
 
 async function fetchJson(file: string): Promise<unknown> {
   const res = await fetch(`${import.meta.env.BASE_URL}data/${file}`, { cache: 'no-store' })
@@ -66,14 +69,14 @@ export const useClipStore = create<ClipState>((set, get) => ({
     if (get().loadState !== 'ready') set({ loadState: 'loading' })
     try {
       const [statusJson, clipsJson] = await Promise.all([fetchJson('status.json'), fetchJson('clips.json')])
-      const status = parseStatus(statusJson, currentNames())
+      const status = parseStatus(statusJson, statusNames())
       const fresh = parseClips(clipsJson, currentNames())
       if (!status || !fresh) throw new Error('Invalid data')
       const { clips, dismissed } = get()
       const favorites = new Set(clips.filter((c) => c.favorite).map((c) => c.id))
       set({
         streamStatus: status,
-        streamDetails: parseStreamDetails(statusJson, currentNames()),
+        streamDetails: parseStreamDetails(statusJson, statusNames()),
         // With ads, sponsors or affiliates on, flagged clips are hidden outright (blurred otherwise).
         clips: visibleClips(fresh, hasSponsoredContent(monetization)).filter((c) => !dismissed.includes(c.id)).map((c) => ({ ...c, favorite: favorites.has(c.id) })),
         pipelineLogins: Object.keys((statusJson as { streamers: object }).streamers).map((k) => k.toLowerCase()),
