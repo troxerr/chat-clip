@@ -6,7 +6,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { app, BrowserWindow, Menu, ipcMain, shell, nativeTheme } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, shell, nativeTheme, dialog } = require("electron");
 
 const platform = require("../../lib/platform.js");
 const { resolveConfigPath, readConfig, writeConfig } = require("../../lib/appconfig.js");
@@ -20,6 +20,7 @@ const { createSettings } = require("./settings.js");
 const { createClips } = require("./clips.js");
 const { createApp } = require("./app.js");
 const { createDiagnostics } = require("./diagnostics.js");
+const { confirmClose, CLOSE_DIALOG } = require("./close-guard.js");
 
 require("../../lib/legacy.js").mirrorLegacyEnv();
 const SMOKE = process.env.CLIPSPIKE_SMOKE || "";
@@ -127,6 +128,10 @@ function main() {
       if (isMainFrame && code !== -3) record("renderer.load_failed");
     });
     win.webContents.on("render-process-gone", () => record("renderer.exited"));
+    win.on("close", (event) => {
+      if (!services || !confirmClose({ phase: services.core.snapshot().capture.phase, quitting: closing, skip: Boolean(SMOKE) })) return;
+      if (dialog.showMessageBoxSync(win, CLOSE_DIALOG) === 0) event.preventDefault();
+    });
     win.loadFile(INDEX);
     return win;
   }
