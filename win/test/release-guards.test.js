@@ -99,3 +99,37 @@ test("an installer with the wrong bytes or a missing file fails even when latest
   const missing = feed(yml);
   assert.match((await verifyFeed({ base: BASE, distDir: dist(latest()), fetchImpl: missing.fetchImpl, sleep: async () => {} }))[0], /returned HTTP 404/);
 });
+
+const blockmap = Buffer.from("pretend blockmap: chunk hashes for differential download");
+const withBlockmap = () => {
+  const dir = dist(latest());
+  fs.writeFileSync(path.join(dir, "ClipSpike-0.1.3-x64.exe.blockmap"), blockmap);
+  return dir;
+};
+const liveRoutes = (map) => ({
+  "https://downloads.example.com/win/latest.yml": { text: latest() },
+  "https://downloads.example.com/win/ClipSpike-0.1.3-x64.exe": { bytes: installer },
+  ...map
+});
+const MAP_URL = "https://downloads.example.com/win/ClipSpike-0.1.3-x64.exe.blockmap";
+
+test("when the build made a blockmap, the feed must serve exactly that file", async () => {
+  const ok = feed(liveRoutes({ [MAP_URL]: { bytes: blockmap } }));
+  assert.deepEqual(await verifyFeed({ base: BASE, distDir: withBlockmap(), fetchImpl: ok.fetchImpl, sleep: async () => {} }), []);
+  assert.ok(ok.calls.includes(`GET ${MAP_URL}`), "the blockmap was actually fetched");
+});
+
+test("a missing or different blockmap on the feed fails, because updates would silently become full downloads", async () => {
+  const missing = feed(liveRoutes({}));
+  assert.match((await verifyFeed({ base: BASE, distDir: withBlockmap(), fetchImpl: missing.fetchImpl, sleep: async () => {} })).join("\n"), /blockmap returned HTTP 404; differential updates would be lost/);
+  const different = feed(liveRoutes({ [MAP_URL]: { bytes: Buffer.from("some other blockmap") } }));
+  assert.match((await verifyFeed({ base: BASE, distDir: withBlockmap(), fetchImpl: different.fetchImpl, sleep: async () => {} })).join("\n"), /does not match the one the build made/);
+  const offline = feed(liveRoutes({ [MAP_URL]: new Error("reset") }));
+  assert.match((await verifyFeed({ base: BASE, distDir: withBlockmap(), fetchImpl: offline.fetchImpl, sleep: async () => {} })).join("\n"), /Could not download .*blockmap/);
+});
+
+test("a build without a blockmap is not asked for one", async () => {
+  const noMap = feed(liveRoutes({}));
+  assert.deepEqual(await verifyFeed({ base: BASE, distDir: dist(latest()), fetchImpl: noMap.fetchImpl, sleep: async () => {} }), []);
+  assert.equal(noMap.calls.some((c) => c.includes("blockmap")), false);
+});

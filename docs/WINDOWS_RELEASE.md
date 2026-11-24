@@ -61,7 +61,12 @@ self-extracting exe). Manual verification: [WINDOWS_TEST_CHECKLIST.md](WINDOWS_T
   2. **Releases are immutable**: the upload is refused if `ClipSpike-<version>-x64.exe` is already on the
      feed, because replacing it would change the sha512 clients may have cached. Re-releasing means a new version.
   3. **Feed verified after upload**: the live `latest.yml` must match the build (version, file, sha512, size),
-     and the installer a client would download is fetched and its size and sha512 checked.
+     and the installer a client would download is fetched and its size and sha512 checked. If the
+     build produced `<installer>.blockmap`, the feed must serve exactly that file too.
+- **Differential updates.** electron-updater downloads only the changed blocks when the feed has the *previous*
+  version's `.blockmap`, so every release publishes its blockmap (installer, then blockmap, then `latest.yml`)
+  and old installers and blockmaps stay on the feed. A release whose build makes no blockmap warns instead of
+  failing, and clients fall back to the full installer.
 
 ## Licensing provider (Polar sandbox)
 The Windows app picks its provider from `win/build-config.json`: `provider` (`polar`) and
