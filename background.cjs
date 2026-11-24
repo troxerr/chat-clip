@@ -16,6 +16,7 @@ const monitorPolicy = require("./lib/monitor-policy.js");
 const { parseChatLine, isPrivileged, isClipCommand, roomId } = require("./dist/irc.js");
 const { settingsFor } = require("./dist/config.js");
 const platform = require("./lib/platform.js");
+const { drainClips } = require("./lib/clip-drain.js");
 const health = require("./lib/recorder-health.js");
 const { resolveEncoder } = require("./lib/encoder.js");
 const { parseSource } = require("./lib/stream-source.js");
@@ -194,7 +195,6 @@ function shutdown(code = 0) {
   try { clearInterval(emoteTimer); } catch {}
   try { clearInterval(queueTimer); } catch {}
   try { chat && chat.close(); } catch {}
-  pending = null;
 
   const children = [source, encoder].filter((child) => child && child.exitCode === null && child.signalCode === null);
   let remaining = children.length;
@@ -202,28 +202,45 @@ function shutdown(code = 0) {
   const finish = () => {
     if (finished) return;
     finished = true;
+    try { killExports(); } catch {}
+    try { killReframes(); } catch {}
     try { fs.rmSync(temp, { recursive: true, force: true }); } catch {}
     Promise.resolve(monitor?.close()).finally(() => setTimeout(() => process.exit(code), 100));
+  };
+
+  // A highlight that is waiting or exporting is finished before the temp
+  // folder (its source video) goes away.
+  let drained = false;
+  const afterChildren = () => {
+    if (drained) return;
+    drained = true;
+    drainClips({
+      hasPending: () => Boolean(pending),
+      getExport: () => exportPromise,
+      flush: () => maybeExport(true),
+      onUnfinished: (error) => {
+        emit("clip-failed", { error, reason: (pending || exporting || {}).reason });
+        pending = null;
+      }
+    }).catch(() => {}).finally(finish);
   };
 
   for (const child of children) {
     child.once("close", () => {
       remaining -= 1;
-      if (remaining <= 0) finish();
+      if (remaining <= 0) afterChildren();
     });
   }
 
   try { source && source.kill("SIGTERM"); } catch {}
   try { encoder && encoder.kill("SIGTERM"); } catch {}
-  try { killExports(); } catch {}
-  try { killReframes(); } catch {}
   emit("status", { recording: false, joined: false, stopping: true });
 
   if (remaining <= 0) {
-    finish();
+    afterChildren();
     return;
   }
-  setTimeout(finish, 1500);
+  setTimeout(afterChildren, 1500);
 }
 
 function fatal(message) {

@@ -9,7 +9,8 @@ const { spawn } = require("node:child_process");
 const readline = require("node:readline");
 const { parseSource } = require("../../lib/stream-source.js");
 
-const STOP_GRACE_MS = 8000;
+// Long enough for the recorder to finish a highlight that is still exporting.
+const STOP_GRACE_MS = 30000;
 const STDERR_KEEP = 2000;
 // An unexpected exit is retried a few times, with a growing wait. A recorder
 // that dies right after starting is a setup problem (a missing tool), so it is
