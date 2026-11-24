@@ -62,6 +62,9 @@ jobs:
           if ($env:WIN_UPDATE_URL -notmatch '^https://') { Write-Host "::error::WIN_UPDATE_URL must be an https:// URL."; exit 1 }
 
       - name: Check licensing is configured for release
+        # Set the repo variable REQUIRE_PRODUCTION_LICENSING=true at launch to make sandbox values fail the build.
+        env:
+          CLIPSPIKE_REQUIRE_PRODUCTION_LICENSING: ${{ vars.REQUIRE_PRODUCTION_LICENSING }}
         run: node win/tools/check-release-config.js
 
       - uses: actions/cache@v4
