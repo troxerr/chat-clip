@@ -10,6 +10,7 @@
   let snap = null;
   let upd = { status: "disabled" };
   let announcedUpdate = null;
+  let licenseRetry = null;
   let clipList = [];
   let clipQuery = "";
   const ui = {};
@@ -233,6 +234,8 @@
       }
     }
     ui.licenseCard.replaceChildren(...rows);
+    // The key is saved but could not be read just now: look again shortly instead of showing a trial.
+    if (lic.keyUnreadable && !licenseRetry) licenseRetry = setTimeout(() => { licenseRetry = null; refresh().catch(() => {}); }, 20000);
     ui.launch.checked = snap.settings.launchAtLogin;
     ui.folder.textContent = snap.settings.outputFolder || "";
     const v = snap.versions || {};
