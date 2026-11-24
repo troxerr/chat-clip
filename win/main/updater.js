@@ -18,10 +18,16 @@ function feedConfigured({ resourcesPath, exists = fs.existsSync } = {}) {
 
 function disabled(reason) {
   const state = { status: "disabled", version: null, percent: null, error: null, reason };
-  return { enabled: false, reason, getState: () => state, onChange: () => () => {}, check: async () => state, install: () => false };
+  return { enabled: false, reason, stop: () => {}, getState: () => state, onChange: () => () => {}, check: async () => state, install: () => false };
 }
 
-function startAutoUpdate({ app, autoUpdater, resourcesPath, env = process.env, log = () => {}, record = () => {}, exists }) {
+const RECHECK_MS = 6 * 60 * 60 * 1000;
+
+function startAutoUpdate({
+  app, autoUpdater, resourcesPath, env = process.env, log = () => {}, record = () => {}, exists,
+  // Re-check while the app stays open (it can run for days), but never while a capture is running.
+  isBusy = () => false, intervalMs = RECHECK_MS, timers = { setInterval, clearInterval }
+}) {
   if (!app.isPackaged || env.CLIPSPIKE_SMOKE || env.CLIPSPIKE_NO_UPDATE === "1") return disabled("not a normal packaged run");
   if (env.PORTABLE_EXECUTABLE_FILE) return disabled("portable build does not self-update");
   if (!feedConfigured({ resourcesPath, exists })) return disabled("no update feed configured");
@@ -72,7 +78,10 @@ function startAutoUpdate({ app, autoUpdater, resourcesPath, env = process.env, l
   };
 
   check();
-  return { enabled: true, check, install, getState: () => state, onChange: (fn) => { listeners.add(fn); return () => listeners.delete(fn); } };
+  const timer = intervalMs > 0 ? timers.setInterval(() => { if (!isBusy()) check(); }, intervalMs) : null;
+  if (timer && typeof timer.unref === "function") timer.unref();
+  const stop = () => { if (timer) timers.clearInterval(timer); };
+  return { enabled: true, check, install, stop, getState: () => state, onChange: (fn) => { listeners.add(fn); return () => listeners.delete(fn); } };
 }
 
 module.exports = { startAutoUpdate, feedConfigured };

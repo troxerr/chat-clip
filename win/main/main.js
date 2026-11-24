@@ -213,7 +213,7 @@ function main() {
     if (!SMOKE) {
       try {
         updater = require("./updater.js").startAutoUpdate({
-          app, autoUpdater: require("electron-updater").autoUpdater, resourcesPath: process.resourcesPath, log: (m) => console.log(`[updater] ${m}`), record
+          app, autoUpdater: require("electron-updater").autoUpdater, resourcesPath: process.resourcesPath, log: (m) => console.log(`[updater] ${m}`), record, isBusy: () => services.core.snapshot().capture.phase !== "idle"
         });
         updater.onChange((state) => send("update", state));
       } catch (error) { console.log(`[updater] disabled: ${error.message}`); }
