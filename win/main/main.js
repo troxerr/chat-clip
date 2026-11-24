@@ -6,7 +6,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { app, BrowserWindow, Menu, ipcMain, shell, nativeTheme, dialog } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, shell, nativeTheme, dialog, Notification } = require("electron");
 
 const platform = require("../../lib/platform.js");
 const { resolveConfigPath, readConfig, writeConfig } = require("../../lib/appconfig.js");
@@ -20,6 +20,7 @@ const { createSettings } = require("./settings.js");
 const { createClips } = require("./clips.js");
 const { createApp } = require("./app.js");
 const { createDiagnostics } = require("./diagnostics.js");
+const { clipSavedNotice, shouldNotifyOs } = require("./clip-notice.js");
 const { confirmClose, CLOSE_DIALOG } = require("./close-guard.js");
 
 require("../../lib/legacy.js").mirrorLegacyEnv();
@@ -105,6 +106,21 @@ function main() {
   let services;
   let win = null;
   let updater = null;
+
+  function announceClip(event) {
+    const text = clipSavedNotice(event);
+    send("notice", { message: text.toast, kind: "info", clearAfterMs: 8000 });
+    const disabled = process.env.CLIPSPIKE_NOTIFICATIONS === "0" || !Notification.isSupported();
+    if (!shouldNotifyOs({ windowFocused: Boolean(win && !win.isDestroyed() && win.isFocused()), disabled })) return;
+    const note = new Notification({ title: text.title, body: text.body });
+    note.on("click", () => {
+      if (!win || win.isDestroyed()) return;
+      if (win.isMinimized()) win.restore();
+      win.show(); win.focus();
+      send("navigate", "clips");
+    });
+    note.show();
+  }
 
   const send = (name, value) => { if (win && !win.isDestroyed()) win.webContents.send("hd:event", name, value); };
 
@@ -205,6 +221,7 @@ function main() {
     services.engine.on("event", (event) => {
       const name = engineErrors.get(event.type);
       if (name) record(name, event.error || event.message || "");
+      if (event.type === "clip-saved") announceClip(event);
     });
     services.engine.on("exit", ({ unexpected, detail }) => {
       if (unexpected) record("capture.exited", detail);

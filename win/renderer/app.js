@@ -33,11 +33,15 @@
   const PHASE_LABEL = { idle: "Not recording", starting: "Starting", buffering: "Buffering", watching: "Watching", exporting: "Saving a highlight", stopping: "Stopping", error: "Problem" };
 
   // kind "info" is calm news (an update is ready); the default is an error.
-  function notify(message, kind) {
+  let noticeTimer = null;
+  function notify(message, kind, clearAfterMs) {
     const box = $("notice");
+    clearTimeout(noticeTimer);
     box.textContent = message || "";
     box.hidden = !message;
     box.classList.toggle("info", kind === "info");
+    // A passing note (a highlight was saved) removes itself.
+    if (message && clearAfterMs) noticeTimer = setTimeout(() => { if (box.textContent === message) notify(""); }, clearAfterMs);
   }
   async function guarded(fn) {
     notify("");
@@ -281,7 +285,7 @@
     hd.on("capture", (capture) => { if (snap) { snap = { ...snap, capture }; updateCapture(); } });
     hd.on("clips", () => loadClips());
     hd.on("navigate", (page) => { if (PAGES.includes(page)) show(page); });
-    hd.on("notice", (message) => notify(message));
+    hd.on("notice", (message) => (message && typeof message === "object" ? notify(message.message, message.kind, message.clearAfterMs) : notify(message)));
     hd.on("update", (state) => { upd = state; updateUpdates(); });
     await refresh();
     await loadClips();
