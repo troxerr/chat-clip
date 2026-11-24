@@ -4,6 +4,24 @@ const mode = process.env.FAKE_ENGINE || "normal";
 const out = (event) => process.stdout.write(JSON.stringify({ at: new Date().toISOString(), ...event }) + "\n");
 const channel = process.argv[2];
 
+let dying = false;
+if (mode === "flaky" || mode === "quickdeath") {
+  // Dies on the first FAKE_DIE_RUNS runs (counted in a file), then behaves normally.
+  // "quickdeath" dies at once; "flaky" dies after it has been up for a moment.
+  const fs = require("node:fs");
+  const file = process.env.FAKE_COUNTER;
+  const runs = (fs.existsSync(file) ? Number(fs.readFileSync(file, "utf8")) : 0) + 1;
+  fs.writeFileSync(file, String(runs));
+  if (runs <= Number(process.env.FAKE_DIE_RUNS || 1)) {
+    dying = true;
+    out({ type: "ready", channel });
+    out({ type: "status", recording: true, joined: true, mediaTime: 5 });
+    process.stderr.write("simulated recorder failure\n");
+    if (mode === "quickdeath") process.exit(1);
+    setTimeout(() => process.exit(1), 300);
+    setInterval(() => {}, 1000);
+  }
+}
 if (mode === "crash") {
   process.stderr.write("Missing streamlink. Install it with: winget install Streamlink.Streamlink\n");
   process.exit(1);
@@ -16,7 +34,7 @@ else if (mode === "deaf") {
   out({ type: "ready", channel });
   process.on("SIGTERM", () => {});
   setInterval(() => {}, 1000);
-} else {
+} else if (!dying) {
   out({ type: "ready", channel });
   out({ type: "status", recording: true, joined: true, mediaTime: 5 });
   let buf = "";
