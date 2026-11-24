@@ -71,17 +71,18 @@ self-extracting exe). Manual verification: [WINDOWS_TEST_CHECKLIST.md](WINDOWS_T
   and old installers and blockmaps stay on the feed. A release whose build makes no blockmap warns instead of
   failing, and clients fall back to the full installer.
 
-## Licensing provider (Polar sandbox)
+## Licensing provider (Polar production)
 The Windows app picks its provider from `win/build-config.json`: `provider` (`polar`) and
 `apiBase` are passed to every activate/validate/deactivate call (`LICENSE_PROVIDER` and
 `LEMON_API_BASE` only affect the `tools/license.js` CLI, not the app). Without them the app
-uses Lemon Squeezy. The committed config targets the **Polar sandbox**
-(`https://sandbox-api.polar.sh`), with `productId` as `ORG_ID:BENEFIT_ID`. These are
-identifiers, not secrets.
+uses Lemon Squeezy. The committed config targets **Polar production**
+(`https://api.polar.sh`), with `productId` as `ORG_ID:BENEFIT_ID` and `checkoutUrl` set to the
+production checkout link. These are identifiers, not secrets.
 
-**Production needs a new Polar product, license-key benefit, checkout link and organization
-values**: replace `productId` and `checkoutUrl`, and set `apiBase` to `https://api.polar.sh`
-(or remove it) before a public release. Sandbox keys do not work against production.
+Keys bought in the Polar **sandbox** do not activate against production, and production keys do not
+work against the sandbox. To test against the sandbox again, point `apiBase`, `productId` and
+`checkoutUrl` at sandbox values in a scratch build (the release guard warns about sandbox values, and
+fails them when the repo variable `REQUIRE_PRODUCTION_LICENSING` is `true`).
 
 ## Unsigned-first path
 Without a certificate, Windows SmartScreen shows "Windows protected your PC" (More info, then
