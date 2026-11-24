@@ -6,15 +6,22 @@ export default function Privacy() {
   return (
     <article className="legal">
       <h1>Privacy Policy</h1>
-      <p className="meta">Last updated: 2026-11-22 · Operator: AST Labs (ast.labs@outlook.com). Template: have it reviewed before relying on it.</p>
+      <p className="meta">Last updated: 2026-11-24 · Operator: AST Labs (ast.labs@outlook.com). Template: have it reviewed before relying on it.</p>
       <h2>What this web app does</h2>
       <p>
         ClipSpike shows Twitch highlights. Your favorites, followed streamers and settings are stored in your
-        browser&apos;s local storage and never sent to us. We do not run user accounts.
+        browser&apos;s local storage and never sent to us, as is your cookie-banner choice. We do not run user accounts.
+      </p>
+      <h2>Hosting and fonts</h2>
+      <p>
+        The site is hosted on GitHub Pages, which receives your IP address and request details in its normal server logs under
+        <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer"> GitHub&apos;s privacy statement</a>.
+        Fonts are served from this site, not from a third-party font service.
       </p>
       <h2>Twitch embeds and content</h2>
       <p>
-        When you press play, the clip is loaded from Twitch in an embedded player. Twitch then receives your IP address and
+        Clip thumbnails are loaded from Twitch&apos;s image servers as soon as a page is shown, so Twitch receives your IP address and
+        browser details at that point. When you press play, the clip is loaded from Twitch in an embedded player. Twitch then receives your IP address and
         device information and may set cookies under its own <a href="https://www.twitch.tv/p/legal/privacy-notice/" target="_blank" rel="noopener noreferrer">Privacy Notice</a>.
         ClipSpike is not affiliated with or endorsed by Twitch. Clips belong to their creators.
       </p>
@@ -42,9 +49,14 @@ export default function Privacy() {
           section will say so.
         </p>
       )}
+      <h2>Support link</h2>
+      <p>
+        If a support link is shown, it leads to a third-party site (such as Ko-fi) that has its own privacy practices. Nothing is sent to it
+        unless you click.
+      </p>
       <h2>Pro waitlist</h2>
       <p>
-        If you join the waitlist, your email address is sent to our form provider (for example Formspree) or to our inbox and used only to
+        If you join the waitlist, your email address is sent to our form provider (Formspree) or, if that fails, to our inbox by your own email app and used only to
         notify you about ClipSpike Pro. Ask us to delete it at any time.
       </p>
       <h2>Your rights</h2>
