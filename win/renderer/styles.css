@@ -63,6 +63,8 @@ button { font: inherit; }
 .stats dt { font-size: 12px; color: var(--muted); }
 .stats dd { margin: 2px 0 0; font-weight: 650; font-size: 16px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .notice { background: var(--bad-bg); color: var(--bad); border: 1px solid currentColor; border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; max-width: var(--content-w); }
+.notice.info { background: var(--select); color: var(--select-text); }
+.nav.has-update::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-left: auto; }
 .help { font-size: 13px; color: var(--muted); }
 .clip-list { list-style: none; padding: 0; margin: 0; max-width: var(--content-w); }
 .clip { display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; align-items: center; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 8px; }

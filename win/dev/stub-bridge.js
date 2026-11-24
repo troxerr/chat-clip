@@ -55,7 +55,7 @@
     update: {
       state: async () => structuredClone(updateState),
       check: async () => { updateState = { status: "up-to-date", version: null, percent: null, error: null }; fire("update", updateState); return structuredClone(updateState); },
-      install: async () => true
+      install: async () => { window.__hdInstalls = (window.__hdInstalls || 0) + 1; return true; }
     },
     openClipFolder: async () => true,
     openLink: async () => true,
