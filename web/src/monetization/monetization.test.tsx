@@ -156,6 +156,19 @@ describe('analytics', () => {
     track('support_click', { placement: 'x' }, plausible)
     expect(spy).toHaveBeenCalledWith('support_click', { props: { placement: 'x' } })
   })
+
+  it('loads the pageview script once, only after consent, with the configured domain', () => {
+    document.head.querySelector('script[data-clipspike-analytics]')?.remove()
+    expect(initAnalytics(plausible)).toBe(false)
+    expect(document.querySelector('script[data-clipspike-analytics]')).toBeNull()
+    setConsent({ ads: false, analytics: true })
+    expect(initAnalytics(plausible)).toBe(true)
+    expect(initAnalytics(plausible)).toBe(true)
+    const scripts = document.querySelectorAll<HTMLScriptElement>('script[data-clipspike-analytics]')
+    expect(scripts).toHaveLength(1)
+    expect(scripts[0].dataset.domain).toBe('clipspike.com')
+    scripts[0].remove()
+  })
 })
 
 describe('waitlist', () => {

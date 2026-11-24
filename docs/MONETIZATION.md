@@ -56,6 +56,8 @@ When you add a new `VITE_*` variable to `web/.env.example`, also add it to the b
 
 ### 6. Analytics hooks
 - `track()` in `web/src/monetization/analytics.ts` is a no-op unless `VITE_ANALYTICS_PROVIDER=plausible`, `VITE_PLAUSIBLE_DOMAIN` is set and the user accepted analytics. Events: `support_click`, `affiliate_click`, `sponsor_click`, `pro_waitlist_view`, `pro_waitlist_submit`, `pro_cta_click`. No personal data is sent. Self-host via `VITE_PLAUSIBLE_SRC`.
+- **Setup**: in Plausible add the site `clipspike.com`, then set the repository Variables `VITE_ANALYTICS_PROVIDER=plausible` and `VITE_PLAUSIBLE_DOMAIN=clipspike.com` (optionally `VITE_PLAUSIBLE_SRC`); `pages.yml` passes them to the build. Nothing loads until the visitor accepts analytics in the consent banner.
+- **Pageviews with path routing**: `initAnalytics()` injects Plausible's `script.js`, which records the initial pageview and every `history.pushState` navigation, so `/app/clips`, `/app/streamer/<login>` etc. each show up as their own page. 404-fallback deep links are restored with `replaceState` before the script loads, so they count under their real path. Accepting consent mid-session loads the script and records the current page.
 
 ## Other options
 | Option | Notes |

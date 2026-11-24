@@ -1,4 +1,4 @@
-import defaults from '../../../config/streamers.json'
+import defaults from '../../../config/streamers.json' with { type: 'json' }
 
 export interface StreamerConfig {
   primary: string
