@@ -37,3 +37,35 @@ test("diagnostics rotate at the size limit and tolerate a blocked log path", (t)
   fs.writeFileSync(blockedPath, "");
   assert.doesNotThrow(() => createDiagnostics(blockedPath)("startup.begin"));
 });
+
+test("update events are persisted as names and categories only", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-logs-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const record = createDiagnostics(dir);
+  record("update.check");
+  record("update.downloaded");
+  record("update.error", new Error("net::ERR_INTERNET_DISCONNECTED https://downloads.example/secret-path"));
+  record("update.error", new Error("sha512 checksum mismatch for ClipSpike-0.1.3-x64.exe"));
+  record("update.error", new Error("Cannot find latest.yml in the latest release. HttpError: 404"));
+  record("update.error", new Error("something unexpected"));
+  const raw = fs.readFileSync(path.join(dir, "logs", "clipspike.log"), "utf8");
+  assert.doesNotMatch(raw, /secret|downloads\.example|ClipSpike-0\.1\.3|latest\.yml|unexpected/);
+  const entries = raw.trim().split("\n").map(JSON.parse);
+  assert.deepEqual(entries.map(({ event, category }) => [event, category]), [
+    ["update.check", undefined], ["update.downloaded", undefined],
+    ["update.error", "connection"], ["update.error", "integrity"], ["update.error", "feed_unavailable"], ["update.error", "other"]
+  ]);
+});
+
+test("a credential read failure is persisted as a category only", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-logs-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const record = createDiagnostics(dir);
+  record("credential.read_failed", new Error("Could not run PowerShell: spawnSync C:\\Windows\\System32\\powershell.exe ETIMEDOUT"));
+  record("credential.read_failed", new Error("The data is invalid. LICENSE-KEY-1234567890abcdef"));
+  const raw = fs.readFileSync(path.join(dir, "logs", "clipspike.log"), "utf8");
+  assert.doesNotMatch(raw, /powershell|LICENSE-KEY|invalid/i);
+  assert.deepEqual(raw.trim().split("\n").map(JSON.parse).map(({ event, category }) => [event, category]), [
+    ["credential.read_failed", "timeout"], ["credential.read_failed", "other"]
+  ]);
+});

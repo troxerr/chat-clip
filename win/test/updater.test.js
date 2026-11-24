@@ -100,3 +100,69 @@ test("when updating is off the actions are safe no-ops with a disabled state", a
   assert.equal((await result.check()).status, "disabled");
   assert.equal(typeof result.onChange(() => {}), "function");
 });
+
+test("each update step is recorded by name, and failures carry the error for categorising", async () => {
+  const events = [];
+  const { au, result } = setup({ record: (event, error) => events.push(error === undefined ? event : [event, String(error.message || error)]) });
+  au.emit("checking-for-update");
+  au.emit("update-not-available");
+  au.emit("update-available", { version: "0.1.3" });
+  au.emit("update-downloaded", { version: "0.1.3" });
+  au.quitAndInstall = () => {};
+  result.install();
+  au.emit("error", new Error("sha512 checksum mismatch"));
+  assert.deepEqual(events, ["update.check", "update.not_available", "update.available", "update.downloaded", "update.install", ["update.error", "sha512 checksum mismatch"]]);
+});
+
+test("a rejected check is recorded once, not once per path", async () => {
+  const events = [];
+  const { au, result } = setup({ record: (event) => events.push(event) });
+  au.checkForUpdates = () => Promise.reject(new Error("net::ERR_INTERNET_DISCONNECTED"));
+  await result.check();
+  assert.equal(events.filter((e) => e === "update.error").length, 1);
+});
+
+function fakeTimers() {
+  const t = { fns: [], cleared: 0, ms: null };
+  t.setInterval = (fn, ms) => { t.fns.push(fn); t.ms = ms; return { unref() {} , id: t.fns.length }; };
+  t.clearInterval = () => { t.cleared++; };
+  t.tick = () => t.fns.forEach((fn) => fn());
+  return t;
+}
+
+test("re-checks every six hours by default, so an app left open still finds updates", async () => {
+  const timers = fakeTimers();
+  const { au } = setup({ timers });
+  await Promise.resolve();
+  assert.equal(timers.ms, 6 * 60 * 60 * 1000);
+  const before = au.checks;
+  timers.tick();
+  await Promise.resolve();
+  assert.equal(au.checks, before + 1);
+});
+
+test("the periodic check is skipped while a capture is running and resumes after", async () => {
+  const timers = fakeTimers();
+  let busy = true;
+  const { au } = setup({ timers, isBusy: () => busy });
+  await Promise.resolve();
+  const before = au.checks;
+  timers.tick(); timers.tick();
+  assert.equal(au.checks, before, "no checks while busy");
+  busy = false;
+  timers.tick();
+  await Promise.resolve();
+  assert.equal(au.checks, before + 1);
+});
+
+test("stop clears the timer, and a disabled updater has nothing to stop", () => {
+  const timers = fakeTimers();
+  const { result } = setup({ timers });
+  result.stop();
+  assert.equal(timers.cleared, 1);
+  const off = setup({ exists: () => false, timers: fakeTimers() }).result;
+  assert.doesNotThrow(() => off.stop());
+  const none = fakeTimers();
+  setup({ timers: none, intervalMs: 0 });
+  assert.equal(none.fns.length, 0, "intervalMs 0 turns re-checking off");
+});

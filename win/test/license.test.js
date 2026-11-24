@@ -5,7 +5,7 @@ const { createLicenseManager, looksOffline } = require("../main/license.js");
 const DAY = 86400000;
 function harness({ build = { licenseRequired: true }, start = "2026-11-01T00:00:00.000Z", request, env = {}, prepareSet, writeConfig } = {}) {
   let now = new Date(start);
-  const db = { config: {}, secrets: new Map() };
+  const db = { config: {}, secrets: new Map(), unreadable: new Set() };
   const calls = [];
   const manager = createLicenseManager({
     readConfig: () => JSON.parse(JSON.stringify(db.config)),
@@ -14,7 +14,8 @@ function harness({ build = { licenseRequired: true }, start = "2026-11-01T00:00:
       db.config = JSON.parse(JSON.stringify(config));
     },
     store: {
-      get: (n) => db.secrets.get(n) || "",
+      get: (n) => (db.unreadable.has(n) ? "" : db.secrets.get(n) || ""),
+      has: (n) => db.secrets.has(n),
       set: (n, v) => db.secrets.set(n, v),
       prepareSet: prepareSet || ((n, v) => () => db.secrets.set(n, v)),
       delete: (n) => db.secrets.delete(n)
@@ -209,4 +210,70 @@ test("the build config's provider and API base reach every license request", asy
   assert.equal(h.calls[0].options.provider, "polar");
   assert.equal(h.calls[0].options.apiBase, "https://sandbox-api.polar.sh");
   assert.equal(h.calls[0].options.productId, "org:benefit");
+});
+
+async function licensed(h) {
+  h.manager.state();
+  await h.manager.activate("KEY-123");
+  h.db.config.license.email = "owner@example.com";
+  return h;
+}
+
+test("a saved key that cannot be read right now is not shown as a trial, and does not invite re-activation", async () => {
+  const h = await licensed(harness());
+  h.advance(2 * DAY);
+  h.db.unreadable.add("license.key");
+  const s = h.manager.state();
+  assert.equal(s.hasKey, true, "still a licensed install, so no Activate box");
+  assert.equal(s.keyUnreadable, true);
+  assert.equal(s.valid, true);
+  assert.notEqual(s.mode, "trial");
+  assert.match(s.message, /^Licensed to owner@example\.com\. The saved license key could not be read just now/);
+  h.db.unreadable.clear();
+  const ok = h.manager.state();
+  assert.equal(ok.keyUnreadable, false);
+  assert.equal(ok.mode, "licensed");
+  assert.equal(ok.message, "Licensed to owner@example.com.");
+});
+
+test("an unreadable key does not extend a lapsed license: it follows the same expiry rules", async () => {
+  const h = await licensed(harness({ build: { licenseRequired: true, trialDays: 7 } }));
+  h.advance(30 * DAY);
+  h.db.unreadable.add("license.key");
+  const s = h.manager.state();
+  assert.equal(s.hasKey, true);
+  assert.equal(s.valid, false, "past both the trial and the 14-day grace");
+});
+
+test("no key and no instance is still an ordinary trial", () => {
+  const h = harness();
+  const s = h.manager.state();
+  assert.equal(s.mode, "trial");
+  assert.equal(s.hasKey, false);
+  assert.equal(s.keyUnreadable, false);
+});
+
+test("an activation whose key cannot be read is never forgotten without being released", async () => {
+  const h = await licensed(harness());
+  h.db.unreadable.add("license.key");
+  const before = h.calls.length;
+  await assert.rejects(() => h.manager.deactivate(), /could not be read, so this activation cannot be released yet/);
+  assert.equal(h.calls.length, before, "no remote call was made");
+  assert.equal(h.db.secrets.has("license.key"), true, "the stored key is still there");
+  assert.ok(h.db.config.license.instance, "the instance record is still there");
+  h.db.unreadable.clear();
+  await h.manager.deactivate();
+  assert.equal(h.calls[h.calls.length - 1].action, "deactivate");
+  assert.equal(h.db.secrets.has("license.key"), false);
+});
+
+test("validating while the key is unreadable changes nothing and does not call the service", async () => {
+  const h = await licensed(harness());
+  const validatedAt = h.db.config.license.lastValidatedAt;
+  h.db.unreadable.add("license.key");
+  const before = h.calls.length;
+  const s = await h.manager.validate();
+  assert.equal(h.calls.length, before);
+  assert.equal(h.db.config.license.lastValidatedAt, validatedAt);
+  assert.equal(s.keyUnreadable, true);
 });

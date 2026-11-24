@@ -18,10 +18,16 @@ function feedConfigured({ resourcesPath, exists = fs.existsSync } = {}) {
 
 function disabled(reason) {
   const state = { status: "disabled", version: null, percent: null, error: null, reason };
-  return { enabled: false, reason, getState: () => state, onChange: () => () => {}, check: async () => state, install: () => false };
+  return { enabled: false, reason, stop: () => {}, getState: () => state, onChange: () => () => {}, check: async () => state, install: () => false };
 }
 
-function startAutoUpdate({ app, autoUpdater, resourcesPath, env = process.env, log = () => {}, exists }) {
+const RECHECK_MS = 6 * 60 * 60 * 1000;
+
+function startAutoUpdate({
+  app, autoUpdater, resourcesPath, env = process.env, log = () => {}, record = () => {}, exists,
+  // Re-check while the app stays open (it can run for days), but never while a capture is running.
+  isBusy = () => false, intervalMs = RECHECK_MS, timers = { setInterval, clearInterval }
+}) {
   if (!app.isPackaged || env.CLIPSPIKE_SMOKE || env.CLIPSPIKE_NO_UPDATE === "1") return disabled("not a normal packaged run");
   if (env.PORTABLE_EXECUTABLE_FILE) return disabled("portable build does not self-update");
   if (!feedConfigured({ resourcesPath, exists })) return disabled("no update feed configured");
@@ -35,18 +41,21 @@ function startAutoUpdate({ app, autoUpdater, resourcesPath, env = process.env, l
   const fail = (error) => {
     const message = (error && error.message) || String(error);
     log(`update check failed: ${message}`);
+    record("update.error", error || message);
     set({ status: "error", percent: null, error: message });
   };
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.on("checking-for-update", () => set({ status: "checking", error: null }));
-  autoUpdater.on("update-available", (info) => set({ status: "downloading", version: (info && info.version) || null, percent: 0 }));
-  autoUpdater.on("update-not-available", () => set({ status: "up-to-date", version: null, percent: null }));
+  // The diagnostics log keeps only event names and an error category, never versions, URLs or messages.
+  autoUpdater.on("checking-for-update", () => { record("update.check"); set({ status: "checking", error: null }); });
+  autoUpdater.on("update-available", (info) => { record("update.available"); set({ status: "downloading", version: (info && info.version) || null, percent: 0 }); });
+  autoUpdater.on("update-not-available", () => { record("update.not_available"); set({ status: "up-to-date", version: null, percent: null }); });
   autoUpdater.on("download-progress", (p) => set({ status: "downloading", percent: Math.max(0, Math.min(100, Math.round((p && p.percent) || 0))) }));
   autoUpdater.on("error", fail);
   autoUpdater.on("update-downloaded", (info) => {
     log(`update ${info && info.version} downloaded; installs on quit`);
+    record("update.downloaded");
     set({ status: "ready", version: (info && info.version) || state.version, percent: 100, error: null });
   });
 
@@ -63,12 +72,16 @@ function startAutoUpdate({ app, autoUpdater, resourcesPath, env = process.env, l
   const install = () => {
     if (state.status !== "ready") return false;
     log(`restarting to install ${state.version}`);
+    record("update.install");
     autoUpdater.quitAndInstall(true, true);
     return true;
   };
 
   check();
-  return { enabled: true, check, install, getState: () => state, onChange: (fn) => { listeners.add(fn); return () => listeners.delete(fn); } };
+  const timer = intervalMs > 0 ? timers.setInterval(() => { if (!isBusy()) check(); }, intervalMs) : null;
+  if (timer && typeof timer.unref === "function") timer.unref();
+  const stop = () => { if (timer) timers.clearInterval(timer); };
+  return { enabled: true, check, install, stop, getState: () => state, onChange: (fn) => { listeners.add(fn); return () => listeners.delete(fn); } };
 }
 
 module.exports = { startAutoUpdate, feedConfigured };

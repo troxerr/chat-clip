@@ -9,6 +9,8 @@
   let hd = null;
   let snap = null;
   let upd = { status: "disabled" };
+  let announcedUpdate = null;
+  let licenseRetry = null;
   let clipList = [];
   let clipQuery = "";
   const ui = {};
@@ -30,10 +32,12 @@
   const when = (iso) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); };
   const PHASE_LABEL = { idle: "Not recording", starting: "Starting", buffering: "Buffering", watching: "Watching", exporting: "Saving a highlight", stopping: "Stopping", error: "Problem" };
 
-  function notify(message) {
+  // kind "info" is calm news (an update is ready); the default is an error.
+  function notify(message, kind) {
     const box = $("notice");
     box.textContent = message || "";
     box.hidden = !message;
+    box.classList.toggle("info", kind === "info");
   }
   async function guarded(fn) {
     notify("");
@@ -163,7 +167,11 @@
     ui.about = el("dl", { class: "kv" });
     ui.updText = el("p", { id: "update-status", role: "status" });
     ui.updBtn = el("button", { class: "btn", type: "button", id: "update-btn", onclick: () => guarded(async () => {
-      if (upd.status === "ready") await hd.update.install(); else await hd.update.check();
+      if (upd.status === "ready") {
+        const phase = snap && snap.capture && snap.capture.phase;
+        if (phase && phase !== "idle" && !window.confirm("ClipSpike is capturing right now. Restarting will stop the capture. Restart and update anyway?")) return;
+        await hd.update.install();
+      } else await hd.update.check();
     }) });
     $("page-settings").replaceChildren(el("h1", { id: "h-settings", text: "Settings" }), ui.licenseCard,
       el("div", { class: "card" }, el("h2", { text: "General" }),
@@ -172,6 +180,19 @@
         el("div", { class: "row", style: false }, el("button", { class: "btn", type: "button", text: "Open clip folder", onclick: () => guarded(() => hd.openClipFolder()) }))),
       el("div", { class: "card", id: "update-card" }, el("h2", { text: "Updates" }), ui.updText, el("div", { class: "row", style: false }, ui.updBtn)),
       el("div", { class: "card" }, el("h2", { text: "About" }), ui.about));
+  }
+
+  // When an update finishes downloading, say so once and mark Settings, so people need not look for it.
+  function announceUpdate() {
+    const ready = upd.status === "ready";
+    const settingsNav = document.querySelector('.nav[data-page="settings"]');
+    settingsNav.classList.toggle("has-update", ready);
+    if (ready) settingsNav.setAttribute("title", `Version ${upd.version} is ready to install`); else settingsNav.removeAttribute("title");
+    if (ready && announcedUpdate !== upd.version) {
+      announcedUpdate = upd.version;
+      if (!$("page-settings").hidden) return;
+      notify(`Version ${upd.version} is ready. Open Settings to restart and update.`, "info");
+    }
   }
 
   // Updates are checked at launch and download in the background; this card shows where that stands
@@ -191,6 +212,7 @@
     ui.updBtn.hidden = status === "disabled";
     ui.updBtn.disabled = status === "checking" || status === "downloading";
     ui.updBtn.classList.toggle("primary", status === "ready");
+    announceUpdate();
     ui.updBtn.textContent = status === "ready" ? "Restart to update" : status === "error" ? "Try again" : "Check for updates";
   }
 
@@ -212,6 +234,8 @@
       }
     }
     ui.licenseCard.replaceChildren(...rows);
+    // The key is saved but could not be read just now: look again shortly instead of showing a trial.
+    if (lic.keyUnreadable && !licenseRetry) licenseRetry = setTimeout(() => { licenseRetry = null; refresh().catch(() => {}); }, 20000);
     ui.launch.checked = snap.settings.launchAtLogin;
     ui.folder.textContent = snap.settings.outputFolder || "";
     const v = snap.versions || {};
