@@ -56,3 +56,16 @@ test("update events are persisted as names and categories only", (t) => {
     ["update.error", "connection"], ["update.error", "integrity"], ["update.error", "feed_unavailable"], ["update.error", "other"]
   ]);
 });
+
+test("a credential read failure is persisted as a category only", (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-logs-"));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const record = createDiagnostics(dir);
+  record("credential.read_failed", new Error("Could not run PowerShell: spawnSync C:\\Windows\\System32\\powershell.exe ETIMEDOUT"));
+  record("credential.read_failed", new Error("The data is invalid. LICENSE-KEY-1234567890abcdef"));
+  const raw = fs.readFileSync(path.join(dir, "logs", "clipspike.log"), "utf8");
+  assert.doesNotMatch(raw, /powershell|LICENSE-KEY|invalid/i);
+  assert.deepEqual(raw.trim().split("\n").map(JSON.parse).map(({ event, category }) => [event, category]), [
+    ["credential.read_failed", "timeout"], ["credential.read_failed", "other"]
+  ]);
+});

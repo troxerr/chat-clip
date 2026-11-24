@@ -74,14 +74,18 @@ function createLicenseManager({
     const key = store.get(KEY);
     const instance = typeof s.instance === "string" ? s.instance : "";
     const left = daysLeft();
-    const hasKey = Boolean(key && instance);
+    // A saved key that cannot be decrypted right now (a slow first PowerShell start, antivirus) is not
+    // "no key": showing the trial and the Activate box would invite a second activation.
+    const keyUnreadable = !key && Boolean(instance) && typeof store.has === "function" && store.has(KEY);
+    const hasKey = Boolean((key || keyUnreadable) && instance);
     const lastOk = parse(s.lastValidatedAt);
     const fresh = lastOk !== null && now().getTime() - lastOk <= GRACE_DAYS * DAY_MS;
     let valid, mode, message;
     if (hasKey) {
       valid = fresh || left > 0;
       mode = fresh ? "licensed" : (left > 0 ? "licensed-unverified" : "expired");
-      message = fresh ? `Licensed${s.email ? ` to ${s.email}` : ""}.`
+      message = keyUnreadable ? `Licensed${s.email ? ` to ${s.email}` : ""}. The saved license key could not be read just now; ClipSpike will try again.`
+        : fresh ? `Licensed${s.email ? ` to ${s.email}` : ""}.`
         : left > 0 ? "Licensed. The license could not be checked recently; it will be checked again when you are online."
         : "The license could not be checked for over 14 days. Connect to the internet to keep using the app.";
     } else {
@@ -89,7 +93,7 @@ function createLicenseManager({
       mode = left > 0 ? "trial" : "expired";
       message = left > 0 ? `Trial: ${left} day${left === 1 ? "" : "s"} left.` : "The trial has ended. Enter a license key to keep capturing.";
     }
-    return { required: true, valid, mode, trialDays, daysLeft: left, hasKey, stale: hasKey && !fresh,
+    return { required: true, valid, mode, trialDays, daysLeft: left, hasKey, keyUnreadable, stale: hasKey && !fresh,
       message, email: s.email || "", productName: s.productName || "", checkoutUrl: build.checkoutUrl || "" };
   }
 
@@ -149,6 +153,10 @@ function createLicenseManager({
   async function deactivate() {
     const key = store.get(KEY);
     const instance = section().instance;
+    // Never forget the local record of an activation that could not be released remotely.
+    if (!key && instance && typeof store.has === "function" && store.has(KEY)) {
+      throw new Error("The saved license key could not be read, so this activation cannot be released yet. Try again in a moment.");
+    }
     if (key && instance) await request("deactivate", { licenseKey: key, instanceId: instance, productId: build.productId || "", ...providerOptions });
     store.delete(KEY);
     save({ instance: undefined, email: undefined, productName: undefined, lastValidatedAt: undefined });

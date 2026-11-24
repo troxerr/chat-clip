@@ -56,7 +56,7 @@ function buildConfig() {
 
 function createServices() {
   const configPath = resolveConfigPath(process.env);
-  const store = createCredentialStore({ env: process.env });
+  const store = createCredentialStore({ env: process.env, onReadError: (_account, error) => record("credential.read_failed", error) });
   const readCfg = () => readConfig({ filePath: configPath }).config;
   // A config file that cannot be parsed is never overwritten from a blank copy.
   const writeCfg = (config) => {
