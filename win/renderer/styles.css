@@ -84,3 +84,5 @@ button { font: inherit; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 860px) { .stats { grid-template-columns: 1fr; } .content { padding: 20px 18px 32px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+.btn.is-disabled { opacity: .55; cursor: not-allowed; }
