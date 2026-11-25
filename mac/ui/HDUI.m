@@ -2120,7 +2120,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   [actions addArrangedSubview:self.licenseBuyButton];
   self.licenseActions = actions;
   [box addArrangedSubview:actions];
-  self.licenseTerms = HDLabel(@"A license works on up to two Macs. An internet connection is needed for validation every 14 days.", 11, NSFontWeightRegular, NSColor.secondaryLabelColor);
+  self.licenseTerms = HDLabel(@"After the 7-day trial, a new capture does not start until a license is activated. A license works on up to two computers. An internet connection is needed for validation every 14 days.", 11, NSFontWeightRegular, NSColor.secondaryLabelColor);
   [box addArrangedSubview:self.licenseTerms];
   [self.licenseTerms.widthAnchor constraintEqualToAnchor:box.widthAnchor].active = YES;
 }

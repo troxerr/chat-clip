@@ -59,6 +59,7 @@ jobs:
           VITE_SUPPORT_URL: ${{ vars.VITE_SUPPORT_URL }}
           VITE_WAITLIST_ENDPOINT: ${{ vars.VITE_WAITLIST_ENDPOINT }}
           VITE_WAITLIST_EMAIL: ${{ vars.VITE_WAITLIST_EMAIL }}
+          # Empty keeps the Polar checkout in web/src/monetization/offer.ts. A valid https value overrides it.
           VITE_CHECKOUT_URL: ${{ vars.VITE_CHECKOUT_URL }}
           VITE_DISCORD_INVITE_URL: ${{ vars.VITE_DISCORD_INVITE_URL }}
           VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}

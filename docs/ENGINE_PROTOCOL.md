@@ -37,7 +37,7 @@ One JSON object per line. Every event has `type` and `at` (ISO timestamp). `back
 |---|---|---|
 | `ready` | Capture is set up | `channel`, `output`, `temp`, `version`, `sessionId`, `profileVersion`, `settings`, `reframe`, `storage` |
 | `status` | Every sampling tick, and on state changes | `recording`, `joined`, `mediaTime`, `participants`, `reactions`, `messages`, `score`, `threshold`, `trigger`, `reasons`; also `exporting`/`target` while exporting, `stopping` while shutting down, `emotes`/`channelEmotes` after emote loads |
-| `free-tier` | The free plan is active (no valid license) | Weekly allowance from `lib/freetier.js`: how many clean clips remain this week before clips are watermarked. Emitted by both `background.cjs` and `vod.cjs`. |
+| `free-tier` | `CLIPSPIKE_PLAN=free` | Weekly allowance from `lib/freetier.js`. The Mac and Windows apps do not select this plan: an ended trial blocks a new capture. Emitted by `background.cjs` and `vod.cjs` only when the plan is set. |
 | `clip-requested` | A clip was triggered | `clipId`, `reason`, `trigger` (`auto`, `manual`, `command`, `raid`), `center`, `participants` |
 | `clip-exported` | The landscape clip was written | `path`, `sidecar`, `metadata` |
 | `clip-reframed` | The 9:16 clip was written | `path`, `width`, `height`, `sidecar` |

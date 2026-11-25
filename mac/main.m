@@ -192,7 +192,6 @@ static NSString *const kConfigTemplate =
 @property BOOL licenseValid;
 @property(strong, nonatomic) HDLicenseManager *licenseManager;
 @property(copy) NSString *pendingLicenseKey;
-@property BOOL freeTier;
 @property BOOL licenseRequired;
 @property BOOL licenseSilent;
 @property BOOL licenseValidationAttempted;
@@ -357,7 +356,8 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSString *mode = [storage[@"mode"] isKindOfClass:[NSString class]] ? storage[@"mode"] : @"local";
   NSString *folder = [storage[@"folder"] isKindOfClass:[NSString class]] ? storage[@"folder"] : @"/ClipSpike";
   environment[@"CLIPSPIKE_STORAGE"] = mode;
-  environment[@"CLIPSPIKE_PLAN"] = self.freeTier ? @"free" : @"pro";
+  // An ended trial refuses a new capture. It does not fall through to the watermark plan.
+  environment[@"CLIPSPIKE_PLAN"] = @"pro";
   environment[@"CLIPSPIKE_CONFIG"] = self.configPath;
   if (self.stateDir.length) environment[@"CLIPSPIKE_STATE"] = self.stateDir;
 
@@ -465,26 +465,27 @@ static NSString *HDByteString(unsigned long long bytes) {
 // A paid license stays usable offline for 14 days after its last successful validation.
 - (BOOL)licenseValidationFresh { return self.licenseManager.isWithinGrace; }
 
-// Free plan allowance, read from the recorder's usage file (see lib/freetier.js).
-- (NSString *)freeTierNote {
-  if (!self.freeTier) return nil;
-  NSCalendar *calendar = NSCalendar.currentCalendar;
-  calendar.firstWeekday = 2; // Monday
-  NSDate *monday = nil;
-  [calendar rangeOfUnit:NSCalendarUnitWeekOfYear startDate:&monday interval:nil forDate:[NSDate date]];
-  NSDateFormatter *iso = [NSDateFormatter new];
-  iso.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-  iso.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
-  iso.dateFormat = @"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-  NSString *dir = self.stateDir.length ? self.stateDir : [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/ClipSpike"];
-  NSData *data = [NSData dataWithContentsOfFile:[dir stringByAppendingPathComponent:@"free-tier.json"]];
-  NSDictionary *usage = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
-  NSInteger used = ([usage isKindOfClass:NSDictionary.class] && [usage[@"weekStart"] isEqual:[iso stringFromDate:monday]]) ? [usage[@"used"] integerValue] : 0;
-  NSInteger left = MAX(0, 3 - used);
-  return left > 0 ? [NSString stringWithFormat:@"Free plan: %ld of 3 clean clips left this week", (long)left] : @"Free plan: new clips are watermarked until Monday";
+// Trial days, or the hard stop after the trial. The watermark allowance is not shown.
+- (void)refreshPlanNote {
+  if (!self.ui) return;
+  NSString *note = nil;
+  if (self.licenseRequired && !([self licenseKeyValue].length && self.licenseValid)) {
+    NSInteger daysLeft = [self licenseTrialDaysLeft];
+    note = daysLeft > 0
+      ? [NSString stringWithFormat:@"Trial: %ld day%@ left", (long)daysLeft, daysLeft == 1 ? @"" : @"s"]
+      : @"Trial ended. A license is required to capture.";
+  }
+  [self.ui setPlanNote:note];
 }
 
-- (void)refreshFreeTierNote { [self.ui setPlanNote:[self freeTierNote]]; }
+// Nil when a new capture may start. Refreshes license state first so an open app
+// notices a trial that ended while it was running.
+- (NSString *)newCaptureBlockReason {
+  [self refreshLicenseState];
+  if (!self.licenseRequired || self.licenseValid) return nil;
+  if ([self licenseKeyValue].length) return @"This license is not active. Enter a license key to keep capturing.";
+  return @"The trial has ended. Enter a license key to keep capturing.";
+}
 
 - (void)refreshLicenseState {
   (void)self.licenseManager;  // loads Keychain state and starts Sparkle if already licensed
@@ -492,8 +493,8 @@ static NSString *HDByteString(unsigned long long bytes) {
   self.trialDays = [self configuredTrialDays];
   if (!self.licenseRequired) {
     self.licenseValid = YES;
-    self.freeTier = NO;
     [self updateLicenseUI];
+    [self refreshPlanNote];
     return;
   }
   [self startTrialIfNeeded];
@@ -510,8 +511,8 @@ static NSString *HDByteString(unsigned long long bytes) {
   } else {
     self.licenseValid = daysLeft > 0;
   }
-  self.freeTier = !self.licenseValid;
   [self updateLicenseUI];
+  [self refreshPlanNote];
   if (!self.licenseValid && !self.licenseWindow.isVisible) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.6 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
       [self showLicense:nil];
@@ -598,7 +599,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.licenseStatusLabel.stringValue = [NSString stringWithFormat:@"Trial active: %ld day%@ left. Enter a license key to continue after the trial.", (long)daysLeft, daysLeft == 1 ? @"" : @"s"];
     state = HDLicenseStateTrial;
   } else {
-    self.licenseStatusLabel.stringValue = [NSString stringWithFormat:@"Free plan: 3 clean clips a week, then clips carry a watermark. Enter a license key to remove it.%@", self.freeTierNote.length ? [NSString stringWithFormat:@" %@.", self.freeTierNote] : @""];
+    self.licenseStatusLabel.stringValue = @"The trial has ended. Enter a license key to keep capturing.";
     state = HDLicenseStateExpired;
   }
   self.licenseTrialLabel.stringValue = daysLeft > 0
@@ -664,7 +665,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.licenseBuyButton.frame = NSMakeRect(388, 140, 108, 32);
     [view addSubview:self.licenseBuyButton];
 
-    NSTextField *note = [NSTextField wrappingLabelWithString:@"A 7-day trial starts on first launch. A license can be used on up to two Macs. Validation requires an internet connection once every 14 days."];
+    NSTextField *note = [NSTextField wrappingLabelWithString:@"A 7-day trial starts on first launch. After it ends, a new capture does not start until you activate a license. A license can be used on up to two computers. Validation requires an internet connection once every 14 days."];
     note.font = [NSFont systemFontOfSize:11];
     note.textColor = [NSColor secondaryLabelColor];
     note.frame = NSMakeRect(24, 76, 472, 42);
@@ -812,8 +813,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.licenseValid = (transient && self.licenseManager.isWithinGrace) || [self licenseTrialDaysLeft] > 0;
   }
   if ([action isEqualToString:@"activate"]) self.pendingLicenseKey = nil;
-  self.freeTier = self.licenseRequired && !self.licenseValid;
-  [self refreshFreeTierNote];
+  [self refreshPlanNote];
   [self updateLicenseUI];
   if (!self.licenseSilent) {
     if (success) {
@@ -2121,7 +2121,6 @@ static NSString *HDByteString(unsigned long long bytes) {
     });
   }
   [self refreshLicenseState];
-  [self refreshFreeTierNote];
   NSString *reviewDirectory = HDEnv(@"CLIPSPIKE_UI_REVIEW");
   if (reviewDirectory.length) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -2694,7 +2693,7 @@ static NSString *HDByteString(unsigned long long bytes) {
       ? [NSString stringWithFormat:@"Saving clip %ld of %ld", (long)self.vodSaved + 1, (long)total]
       : [NSString stringWithFormat:@"Saved clip %ld of %ld", (long)self.vodSaved, (long)total];
   }
-  if ([type isEqualToString:@"free-tier"] || [type isEqualToString:@"clip-saved"]) [self refreshFreeTierNote];
+  if ([type isEqualToString:@"free-tier"] || [type isEqualToString:@"clip-saved"]) [self refreshPlanNote];
   [self.ui updateSummaryWithClips:self.clipCount queue:self.queuedCount storage:self.storageLabel trial:self.trialDays];
   [self refreshStatusItem];
 }
@@ -2718,6 +2717,14 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.status.stringValue = @"Stopping capture…";
     [self.ui setSessionState:HDSessionStateStopping status:self.status.stringValue];
     [self.task terminate];
+    return;
+  }
+
+  NSString *blocked = [self newCaptureBlockReason];
+  if (blocked) {
+    self.status.stringValue = blocked;
+    [self.ui setSessionState:HDSessionStateError status:blocked];
+    [self showLicense:nil];
     return;
   }
 
@@ -2862,6 +2869,13 @@ static NSString *HDByteString(unsigned long long bytes) {
   }
   if (self.task.running) {
     self.status.stringValue = @"Stop the live capture before scanning a VOD.";
+    return;
+  }
+  NSString *blocked = [self newCaptureBlockReason];
+  if (blocked) {
+    self.status.stringValue = blocked;
+    [self.ui setSessionState:HDSessionStateError status:blocked];
+    [self showLicense:nil];
     return;
   }
   NSCharacterSet *space = [NSCharacterSet whitespaceAndNewlineCharacterSet];

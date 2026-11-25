@@ -6,7 +6,7 @@ export default function Privacy() {
   return (
     <article className="legal">
       <h1>Privacy Policy</h1>
-      <p className="meta">Last updated: 2026-11-24 · Operator: AST Labs (ast.labs@outlook.com). Template: have it reviewed before relying on it.</p>
+      <p className="meta">Last updated: 2026-11-25 · Operator: AST Labs (ast.labs@outlook.com).</p>
       <h2>What this web app does</h2>
       <p>
         ClipSpike shows Twitch highlights. Your favorites, followed streamers and settings are stored in your

@@ -73,7 +73,7 @@ const STATIC_PAGES: StaticPage[] = [
   {
     path: '/about',
     title: `About ${SITE_NAME}`,
-    description: 'ClipSpike finds the moments chat loses it by watching chat velocity, audio peaks and play-by-play on Twitch streams.',
+    description: 'ClipSpike browses Twitch clips. The Windows app watches chat and saves a vertical clip from a spike, a raid, !clip, or Save highlight.',
   },
   {
     path: '/privacy',

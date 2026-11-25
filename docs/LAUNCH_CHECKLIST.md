@@ -142,7 +142,7 @@ In the Polar sandbox dashboard revoke the key (Benefits → License keys). Then:
 node tools/license.js --action validate --instance-id <an active ID>
 ```
 
-Expect `ok:false` with "not valid, or has been revoked or expired". In the app this clears the Keychain on the next check and returns to the free plan.
+Expect `ok:false` with "not valid, or has been revoked or expired". In the app this clears the Keychain on the next check and returns to an ended trial. A new capture does not start.
 
 ### Wrong-benefit key
 

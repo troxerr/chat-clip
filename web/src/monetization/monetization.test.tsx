@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { adsenseReady, buildConfig, hasSponsoredContent, consentRequired, httpsOrEmpty, type AffiliateItem, type MonetizationConfig } from './config'
+import { publicOffer } from './offer'
 import { monetization } from './index'
 import { CONSENT_KEY, getConsent, reloadConsent, resetConsent, setConsent } from './consent'
 import { initAnalytics, track } from './analytics'
@@ -28,11 +29,12 @@ afterEach(() => {
 })
 
 describe('config defaults', () => {
-  it('ships fully off', () => {
+  it('ships ads and analytics off, with the public checkout', () => {
     expect(monetization.adsEnabled).toBe(false)
     expect(monetization.affiliatesEnabled).toBe(false)
     expect(monetization.supportUrl).toBe('')
     expect(monetization.analytics.provider).toBe('none')
+    expect(monetization.checkoutUrl).toBe(publicOffer.checkoutUrl)
     expect(consentRequired(monetization)).toBe(false)
   })
 
@@ -60,7 +62,7 @@ describe('config defaults', () => {
     expect(c.supportUrl).toBe('')
     expect(c.waitlist.email).toBe('')
     expect(c.affiliates).toHaveLength(1)
-    expect(c.checkoutUrl).toBe('')
+    expect(c.checkoutUrl).toBe(publicOffer.checkoutUrl)
     expect(adsenseReady(c)).toBe(false)
     expect(adsenseReady(adsense)).toBe(true)
   })
@@ -179,20 +181,22 @@ describe('checkout URL', () => {
     expect(httpsOrEmpty('javascript:alert(1)')).toBe('')
     expect(httpsOrEmpty('not a url')).toBe('')
     expect(httpsOrEmpty('')).toBe('')
+    expect(buildConfig({}, []).checkoutUrl).toBe(publicOffer.checkoutUrl)
+    expect(buildConfig({ VITE_CHECKOUT_URL: '' }, []).checkoutUrl).toBe(publicOffer.checkoutUrl)
     expect(buildConfig({ VITE_CHECKOUT_URL: 'https://buy.example/pro' }, []).checkoutUrl).toBe('https://buy.example/pro')
-    expect(buildConfig({ VITE_CHECKOUT_URL: 'http://buy.example/pro' }, []).checkoutUrl).toBe('')
+    expect(buildConfig({ VITE_CHECKOUT_URL: 'http://buy.example/pro' }, []).checkoutUrl).toBe(publicOffer.checkoutUrl)
   })
 
-  it('shows Get ClipSpike Pro only when checkout is configured', async () => {
+  it('shows the Polar price and checkout, and hides the button when checkout is blank', async () => {
     const { unmount } = render(<Pro config={monetization} />)
-    expect(screen.queryByRole('link', { name: 'Get ClipSpike Pro' })).toBeNull()
-    expect(screen.getByText(/isn.t open yet/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Get ClipSpike Pro' })).toHaveAttribute('href', publicOffer.checkoutUrl)
+    expect(screen.getByText(/\$39 one-time/)).toBeInTheDocument()
     unmount()
 
-    const http = buildConfig({ VITE_CHECKOUT_URL: 'http://buy.example/pro' }, [])
-    const { unmount: unmountHttp } = render(<Pro config={http} />)
+    const hidden = { ...monetization, checkoutUrl: '' }
+    const { unmount: unmountHidden } = render(<Pro config={hidden} />)
     expect(screen.queryByRole('link', { name: 'Get ClipSpike Pro' })).toBeNull()
-    unmountHttp()
+    unmountHidden()
 
     setConsent({ ads: false, analytics: true })
     const spy = vi.fn()

@@ -20,8 +20,8 @@ export default function Home() {
         <span className="live-pill">● Live highlight detection</span>
         <h1>Never miss the moment chat loses it.</h1>
         <p>
-          ClipSpike watches chat velocity, audio peaks and play-by-play to surface the best moments from your
-          favorite streams.
+          Browse the moments a Twitch chat reacts to. The Windows app watches chat and saves the 30 seconds
+          around a spike, a raid, a moderator&apos;s !clip, or Save highlight.
         </p>
         <Link className="btn" to="/clips">
           Browse highlights

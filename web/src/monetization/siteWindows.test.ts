@@ -1,6 +1,7 @@
 /// <reference types="node" />
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { publicOffer } from './offer'
 
 // vitest runs with cwd = web/
 const html = readFileSync('../site/windows.html', 'utf8')
@@ -9,14 +10,18 @@ const setup = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.3
 const portable = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.3/ClipSpike-0.1.3-x64-portable.exe'
 
 describe('site/windows.html', () => {
-  it('links the published 0.1.3 assets and warns that the build is unsigned', () => {
+  it('links the published 0.1.3 trial and the Polar checkout, and warns that the build is unsigned', () => {
     expect(html).toContain(setup)
     expect(html).toContain(portable)
+    expect(html).toContain(publicOffer.checkoutUrl)
+    expect(html).toContain(publicOffer.priceLabel)
     expect(html).toMatch(/UNSIGNED/)
     expect(html).toMatch(/SmartScreen/)
     expect(html).not.toContain('releases/latest')
     expect(html).not.toContain('coming soon')
     expect(html).not.toMatch(/href="(?!https:)[^"]*\.exe"/)
+    const win = JSON.parse(readFileSync('../win/build-config.json', 'utf8')) as { checkoutUrl: string }
+    expect(win.checkoutUrl).toBe(publicOffer.checkoutUrl)
   })
 
   it('uses only relative asset paths so it works under any base path', () => {
@@ -26,12 +31,18 @@ describe('site/windows.html', () => {
 })
 
 describe('site/index.html', () => {
-  it('leads with the live clip browser and does not promise a Mac download', () => {
+  it('leads with the live clip browser, lists the Polar price, and does not promise a Mac download', () => {
     expect(home).toContain('href="/app/clips/"')
     expect(home).toContain('href="/app/"')
-    expect(home).toContain(setup)
-    expect(home).toContain(portable)
-    expect(home).toMatch(/UNSIGNED/)
+    expect(home).toContain(publicOffer.checkoutUrl)
+    expect(home).toContain(publicOffer.priceLabel)
+    expect(home).toContain('windows.html')
+    expect(home).not.toContain(setup)
+    expect(home).not.toContain(portable)
+    expect(home).toMatch(/unsigned/i)
+    expect(home).not.toContain('your Mac')
+    expect(home).not.toContain('Mac’s hardware encoder')
+    expect(home).not.toContain('does not list a price')
     expect(home).not.toContain('Mac release coming soon')
     expect(home).not.toContain('Once the app is out')
     expect(home).not.toMatch(/notariz/i)

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import LiveAlertsSignup from '../components/LiveAlertsSignup'
 import { monetization } from '../monetization'
 import { track } from '../monetization/analytics'
+import { publicOffer } from '../monetization/offer'
 import type { MonetizationConfig } from '../monetization/config'
 import { isEmail, joinWaitlist, mailtoHref, type WaitlistResult } from '../monetization/waitlist'
 
@@ -41,8 +42,9 @@ export default function Pro({ config = monetization }: { config?: MonetizationCo
     <>
       <h1>ClipSpike Pro</h1>
       <p className="meta">
-        Web clip browsing stays free. Pro is a license for the desktop app: a 7-day trial, then a license to keep capturing.
-        This page does not list a price.
+        Web clip browsing stays free. Pro is {publicOffer.priceLabel} {publicOffer.billing} for the Windows app.
+        The app includes a {publicOffer.trialDays}-day trial, then the license is required to keep capturing.
+        One license covers {publicOffer.computers} computers.
       </p>
       <ul className="pro-features">
         {features.map(([t, d]) => (
