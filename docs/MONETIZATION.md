@@ -25,7 +25,7 @@ Config lives in `web/src/monetization/config.ts` (`buildConfig` validates every 
 | `VITE_SUPPORT_URL` | Ko-fi / Buy Me a Coffee / GitHub Sponsors `http(s)://` URL. |
 | `VITE_WAITLIST_ENDPOINT` | Formspree-style JSON POST URL for `/pro`. |
 | `VITE_WAITLIST_EMAIL` | Fallback mailto address for `/pro`. |
-| `VITE_CHECKOUT_URL` | https checkout URL for the desktop license. Invalid values are dropped. Unset = no buy button. |
+| `VITE_CHECKOUT_URL` | https checkout URL for the desktop license. Invalid values are dropped. Unset uses the Polar checkout in `web/src/monetization/offer.ts` ($39, one-time). |
 | `VITE_ANALYTICS_PROVIDER` | `plausible` to enable analytics (needs the domain too); else off. |
 | `VITE_PLAUSIBLE_DOMAIN` | Site domain, e.g. `clipspike.com`. |
 | `VITE_PLAUSIBLE_SRC` | Optional self-hosted Plausible script URL. |
@@ -53,8 +53,8 @@ When you add a new `VITE_*` variable to `web/.env.example`, also add it to the b
 - Set `VITE_SUPPORT_URL` to your Ko-fi, Buy Me a Coffee or GitHub Sponsors page. Shown in the sidebar, footer and on the clip page.
 
 ### 5. Pro (`/pro`)
-- What is sold is the desktop app: a 7-day trial, then a license to keep capturing. Web clip browsing stays free. The page does not list a price and does not promise web-only features that are not enforced.
-- Set `VITE_CHECKOUT_URL` to an https checkout link (the same public URL the desktop app uses). `/pro` then shows **Get ClipSpike Pro** (new tab). Anything that is not https is dropped and the button stays hidden. Do not put a secret in this variable.
+- What is sold is the Windows app: a 7-day trial, then a $39 one-time Polar license to keep capturing. Web clip browsing stays free. The page lists that price and does not promise web-only features that are not enforced.
+- `/pro` shows **Get ClipSpike Pro** using the checkout in `web/src/monetization/offer.ts`, which is the same URL as `win/build-config.json`. Set `VITE_CHECKOUT_URL` to a different https checkout to override it. Anything that is not https is ignored and the committed checkout stays. Do not put a secret in this variable.
 - Set `VITE_WAITLIST_ENDPOINT` (e.g. `https://formspree.io/f/<your-form-id>`; JSON POST) and/or `VITE_WAITLIST_EMAIL` (mailto fallback) to keep the waitlist as the secondary path. With neither, the page says the waitlist is not open.
 
 ### 6. Analytics hooks

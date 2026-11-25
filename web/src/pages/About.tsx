@@ -3,8 +3,9 @@ export default function About() {
     <>
       <h1>About</h1>
       <p>
-        ClipSpike is a live highlight detector for Twitch. This preview runs on mock data; scores combine chat
-        velocity, audio peaks and in-game events.
+        ClipSpike browses Twitch clips in the browser. The Windows app watches a channel&apos;s chat and saves
+        the moment chat reacts: a spike, a raid, a moderator&apos;s !clip, or Save highlight. It turns that
+        moment into a vertical clip. There is no public Mac release.
       </p>
     </>
   )

@@ -109,7 +109,7 @@ R2 setup: create a bucket, attach a custom domain, and create an R2 API token sc
 
 ## Licensing
 
-ClipSpike activates against Lemon Squeezy with the Mac's hardware UUID in `instance_name`. The key, instance ID and last-validated time are stored in the login Keychain (service `com.clipspike.app.license`). A license stays valid offline for 14 days after the last successful validation; a refunded, revoked or deleted key clears the Keychain on the next check and returns the app to the free plan.
+ClipSpike activates against Lemon Squeezy with the Mac's hardware UUID in `instance_name`. The key, instance ID and last-validated time are stored in the login Keychain (service `com.clipspike.app.license`). A license stays valid offline for 14 days after the last successful validation; a refunded, revoked or deleted key clears the Keychain on the next check and returns the app to an ended trial. A new capture does not start until a license is active.
 
 ## Rename from ChatClip / Highlight Desk (external steps)
 

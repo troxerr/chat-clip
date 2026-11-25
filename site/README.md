@@ -6,9 +6,9 @@ Static marketing site for the ClipSpike apps (macOS and Windows). There is no bu
 
 | File | Purpose |
 |---|---|
-| `index.html` | Landing page. Leads with the live clip browser (`/app/` and `/app/clips/`), then the Windows download. Mac is described as unpublished. |
-| `windows.html` | Windows download page. Links the published `win-v0.1.3` setup and portable assets, with the unsigned/SmartScreen warning. |
-| `privacy.html`, `terms.html`, `eula.html` | Legal pages. Starting templates, not legal advice. |
+| `index.html` | Landing page. Leads with the live clip browser, then the $39 Windows license. The trial installer is on `windows.html`. Mac is described as unpublished. |
+| `windows.html` | Windows download page. The $39 Polar checkout is first. The published `win-v0.1.3` setup and portable assets follow, with the unsigned/SmartScreen warning. |
+| `privacy.html`, `terms.html`, `eula.html` | Privacy policy, terms, and EULA for the Windows license. |
 
 ## Deploy with GitHub Pages
 
@@ -27,7 +27,7 @@ The clip browser is live at `/app/` and `/app/clips/`. Windows `win-v0.1.3` is a
 
 | Platform | On the site now | To go live |
 |---|---|---|
-| Windows | `windows.html` and the homepage download section link `ClipSpike-0.1.3-x64.exe` and `ClipSpike-0.1.3-x64-portable.exe` on the `win-v0.1.3` GitHub release. The release is unsigned; the pages say SmartScreen will warn. | When a newer non-draft Windows release exists, replace those exact asset URLs and the guard test `web/src/monetization/siteWindows.test.ts`. Do not host binaries in this repo. |
+| Windows | The homepage links the Polar checkout and `windows.html`. That page links `ClipSpike-0.1.3-x64.exe` and `ClipSpike-0.1.3-x64-portable.exe` on the published `win-v0.1.3` GitHub release. The release is unsigned; the page says SmartScreen will warn. `win-v0.1.4` is a draft and is not linked. | When a newer non-draft Windows release exists, replace those exact asset URLs and the guard test `web/src/monetization/siteWindows.test.ts`. Do not host binaries in this repo. Do not link a draft. A signed installer needs an Authenticode certificate in the release secrets; until then the SmartScreen note stays. |
 | Mac | Honest “no public Mac release” copy. No download link. | Link a Mac build only after a public release exists. Do not call a build notarized unless it is. |
 
 Never link GitHub's `/releases/latest` or a draft release. Release versions are immutable: the workflow refuses to overwrite an installer that is already on the feed, and a `win-v*` tag must match the version in `win/package.json`. See `docs/WINDOWS_RELEASE.md`.
@@ -43,11 +43,9 @@ Never link GitHub's `/releases/latest` or a draft release. Release versions are 
 
 - Windows: finish the release steps in `docs/WINDOWS_RELEASE.md` (update feed host, signing decision, production Polar values, tag build), run the smoke test, then link the installer.
 - Mac: link the notarized DMG.
-- Put the production checkout link in the pricing card and download CTAs once the apps are live, and point the Mac app's `HDCheckoutURL` at the same checkout.
-- Replace `support@clipspike.example` and the `[LEGAL ENTITY]`, `[ADDRESS]` and `[DATE]` placeholders in `privacy.html`, `terms.html` and `eula.html`.
-- Update the legal pages for Windows and Polar. They currently describe a macOS app sold through Lemon Squeezy, with licenses counted in Macs.
-- Have the privacy policy, terms, EULA, refund policy and third-party notices reviewed by a lawyer.
+- The pricing card and `/pro` use the Polar checkout and the $39 price in `web/src/monetization/offer.ts`. Point the Mac app's `HDCheckoutURL` at that same checkout when a Mac release exists.
+- Have the privacy policy, terms, EULA, refund policy and third-party notices read by a lawyer when the business details change.
 - Add real screenshots and a demo video. The current hero is a CSS mockup so no personal desktop content is exposed.
 - Add analytics only if the privacy policy and consent flow cover it.
 
-The legal pages are starting templates, not legal advice. Do not sell without review.
+The legal pages are the published policy, terms, and EULA. They are not a lawyer's opinion.

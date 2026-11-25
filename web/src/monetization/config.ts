@@ -1,6 +1,9 @@
-// Single source of truth for monetization. Everything is OFF unless the matching
-// VITE_* env var is set at build time: no ads, no third-party scripts, no tracking.
+// Single source of truth for monetization. Ads, affiliates, tips and analytics stay
+// off unless the matching VITE_* env var is set at build time. The desktop checkout
+// defaults to the committed Polar offer; a valid https VITE_CHECKOUT_URL overrides it.
 // Setup steps per provider: docs/MONETIZATION.md
+
+import { publicOffer } from './offer'
 
 export type SlotProvider = 'sponsor' | 'adsense'
 
@@ -93,7 +96,8 @@ export function buildConfig(env: Env, affiliates: AffiliateItem[]): Monetization
       email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '',
     },
     discordInviteUrl: discordInvite(env.VITE_DISCORD_INVITE_URL),
-    checkoutUrl: httpsOrEmpty(env.VITE_CHECKOUT_URL),
+    // Empty or invalid env keeps the committed Polar checkout, so the buy button is on by default.
+    checkoutUrl: httpsOrEmpty(env.VITE_CHECKOUT_URL) || publicOffer.checkoutUrl,
     analytics: {
       provider: env.VITE_ANALYTICS_PROVIDER === 'plausible' && plausibleDomain ? 'plausible' : 'none',
       domain: plausibleDomain,

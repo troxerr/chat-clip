@@ -143,6 +143,21 @@ test("build.sh compiles the license manager and links IOKit", () => {
   assert.match(script, /-framework IOKit/);
 });
 
+test("an ended Mac trial blocks a new capture instead of watermarking", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const source = fs.readFileSync(path.join(__dirname, "..", "mac", "main.m"), "utf8");
+  const ui = fs.readFileSync(path.join(__dirname, "..", "mac", "ui", "HDUI.m"), "utf8");
+  assert.match(source, /The trial has ended\. Enter a license key to keep capturing\./);
+  assert.doesNotMatch(source, /Free plan:/);
+  assert.match(source, /CLIPSPIKE_PLAN"\] = @"pro"/);
+  const toggle = source.slice(source.indexOf("- (void)toggleCapture:"), source.indexOf("- (BOOL)validVodTime:"));
+  const vod = source.slice(source.indexOf("- (void)findHighlights:"), source.indexOf("- (void)findHighlights:") + 2500);
+  assert.match(toggle, /newCaptureBlockReason/);
+  assert.match(vod, /newCaptureBlockReason/);
+  assert.match(ui, /a new capture does not start until a license is activated/);
+});
+
 test("license data is stored in the Keychain with a 14-day grace window", () => {
   const fs = require("node:fs");
   const path = require("node:path");
