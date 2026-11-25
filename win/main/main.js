@@ -98,7 +98,7 @@ function createServices() {
     outputFolder,
     versions: { electron: process.versions.electron, node: process.versions.node }
   });
-  return { core, license, engine };
+  return { core, license, engine, store };
 }
 
 function main() {
@@ -231,6 +231,8 @@ function main() {
     buildMenu();
     createWindow();
     record("startup.ready");
+    // Read the saved license key in the background so the first screen does not wait on PowerShell.
+    if (!SMOKE && services.store && typeof services.store.warm === "function") services.store.warm("license.key").catch(() => {});
     app.on("second-instance", () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
     if (!SMOKE) {
       try {
