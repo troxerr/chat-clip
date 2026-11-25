@@ -19,7 +19,9 @@ export default function Pro({ config = monetization }: { config?: MonetizationCo
   const [result, setResult] = useState<WaitlistResult | null>(null)
   const canSubmit = !!(config.waitlist.endpoint || config.waitlist.email)
 
-  useEffect(() => track('pro_waitlist_view', undefined, config), [config])
+  useEffect(() => {
+    if (canSubmit) track('pro_waitlist_view', undefined, config)
+  }, [canSubmit, config])
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -67,44 +69,44 @@ export default function Pro({ config = monetization }: { config?: MonetizationCo
           </a>
         </p>
       ) : null}
-      <section className="waitlist" aria-labelledby="waitlist-h">
-        <h2 id="waitlist-h">Join the waitlist</h2>
-        {!canSubmit ? (
-          <p className="meta">The waitlist isn&apos;t open yet. Check back soon.</p>
-        ) : result === 'sent' ? (
-          <p role="status" className="ok">Thanks! You&apos;re on the list.</p>
-        ) : result === 'mailto' ? (
-          <p role="status" className="ok">
-            Your email app should open. If not,{' '}
-            <a href={mailtoHref(config.waitlist.email, email.trim())}>send the email manually</a>.
-          </p>
-        ) : (
-          <form onSubmit={onSubmit} noValidate>
-            <label className="field">
-              <span>Email address</span>
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                required
-                value={email}
-                aria-invalid={!!error}
-                aria-describedby={error ? 'waitlist-err' : undefined}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </label>
-            <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hp" />
-            {error && <p id="waitlist-err" role="alert" className="field-error">{error}</p>}
-            {result === 'unavailable' && (
-              <p role="alert" className="field-error">Could not join right now. Please try again later.</p>
-            )}
-            <button type="submit" className="btn" disabled={busy} onClick={() => track('pro_cta_click', undefined, config)}>
-              {busy ? 'Joining…' : 'Notify me'}
-            </button>
-            <p className="meta">We only use your email to tell you about Pro. See the Privacy Policy.</p>
-          </form>
-        )}
-      </section>
+      {canSubmit ? (
+        <section className="waitlist" aria-labelledby="waitlist-h">
+          <h2 id="waitlist-h">Join the waitlist</h2>
+          {result === 'sent' ? (
+            <p role="status" className="ok">Thanks! You&apos;re on the list.</p>
+          ) : result === 'mailto' ? (
+            <p role="status" className="ok">
+              Your email app should open. If not,{' '}
+              <a href={mailtoHref(config.waitlist.email, email.trim())}>send the email manually</a>.
+            </p>
+          ) : (
+            <form onSubmit={onSubmit} noValidate>
+              <label className="field">
+                <span>Email address</span>
+                <input
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  aria-invalid={!!error}
+                  aria-describedby={error ? 'waitlist-err' : undefined}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </label>
+              <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hp" />
+              {error && <p id="waitlist-err" role="alert" className="field-error">{error}</p>}
+              {result === 'unavailable' && (
+                <p role="alert" className="field-error">Could not join right now. Please try again later.</p>
+              )}
+              <button type="submit" className="btn" disabled={busy} onClick={() => track('pro_cta_click', undefined, config)}>
+                {busy ? 'Joining…' : 'Notify me'}
+              </button>
+              <p className="meta">We only use your email to tell you about Pro. See the Privacy Policy.</p>
+            </form>
+          )}
+        </section>
+      ) : null}
       <LiveAlertsSignup config={config} />
     </>
   )

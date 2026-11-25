@@ -36,7 +36,7 @@ When you add a new `VITE_*` variable to `web/.env.example`, also add it to the b
 
 ### 1. Consent and legal
 - `ConsentBanner` appears only when ads (AdSense) or analytics are configured. Choices (Accept all / Reject all / Customize) are stored in localStorage `clipspike:consent`; "Cookie settings" in the footer reopens it. Ads and analytics scripts load **only after** the matching consent.
-- `/privacy` and `/terms` are routed in the app and linked in the footer. They are templates (operator: AST Labs, last updated 2026-11-22): update the date when you change them, and get legal review. They cover Twitch embeds, ads/analytics and affiliate disclosure.
+- `/privacy` and `/terms` are routed in the app and linked in the footer. They are the published pages (operator: AST Labs). Update the date when you change them. They cover Twitch embeds, ads/analytics and affiliate disclosure.
 - For EU/UK traffic Google requires a certified CMP for AdSense; the built-in banner is a basic consent gate, not a certified CMP. Use one before serving ads there.
 
 ### 2. Display ads (Google AdSense)
@@ -55,7 +55,7 @@ When you add a new `VITE_*` variable to `web/.env.example`, also add it to the b
 ### 5. Pro (`/pro`)
 - What is sold is the Windows app: a 7-day trial, then a $39 one-time Polar license to keep capturing. Web clip browsing stays free. The page lists that price and does not promise web-only features that are not enforced.
 - `/pro` shows **Get ClipSpike Pro** using the checkout in `web/src/monetization/offer.ts`, which is the same URL as `win/build-config.json`. Set `VITE_CHECKOUT_URL` to a different https checkout to override it. Anything that is not https is ignored and the committed checkout stays. Do not put a secret in this variable.
-- Set `VITE_WAITLIST_ENDPOINT` (e.g. `https://formspree.io/f/<your-form-id>`; JSON POST) and/or `VITE_WAITLIST_EMAIL` (mailto fallback) to keep the waitlist as the secondary path. With neither, the page says the waitlist is not open.
+- Set `VITE_WAITLIST_ENDPOINT` (e.g. `https://formspree.io/f/<your-form-id>`; JSON POST) and/or `VITE_WAITLIST_EMAIL` (mailto fallback) to show the waitlist under the checkout button. With neither, `/pro` does not render a waitlist.
 
 ### 6. Analytics hooks
 - `track()` in `web/src/monetization/analytics.ts` is a no-op unless `VITE_ANALYTICS_PROVIDER=plausible`, `VITE_PLAUSIBLE_DOMAIN` is set and the user accepted analytics. Events: `support_click`, `affiliate_click`, `sponsor_click`, `pro_waitlist_view`, `pro_waitlist_submit`, `pro_cta_click`, `pro_checkout_click`. No personal data is sent. Self-host via `VITE_PLAUSIBLE_SRC`.
@@ -65,7 +65,7 @@ When you add a new `VITE_*` variable to `web/.env.example`, also add it to the b
 ## Other options
 | Option | Notes |
 |---|---|
-| Pro for the desktop app | Mac has a Lemon Squeezy license flow and `lib/freetier.js`; extend to Windows. Strongest long-term revenue. |
+| Pro for the desktop app | Sold now: a 7-day Windows trial, then the $39 one-time Polar license in `win/build-config.json`. An ended trial blocks a new capture. `lib/freetier.js` is not the plan either app selects. |
 | Direct sponsorships | Best first step: one labelled `sponsor` slot, no third-party code. |
 
 ## Compliance checklist (before enabling anything)
@@ -74,7 +74,7 @@ When you add a new `VITE_*` variable to `web/.env.example`, also add it to the b
 - **Privacy/consent**: finalize `/privacy` and `/terms`; `site/privacy.html` (desktop app) is separate and says no analytics.
 - **Disclosures**: label sponsored/affiliate content (FTC and similar).
 - **Children**: not directed at children; no personalized ads for under-13s.
-- Paid tiers later: Terms/refund policy and tax (Lemon Squeezy is merchant of record).
+- The desktop license is sold through Polar, the merchant of record. Terms and the refund policy are the published pages.
 
 This document is not legal advice.
 

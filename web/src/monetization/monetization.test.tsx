@@ -228,11 +228,13 @@ describe('waitlist', () => {
     expect(await joinWaitlist('u@x.co', monetization, bad as never)).toBe('unavailable')
   })
 
-  it('Pro page validates email and says not open when unconfigured', async () => {
+  it('Pro page hides the waitlist until it is configured, then validates email', async () => {
     const { unmount } = render(<Pro config={monetization} />)
-    expect(screen.getByText(/isn.t open yet/)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Join the waitlist' })).toBeNull()
+    expect(screen.queryByText(/isn.t open yet/)).toBeNull()
     unmount()
     render(<Pro config={withEndpoint} />)
+    expect(screen.getByRole('heading', { name: 'Join the waitlist' })).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Email address'), 'nope')
     await userEvent.click(screen.getByRole('button', { name: 'Notify me' }))
     expect(screen.getByRole('alert')).toHaveTextContent('valid email')

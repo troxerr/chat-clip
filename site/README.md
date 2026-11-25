@@ -36,7 +36,7 @@ Never link GitHub's `/releases/latest` or a draft release. Release versions are 
 
 - **Windows uses [Polar](https://polar.sh)** as merchant of record and license-key provider. The settings are in `win/build-config.json`: `provider`, `apiBase`, `productId` (`<organization-id>:<benefit-id>`), `checkoutUrl` and `trialDays`.
 - The committed values point at **Polar production** (`https://api.polar.sh`). Sandbox keys do not work in production, and production keys do not work in the sandbox. To test against the sandbox, point `apiBase`, `productId` and `checkoutUrl` at sandbox values in a scratch build. The release workflow runs `node win/tools/check-release-config.js` and fails if licensing is not configured.
-- **Mac** still defaults to Lemon Squeezy, and Polar can be selected instead (see the root `README.md`, "Using Polar instead of Lemon Squeezy"). Pick one provider per platform on purpose.
+- **Mac** has no public download. A release build must use the same Polar checkout, product id, and `https://api.polar.sh` API as `win/build-config.json`. `./mac/release.sh --check` fails otherwise. Do not ship a Lemon Squeezy Mac build.
 - Details: `docs/WINDOWS_RELEASE.md` (licensing provider) and `docs/LAUNCH_CHECKLIST.md` (the Polar sandbox pass and production inputs).
 
 ## Before publishing

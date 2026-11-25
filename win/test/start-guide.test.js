@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { channelProblem, startBlocker, licenseBanner } = require("../renderer/start-guide.js");
+const { channelProblem, startBlocker, licenseBanner, bannerButtons } = require("../renderer/start-guide.js");
 
 const ok = { valid: true, mode: "licensed", required: true };
 
@@ -21,8 +21,25 @@ test("Start says what is missing, in the order a person would fix it", () => {
 });
 
 test("the banner shows trial days, an expired trial, or nothing", () => {
-  assert.deepEqual(licenseBanner({ required: true, mode: "trial", daysLeft: 1 }), { kind: "info", text: "Trial: 1 day left.", action: "buy" });
-  assert.equal(licenseBanner({ required: true, mode: "expired", message: "Ended." }).action, "settings");
+  assert.deepEqual(licenseBanner({ required: true, mode: "trial", daysLeft: 1 }), { kind: "info", text: "Trial: 1 day left.", actions: ["buy"] });
+  assert.deepEqual(licenseBanner({ required: true, mode: "expired", message: "Ended." }).actions, ["buy", "key"]);
   assert.equal(licenseBanner({ required: true, mode: "licensed" }), null);
   assert.equal(licenseBanner({ required: false, mode: "development" }), null);
+});
+
+test("checkout is the banner's buy button, and an ended trial also offers the key field", () => {
+  const offer = { checkoutUrl: "https://buy.polar.sh/x", priceLabel: "$39" };
+  assert.deepEqual(bannerButtons({ required: true, mode: "trial", daysLeft: 2, ...offer }), [
+    { action: "buy", label: "Buy for $39" }
+  ]);
+  assert.deepEqual(bannerButtons({ required: true, mode: "expired", message: "Ended.", ...offer }), [
+    { action: "buy", label: "Buy for $39" },
+    { action: "settings", label: "Enter license key" }
+  ]);
+  assert.deepEqual(bannerButtons({ required: true, mode: "expired", message: "Ended.", priceLabel: "$39" }), [
+    { action: "settings", label: "Enter license key" }
+  ]);
+  assert.deepEqual(bannerButtons({ required: true, mode: "trial", daysLeft: 2, checkoutUrl: "https://buy.polar.sh/x" }), [
+    { action: "buy", label: "Buy a license" }
+  ]);
 });

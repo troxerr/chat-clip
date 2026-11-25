@@ -315,7 +315,7 @@ tools/dropbox-auth.js    Dropbox refresh-token helper
 tools/google-auth.js     Google Drive refresh-token helper
 tools/oauth-bridge.js    Browser OAuth helper used by the app
 tools/credentials.js     Manage secrets in the Windows credential store
-tools/license.js         Lemon Squeezy license helper
+tools/license.js         license activation helper
 tools/fetch-sparkle.sh   Fetch the pinned Sparkle framework
 tools/make-appcast.sh    Sign a release DMG into a Sparkle appcast
 tools/build-runtime.sh   Build LGPL FFmpeg + self-contained Streamlink
@@ -348,7 +348,7 @@ test/                    Node tests
 - **Google 403/quota:** check Drive API enablement, scopes, and storage quota; local clips and the queue are kept.
 - **Google refresh token expires every 7 days:** publish the OAuth consent screen; testing-mode tokens are short-lived.
 - **macOS asks for the login keychain password:** allow it once. Ad-hoc development rebuilds change the code signature, so Keychain may ask again; a signed release with a stable Developer ID has a stable identity. Set `CLIPSPIKE_KEYCHAIN=0` for a dev run that must not touch Keychain.
-- **Trial expired / license not active:** open **License…**, paste the key from the purchase email, and activate. Check that `LEMON_PRODUCT_ID` matches the product and that the Mac can reach the Lemon Squeezy API.
+- **Trial expired / license not active:** open **License…**, paste the key from the purchase email, and activate. A release build uses the Polar product in `win/build-config.json`. Check that `LEMON_PRODUCT_ID` and `LEMON_API_BASE` match that file.
 - **No notifications:** enable **Notify When Clips Finish** in the app menu and allow ClipSpike in System Settings → Notifications. Ad-hoc development builds may not register with Notification Center; a signed/notarized release does. Set `CLIPSPIKE_NOTIFICATIONS=0` for a dev run without the permission prompt.
 - **Need support:** use **Export Diagnostics…** from the app menu, review the zip, and send it with what happened. OAuth tokens, app secrets, and license keys are redacted from the config copy.
 - **A clip is queued, not uploaded:** inspect the active storage mode and `~/Library/Application Support/ClipSpike/queue.json`; retries run every minute with exponential backoff.
@@ -382,42 +382,30 @@ See [docs/UPDATE.md](docs/UPDATE.md) for CI keys, appcast hosting, and the updat
 
 ## License and trial
 
-Development builds are unlocked (`HDLicenseRequired` is false). A release build enables the 7-day trial and Lemon Squeezy license activation:
+Development builds are unlocked (`HDLicenseRequired` is false). A release build enables the 7-day trial and the Polar license in `win/build-config.json` ($39 one-time, two computers). The public Windows app already ships that file. A Mac release build must use the same checkout, product id, and production API. `./mac/release.sh --check` fails if it does not.
 
 ```sh
 LICENSE_REQUIRED=1 \
 TRIAL_DAYS=7 \
-LEMON_PRODUCT_ID=12345 \
-CHECKOUT_URL=https://your-store.lemonsqueezy.com/checkout/buy/... \
-npm run build:mac
-```
-
-Open **License…** in the app menu to see trial days, enter a key, activate, deactivate, or open checkout. The app stores the license key in the `0600` config file and validates through `tools/license.js`:
-
-- activation: `POST /v1/licenses/activate`
-- validation: `POST /v1/licenses/validate`
-- deactivation: `POST /v1/licenses/deactivate`
-- offline grace: 14 days after the last successful validation
-- instance limit: controlled by the Lemon Squeezy product (the UI recommends two computers)
-
-### Using Polar instead of Lemon Squeezy
-
-`tools/license.js` also speaks to [Polar](https://docs.polar.sh/docs/benefits/license-keys), using the customer-portal license-key endpoints, which need no secret and are meant for desktop apps. The app code is unchanged; it reads the same result. Lemon Squeezy remains the default. Select Polar by pointing the API base at Polar (or set `LICENSE_PROVIDER=polar`):
-
-```sh
-LICENSE_REQUIRED=1 \
-LEMON_API_BASE=https://sandbox-api.polar.sh \          # https://api.polar.sh in production
-LEMON_PRODUCT_ID=<organization-id>:<license-key-benefit-id> \
+LEMON_API_BASE=https://api.polar.sh \
+LEMON_PRODUCT_ID=<organization-id>:<benefit-id> \
 CHECKOUT_URL=https://buy.polar.sh/... \
 npm run build:mac
 ```
 
-The product ID setting holds the Polar organization ID, optionally followed by `:` and the license-key benefit ID. With the benefit ID set, keys from any other product are rejected. Set the benefit's activation limit in the Polar dashboard (two computers). Test in the sandbox first.
+Copy `apiBase`, `productId`, and `checkoutUrl` from `win/build-config.json`. Do not point a release build at the Polar sandbox or at Lemon Squeezy.
 
-Set `LEMON_API_BASE` only for testing or a proxy. A license is required to start a new capture after the trial ends; an already-running capture is not interrupted.
+Open **License…** in the app menu to see trial days, enter a key, activate, deactivate, or open checkout. The app stores the license key in the `0600` config file and validates through `tools/license.js`. Polar's customer-portal license-key endpoints need no secret. The product id is the organization id, then `:`, then the license-key benefit id, so a key from another product is rejected.
+
+- activation, validation, and deactivation go through `tools/license.js`
+- offline grace: 14 days after the last successful validation
+- activation limit: set to two computers on the Polar benefit
+- after the trial, a new capture does not start until a license is active; a capture that is already running is not interrupted
+
+`tools/license.js` can still talk to Lemon Squeezy if `LEMON_API_BASE` is a Lemon host. That is not the public offer, and a Mac release check rejects it. `lib/freetier.js` is not the plan either app selects.
 
 ## Commercial release
 
-The current builds are ad-hoc signed. Arm64 and x86_64 LGPL runtimes/apps are built locally, but a sellable release still requires Developer ID signing, notarization, vendor OAuth client credentials, a Lemon Squeezy product/checkout, a hosted Sparkle feed, legal review, and a paid pilot.
+The current builds are ad-hoc signed. Arm64 and x86_64 LGPL runtimes/apps are built locally, but a sellable Mac release still requires Developer ID signing, notarization, vendor OAuth client credentials, the Polar product above, a hosted Sparkle feed, and a paid pilot. There is no public Mac download until that release exists.
 
 See [docs/RELEASE.md](docs/RELEASE.md) for the release path and [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md) for the ordered owner-side launch steps.

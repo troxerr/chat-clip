@@ -120,9 +120,17 @@
     ui.banner.hidden = !banner;
     if (banner) {
       ui.banner.className = `notice ${banner.kind === "info" ? "info" : ""}`;
-      ui.banner.replaceChildren(el("span", { text: banner.text + " " }),
-        banner.action === "settings" ? el("button", { class: "btn", type: "button", text: "Open Settings", onclick: () => show("settings") })
-          : banner.action === "buy" && snap.license.checkoutUrl ? el("button", { class: "btn", type: "button", text: "Buy a license", onclick: () => show("settings") }) : "");
+      const kids = [el("span", { text: banner.text })];
+      for (const button of StartGuide.bannerButtons(snap.license)) {
+        kids.push(document.createTextNode(" "));
+        kids.push(el("button", {
+          class: button.action === "buy" ? "btn primary" : "btn",
+          type: "button",
+          text: button.label,
+          onclick: () => (button.action === "buy" ? guarded(() => hd.license.buy()) : show("settings"))
+        }));
+      }
+      ui.banner.replaceChildren(...kids);
     }
   }
 
@@ -251,9 +259,10 @@
           el("button", { class: "btn danger", type: "button", text: "Remove from this PC", onclick: () => { if (!window.confirm("Remove the license from this PC? You can activate it again later with your key.")) return; guarded(async () => { await hd.license.deactivate(); await refresh(); }); } })));
       } else {
         rows.push(el("label", { for: "license-key", text: "License key" }), keyInput,
+          el("p", { class: "muted", text: "The license key arrives by email. Paste it here." }),
           el("div", { class: "row", style: false },
             el("button", { class: "btn primary", type: "button", text: "Activate", onclick: () => guarded(async () => { await hd.license.activate(keyInput.value); keyInput.value = ""; await refresh(); }) }),
-            lic.checkoutUrl && el("button", { class: "btn", type: "button", text: "Buy a license", onclick: () => guarded(() => hd.license.buy()) })));
+            lic.checkoutUrl && el("button", { class: "btn", type: "button", text: StartGuide.buyLabel(lic), onclick: () => guarded(() => hd.license.buy()) })));
       }
     }
     ui.licenseCard.replaceChildren(...rows);

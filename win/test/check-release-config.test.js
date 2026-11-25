@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { check } = require("../tools/check-release-config.js");
 
-const prod = { licenseRequired: true, trialDays: 7, apiBase: "https://api.polar.sh", productId: "p:b", checkoutUrl: "https://buy.polar.sh/x" };
+const prod = { licenseRequired: true, trialDays: 7, apiBase: "https://api.polar.sh", productId: "p:b", checkoutUrl: "https://buy.polar.sh/x", priceLabel: "$39" };
 const sandbox = { ...prod, apiBase: "https://sandbox-api.polar.sh", checkoutUrl: "https://sandbox-api.polar.sh/v1/checkout-links/x" };
 const REQUIRE = { CLIPSPIKE_REQUIRE_PRODUCTION_LICENSING: "true" };
 
@@ -32,7 +32,7 @@ test("a production release needs exactly the production API", () => {
 
 test("the original checks still fail in every mode", () => {
   for (const env of [{}, REQUIRE]) {
-    const bad = check({ ...prod, licenseRequired: false, productId: " ", checkoutUrl: "http://x", trialDays: 0 }, env).problems;
-    assert.equal(bad.length >= 4, true);
+    const bad = check({ ...prod, licenseRequired: false, productId: " ", checkoutUrl: "http://x", trialDays: 0, priceLabel: " " }, env).problems;
+    assert.equal(bad.length >= 5, true);
   }
 });

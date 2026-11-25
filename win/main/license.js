@@ -24,7 +24,7 @@ function createLicenseManager({
   store,            // { get(name), set(name, value), prepareSet(name, value), delete(name) }
   request,          // (action, options) => result, as tools/license.js licenseRequest
   now = () => new Date(),
-  build = {},       // { licenseRequired, trialDays, productId, checkoutUrl }
+  build = {},       // { licenseRequired, trialDays, productId, checkoutUrl, priceLabel }
   env = process.env,
   deviceName = "Windows PC"
 }) {
@@ -67,7 +67,8 @@ function createLicenseManager({
   function state() {
     if (!required) {
       return { required: false, valid: true, mode: "development", trialDays, daysLeft: trialDays, hasKey: false, stale: false,
-        message: "Development build. Every feature is unlocked.", email: "", productName: "", checkoutUrl: build.checkoutUrl || "" };
+        message: "Development build. Every feature is unlocked.", email: "", productName: "", checkoutUrl: build.checkoutUrl || "",
+        priceLabel: String(build.priceLabel || "").trim() };
     }
     ensureTrialStarted();
     const s = section();
@@ -94,7 +95,8 @@ function createLicenseManager({
       message = left > 0 ? `Trial: ${left} day${left === 1 ? "" : "s"} left.` : "The trial has ended. Enter a license key to keep capturing.";
     }
     return { required: true, valid, mode, trialDays, daysLeft: left, hasKey, keyUnreadable, stale: hasKey && !fresh,
-      message, email: s.email || "", productName: s.productName || "", checkoutUrl: build.checkoutUrl || "" };
+      message, email: s.email || "", productName: s.productName || "", checkoutUrl: build.checkoutUrl || "",
+      priceLabel: String(build.priceLabel || "").trim() };
   }
 
   let activationPending = false;

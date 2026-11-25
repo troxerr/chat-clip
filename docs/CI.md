@@ -14,7 +14,7 @@ Each job:
 5. builds the app and verifies its signature/runtime/Sparkle;
 6. uploads an unsigned `.zip` and `.dmg`.
 
-The signed/notarized release is deliberately manual. Use `./mac/release.sh --check` with Apple/OAuth/Lemon/Sparkle credentials, then `./mac/release.sh`.
+The signed/notarized release is deliberately manual. Use `./mac/release.sh --check` with Apple, OAuth, Sparkle, and the Polar values from `win/build-config.json`, then `./mac/release.sh`.
 
 ## Notes
 

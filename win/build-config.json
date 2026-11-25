@@ -4,5 +4,6 @@
   "provider": "polar",
   "apiBase": "https://api.polar.sh",
   "productId": "660037b9-7416-4b0e-8d06-519387bb9583:d6385aad-4b97-482a-b2ce-57433297a5e6",
-  "checkoutUrl": "https://buy.polar.sh/polar_cl_per43WQXkviGSWYLBkNSb86XNDIVkW3ZcDc7z0WOJ7G"
+  "checkoutUrl": "https://buy.polar.sh/polar_cl_per43WQXkviGSWYLBkNSb86XNDIVkW3ZcDc7z0WOJ7G",
+  "priceLabel": "$39"
 }
