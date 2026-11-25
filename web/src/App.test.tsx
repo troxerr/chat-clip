@@ -156,10 +156,22 @@ describe('data states', () => {
     expect(screen.getByRole('status')).toHaveTextContent('10 highlights')
   })
 
-  it('shows an updated-ago indicator from generatedAt', () => {
+  it('shows an updated-ago indicator from generatedAt and hides it when missing', () => {
     useClipStore.setState({ generatedAt: new Date(Date.now() - 5 * 60_000).toISOString() })
-    renderAt('/')
+    const { unmount } = renderAt('/')
+    expect(screen.getByText(/Updated/)).toBeInTheDocument()
     expect(screen.getByText('5 min ago')).toBeInTheDocument()
+    unmount()
+    useClipStore.setState({ generatedAt: null })
+    renderAt('/')
+    expect(document.querySelector('.updated')).toBeNull()
+  })
+
+  it('links the clip browser, Windows download, and Pro from the layout', () => {
+    renderAt('/')
+    expect(screen.getByRole('link', { name: 'Browse Twitch clips' })).toHaveAttribute('href', '/clips')
+    expect(screen.getByRole('link', { name: 'Windows download' })).toHaveAttribute('href', 'https://clipspike.com/windows.html')
+    expect(screen.getByRole('link', { name: 'ClipSpike Pro' })).toHaveAttribute('href', '/pro')
   })
 
   it('exposes landmarks', () => {

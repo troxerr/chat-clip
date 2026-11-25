@@ -29,6 +29,8 @@ export interface MonetizationConfig {
   waitlist: { endpoint: string; email: string }
   /** Public Discord invite for the live-alerts channel; the link is hidden while empty. */
   discordInviteUrl: string
+  /** https checkout for the desktop license. Empty hides the buy button. */
+  checkoutUrl: string
   analytics: { provider: 'none' | 'plausible'; domain: string; src: string }
 }
 
@@ -43,6 +45,16 @@ export function isHttpUrl(u: string): boolean {
 }
 
 const httpOrEmpty = (v: string | undefined) => (v && isHttpUrl(v.trim()) ? v.trim() : '')
+
+/** https only. Junk, http, and other schemes are dropped. Returns the trimmed original, like httpOrEmpty. */
+export function httpsOrEmpty(v: string | undefined): string {
+  const t = (v ?? '').trim()
+  try {
+    return t && new URL(t).protocol === 'https:' ? t : ''
+  } catch {
+    return ''
+  }
+}
 const flag = (v: string | undefined) => v === 'true'
 
 /** Only https links on Discord's own invite hosts are accepted. */
@@ -81,6 +93,7 @@ export function buildConfig(env: Env, affiliates: AffiliateItem[]): Monetization
       email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '',
     },
     discordInviteUrl: discordInvite(env.VITE_DISCORD_INVITE_URL),
+    checkoutUrl: httpsOrEmpty(env.VITE_CHECKOUT_URL),
     analytics: {
       provider: env.VITE_ANALYTICS_PROVIDER === 'plausible' && plausibleDomain ? 'plausible' : 'none',
       domain: plausibleDomain,

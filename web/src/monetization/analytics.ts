@@ -9,6 +9,7 @@ export type AnalyticsEvent =
   | 'pro_waitlist_view'
   | 'pro_waitlist_submit'
   | 'pro_cta_click'
+  | 'pro_checkout_click'
   | 'alerts_signup_submit'
   | 'discord_join_click'
 

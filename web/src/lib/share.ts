@@ -1,32 +1,30 @@
+import { pageUrl } from './seo'
+
 export const APP_URL = 'https://clipspike.com/app/'
 
 export type ShareResult = 'shared' | 'copied' | 'cancelled' | 'failed'
 
 interface Shareable {
+  id?: string | number
   title: string
   streamer: string
   url?: string
 }
 
-// Routes are client-rendered, so crawlers only see the static OG tags of the
-// app root or the Twitch clip page. Prefer the clip URL when we have one.
-export function shareUrl(clip: Shareable): string {
-  return clip.url || APP_URL
+/** Canonical ClipSpike clip page. Trailing slash matches the prerendered URL. */
+export function canonicalClipUrl(id: string | number): string {
+  return pageUrl('/app/', `/clips/${id}`)
 }
 
+export function shareUrl(clip: Shareable): string {
+  if (clip.id !== undefined && clip.id !== null && String(clip.id) !== '') return canonicalClipUrl(clip.id)
+  return APP_URL
+}
+
+/** Copies the canonical clipspike.com URL. No third-party scripts. */
 export async function shareClip(clip: Shareable): Promise<ShareResult> {
-  const url = shareUrl(clip)
-  const data = { title: clip.title, text: `${clip.title} — ${clip.streamer} on ClipSpike`, url }
-  if (typeof navigator.share === 'function') {
-    try {
-      await navigator.share(data)
-      return 'shared'
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return 'cancelled'
-    }
-  }
   try {
-    await navigator.clipboard.writeText(url)
+    await navigator.clipboard.writeText(shareUrl(clip))
     return 'copied'
   } catch {
     return 'failed'

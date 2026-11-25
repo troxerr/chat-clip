@@ -86,6 +86,9 @@ main:focus-visible { outline: none; }
 .menu-btn { display: none; background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .4rem .8rem; font-size: .9rem; cursor: pointer; }
 .error-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; background: #3a1d1d; border: 1px solid #7a3030; color: #ffd6d6; border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; }
 .updated { display: block; }
+.layout-cta { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: 0 0 1rem; font-size: .85rem; }
+.layout-cta a { color: var(--muted); font-weight: 600; }
+.layout-cta a:hover { color: var(--text); }
 .empty .btn { margin-top: .5rem; }
 .sk { background: linear-gradient(90deg, var(--panel-2), var(--border), var(--panel-2)); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: 6px; }
 .sk-line { height: .9rem; margin: .7rem 0 0; }

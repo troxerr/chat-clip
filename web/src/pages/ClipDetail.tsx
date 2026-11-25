@@ -24,7 +24,7 @@ export default function ClipDetail() {
   async function onShare() {
     if (!clip) return
     const result = await shareClip(clip)
-    if (result === 'copied') setToast('Link copied to clipboard')
+    if (result === 'copied') setToast('Link copied')
     else if (result === 'failed') setToast('Could not share — copy the link manually')
   }
 

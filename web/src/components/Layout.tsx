@@ -64,6 +64,11 @@ export default function Layout() {
       </header>
       <main className="main" id="main" tabIndex={-1}>
         <div className="content">
+          <nav className="layout-cta" aria-label="Product">
+            <Link to="/clips">Browse Twitch clips</Link>
+            <a href="https://clipspike.com/windows.html">Windows download</a>
+            <Link to="/pro">ClipSpike Pro</Link>
+          </nav>
           <ErrorBanner />
           <UpdatedAt />
           <Outlet />
