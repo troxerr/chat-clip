@@ -69,6 +69,17 @@ test("engine events drive the status the window sees, and clip events say the li
   assert.equal(app.snapshot().capture.clipsSaved, 1);
 });
 
+test("mark missed moment records a review time and does not save a clip", async () => {
+  const { app, engine } = build({ acknowledged: true });
+  assert.throws(() => app.markMissed(), /Start a capture first/);
+  await app.start("abc");
+  engine.emit("event", { type: "ready" });
+  assert.throws(() => app.markMissed(), /buffer is still filling/);
+  engine.emit("event", { type: "status", recording: true, joined: true, mediaTime: 10 });
+  assert.equal(app.markMissed(), true);
+  assert.deepEqual(engine.sent, ["missed"]);
+});
+
 test("save highlight is refused until the buffer has filled, and while exporting", async () => {
   const { app, engine } = build({ acknowledged: true });
   assert.throws(() => app.saveHighlight(), /Start a capture first/);

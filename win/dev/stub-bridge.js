@@ -17,9 +17,9 @@
   }[["watching", "exporting", "buffering", "error"].includes(scene) ? scene : "idle"];
   const license = {
     development: { required: false, valid: true, mode: "development", message: "Development build. Every feature is unlocked.", hasKey: false, checkoutUrl: "" },
-    trial: { required: true, valid: true, mode: "trial", daysLeft: 5, message: "Trial: 5 days left.", hasKey: false, checkoutUrl: "https://shop.example/buy" },
-    licensed: { required: true, valid: true, mode: "licensed", message: "Licensed to streamer@example.com.", hasKey: true, checkoutUrl: "https://shop.example/buy" },
-    expired: { required: true, valid: false, mode: "expired", message: "The trial has ended. Enter a license key to keep capturing.", hasKey: false, checkoutUrl: "https://shop.example/buy" }
+    trial: { required: true, valid: true, mode: "trial", daysLeft: 5, message: "Trial: 5 days left.", hasKey: false, checkoutUrl: "https://shop.example/buy", priceLabel: "$39" },
+    licensed: { required: true, valid: true, mode: "licensed", message: "Licensed to streamer@example.com.", hasKey: true, checkoutUrl: "https://shop.example/buy", priceLabel: "$39" },
+    expired: { required: true, valid: false, mode: "expired", message: "The trial has ended. Enter a license key to keep capturing.", hasKey: false, checkoutUrl: "https://shop.example/buy", priceLabel: "$39" }
   }[params.get("license") || "development"];
   const clips = params.has("empty") ? [] : [
     { id: "1", channel: "somestreamer", createdAt: "2026-11-18T21:14:00Z", reason: "Chat spike: 82 chatters", available: true, rating: "up" },
@@ -27,7 +27,7 @@
     { id: "3", channel: "otherchannel", createdAt: "2026-11-17T19:02:00Z", reason: "Raid", available: false, rating: "down" },
     { id: "4", channel: "somestreamer", createdAt: "2026-11-17T18:30:00Z", reason: "Chat spike: 47 chatters", available: true, rating: "" }
   ];
-  const state = { capture, license, settings: { launchAtLogin: false, permissionAcknowledged: params.has("ack"), outputFolder: "C:\\Users\\streamer\\Videos\\ClipSpike" }, version: "0.1.0", versions: { electron: "45.3.4", node: "24.1.0" } };
+  const state = { capture, license, settings: { launchAtLogin: false, permissionAcknowledged: params.has("ack"), outputFolder: "C:\\Users\\streamer\\Videos\\ClipSpike" }, version: "0.1.6", versions: { electron: "45.3.4", node: "24.1.0" } };
   const updateStatus = params.get("update") || "idle";
   let updateState = {
     status: updateStatus,

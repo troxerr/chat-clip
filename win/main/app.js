@@ -45,11 +45,22 @@ function createApp({ engine, license, settings, clips, openExternal, openFolder,
     return snapshot();
   }
 
-  function saveHighlight() {
+  function readyForCommand() {
     if (!engine.running) throw new Error("Start a capture first.");
     if (capture.phase === "starting" || capture.phase === "buffering") throw new Error("The video buffer is still filling. Try again in a few seconds.");
+  }
+
+  function saveHighlight() {
+    readyForCommand();
     if (capture.phase === "exporting") throw new Error("A highlight is already being saved.");
     if (!engine.save()) throw new Error("The recorder is not accepting commands right now.");
+    return true;
+  }
+
+  // Records the current time for later review. It does not save or recover video.
+  function markMissed() {
+    readyForCommand();
+    if (!engine.markMissed()) throw new Error("The recorder is not accepting commands right now.");
     return true;
   }
 
@@ -64,7 +75,7 @@ function createApp({ engine, license, settings, clips, openExternal, openFolder,
     start,
     stop,
     saveHighlight,
-    markMissed: () => engine.markMissed(),
+    markMissed,
     clips: { list: () => clips.list(), open: (id) => clips.open(id), reveal: (id) => clips.reveal(id), rate: (id, rating) => clips.rate(id, rating) },
     license: {
       activate: (key) => license.activate(key),

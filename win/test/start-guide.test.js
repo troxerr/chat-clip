@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { channelProblem, startBlocker, licenseBanner, bannerButtons } = require("../renderer/start-guide.js");
+const { channelProblem, startBlocker, licenseBanner, bannerButtons, captureIntro } = require("../renderer/start-guide.js");
 
 const ok = { valid: true, mode: "licensed", required: true };
 
@@ -42,4 +42,11 @@ test("checkout is the banner's buy button, and an ended trial also offers the ke
   assert.deepEqual(bannerButtons({ required: true, mode: "trial", daysLeft: 2, checkoutUrl: "https://buy.polar.sh/x" }), [
     { action: "buy", label: "Buy a license" }
   ]);
+});
+
+test("the capture intro is there before recording and gone once it starts", () => {
+  assert.match(captureIntro("idle"), /Save highlight now/);
+  assert.match(captureIntro("error"), /vertical clip/);
+  assert.equal(captureIntro("watching"), "");
+  assert.equal(captureIntro("buffering"), "");
 });
