@@ -65,7 +65,23 @@ jobs:
         run: |
           mkdir -p mac/build/artifact
           ditto -c -k --keepParent "mac/build/ClipSpike.app" "mac/build/artifact/ClipSpike-${RUNNER_ARCH}.zip"
-          hdiutil create -volname "ClipSpike" -srcfolder "mac/build/ClipSpike.app" -ov -format UDZO "mac/build/artifact/ClipSpike-${RUNNER_ARCH}.dmg"
+          dmg="mac/build/artifact/ClipSpike-${RUNNER_ARCH}.dmg"
+          # GitHub's macOS runners sometimes leave diskimages-helper attached,
+          # and hdiutil then exits with "Resource busy". Detach stray images
+          # and try again before failing the job.
+          for attempt in 1 2 3 4 5; do
+            rm -f "$dmg"
+            if hdiutil create -volname "ClipSpike" -srcfolder "mac/build/ClipSpike.app" -ov -format UDZO "$dmg"; then
+              exit 0
+            fi
+            echo "hdiutil create failed (attempt ${attempt}); clearing disk images"
+            hdiutil info | awk '/^\/dev\/disk/ { print $1 }' | while read -r disk; do
+              hdiutil detach "$disk" -force || true
+            done
+            sleep $((attempt * 5))
+          done
+          echo "hdiutil create failed after 5 attempts" >&2
+          exit 1
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
