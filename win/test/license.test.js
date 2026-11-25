@@ -58,6 +58,12 @@ test("the trial starts on first run and counts down by whole days", () => {
   assert.match(s.message, /trial has ended/);
 });
 
+test("the purchase price and checkout come from the build config", () => {
+  const s = harness({ build: { licenseRequired: true, priceLabel: " $39 ", checkoutUrl: "https://buy.polar.sh/x" } }).manager.state();
+  assert.equal(s.priceLabel, "$39");
+  assert.equal(s.checkoutUrl, "https://buy.polar.sh/x");
+});
+
 test("the trial length can come from the build or the environment", () => {
   assert.equal(harness({ build: { licenseRequired: true, trialDays: 14 } }).manager.state().daysLeft, 14);
   assert.equal(harness({ env: { CLIPSPIKE_TRIAL_DAYS: "2" } }).manager.state().daysLeft, 2);

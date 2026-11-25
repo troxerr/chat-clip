@@ -18,8 +18,9 @@ set -euo pipefail
 #   ./mac/release.sh --verify [DMG]     after notarizing: stapled ticket and Gatekeeper
 #
 # mac/build.sh reads SU_FEED_URL, SU_PUBLIC_ED_KEY, LICENSE_REQUIRED, LEMON_PRODUCT_ID,
-# CHECKOUT_URL, DROPBOX_APP_KEY, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET; this script
-# only checks that they ended up in the built Info.plist.
+# LEMON_API_BASE, CHECKOUT_URL, DROPBOX_APP_KEY, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.
+# --check requires the built checkout, product id and API base to be the production
+# Polar offer in win/build-config.json. A Lemon Squeezy or sandbox build fails.
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -54,8 +55,11 @@ if [[ "${1:-}" == "--check" ]]; then
   [[ "$(plist SUFeedURL)" == https://* && "$(plist SUFeedURL)" != *localhost* && "$(plist SUFeedURL)" != *127.0.0.1* ]] && pass "SUFeedURL is a public HTTPS URL" || fail "SUFeedURL missing, not HTTPS, or local"
   [[ -n "$(plist SUPublicEDKey)" ]] && pass "SUPublicEDKey configured" || fail "SUPublicEDKey missing"
   [[ "$(plist HDLicenseRequired)" == "true" ]] && pass "license enforcement enabled" || fail "HDLicenseRequired is not true"
-  [[ -n "$(plist HDProductId)" ]] && pass "license product ID configured" || fail "HDProductId missing"
-  [[ -n "$(plist HDCheckoutURL)" ]] && pass "checkout URL configured" || fail "HDCheckoutURL missing"
+  if node "$ROOT/tools/check-mac-offer.js" --checkout "$(plist HDCheckoutURL)" --product "$(plist HDProductId)" --api "$(plist HDLicenseApiBase)"; then
+    pass "checkout, product id, and API match the production Polar offer"
+  else
+    fail "Mac license config must match the production Polar offer in win/build-config.json"
+  fi
   [[ -n "$(plist HDDropboxAppKey)" ]] && pass "Dropbox OAuth client configured" || fail "HDDropboxAppKey missing"
   [[ -n "$(plist HDGoogleClientId)" ]] && pass "Google OAuth client ID configured" || fail "HDGoogleClientId missing"
   [[ -n "$(plist HDGoogleClientSecret)" ]] && pass "Google OAuth client secret configured" || fail "HDGoogleClientSecret missing"

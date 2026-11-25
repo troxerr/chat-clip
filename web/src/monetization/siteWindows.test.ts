@@ -20,8 +20,9 @@ describe('site/windows.html', () => {
     expect(html).not.toContain('releases/latest')
     expect(html).not.toContain('coming soon')
     expect(html).not.toMatch(/href="(?!https:)[^"]*\.exe"/)
-    const win = JSON.parse(readFileSync('../win/build-config.json', 'utf8')) as { checkoutUrl: string }
+    const win = JSON.parse(readFileSync('../win/build-config.json', 'utf8')) as { checkoutUrl: string; priceLabel: string }
     expect(win.checkoutUrl).toBe(publicOffer.checkoutUrl)
+    expect(win.priceLabel).toBe(publicOffer.priceLabel)
   })
 
   it('uses only relative asset paths so it works under any base path', () => {

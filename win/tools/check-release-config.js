@@ -13,6 +13,7 @@ function check(config, env = {}) {
   if (!String(config.productId || "").trim()) problems.push('"productId" is empty');
   if (!/^https:\/\//.test(String(config.checkoutUrl || ""))) problems.push('"checkoutUrl" must be an https:// URL');
   if (!(Number(config.trialDays) > 0)) problems.push('"trialDays" must be a positive number');
+  if (!String(config.priceLabel || "").trim()) problems.push('"priceLabel" is empty');
 
   const production = String(env.CLIPSPIKE_REQUIRE_PRODUCTION_LICENSING || "").toLowerCase() === "true";
   const target = production ? problems : warnings;
