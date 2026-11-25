@@ -64,7 +64,9 @@
     ui.channel = el("input", { type: "text", id: "channel", placeholder: "username or twitch.tv/username", autocomplete: "off", spellcheck: "false", "aria-describedby": "channel-help" });
     ui.ack = el("input", { type: "checkbox", id: "ack" });
     ui.ackRow = el("label", { class: "check", for: "ack" }, ui.ack, el("span", { text: "I have permission to record this channel, and I will follow Twitch's terms and the streamer's wishes." }));
-    ui.startBtn = el("button", { class: "btn primary", type: "submit", text: "Start capture" });
+    ui.startBtn = el("button", { class: "btn primary", type: "submit", text: "Start capture", "aria-describedby": "start-reason" });
+    ui.startReason = el("p", { class: "help", id: "start-reason" });
+    ui.banner = el("div", { class: "notice info", id: "license-banner", hidden: true });
     ui.stopBtn = el("button", { class: "btn", type: "button", text: "Stop", onclick: () => guarded(async () => { snap = await hd.stop(); updateCapture(); }) });
     ui.saveBtn = el("button", { class: "btn", type: "button", text: "Save highlight now", title: "Ctrl+S", onclick: () => guarded(() => hd.saveHighlight()) });
     const form = el("form", { class: "card", novalidate: true, onsubmit: (event) => { event.preventDefault(); onStart(); } },
@@ -72,15 +74,19 @@
       ui.channel,
       el("p", { class: "help", id: "channel-help", text: "ClipSpike watches the channel's chat. When chat reacts strongly it saves the 30 seconds around the moment as a vertical clip." }),
       ui.ackRow,
-      el("div", { class: "row", style: false }, ui.startBtn, ui.stopBtn, ui.saveBtn));
+      el("div", { class: "row", style: false }, ui.startBtn, ui.stopBtn, ui.saveBtn),
+      ui.startReason);
+    ui.channel.addEventListener("input", () => updateCapture());
+    ui.ack.addEventListener("change", () => updateCapture());
 
     ui.recent = el("ul", { class: "clip-list", "aria-label": "Recent highlights" });
     ui.recentHead = el("h2", { text: "Recent highlights" });
-    root.replaceChildren(el("h1", { id: "h-capture", text: "Capture" }), statusCard, form, ui.recentHead, ui.recent);
+    root.replaceChildren(el("h1", { id: "h-capture", text: "Capture" }), ui.banner, statusCard, form, ui.recentHead, ui.recent);
   }
 
   async function onStart() {
     const input = ui.channel.value.trim();
+    if (ui.startBtn.getAttribute("aria-disabled") === "true") { ui.channel.focus(); return; }
     await guarded(async () => {
       snap = await hd.start(input, { acknowledge: ui.ack.checked });
       updateCapture();
@@ -104,7 +110,20 @@
     ui.saveBtn.hidden = !running;
     ui.saveBtn.disabled = !["watching"].includes(c.phase);
     ui.ackRow.hidden = snap.settings.permissionAcknowledged || running;
-    ui.startBtn.disabled = !snap.license.valid;
+    const reason = running ? "" : StartGuide.startBlocker({ license: snap.license, channel: ui.channel.value, ackNeeded: !snap.settings.permissionAcknowledged, ack: ui.ack.checked });
+    // aria-disabled keeps the button focusable, so the reason below it can be read.
+    ui.startBtn.setAttribute("aria-disabled", reason ? "true" : "false");
+    ui.startBtn.classList.toggle("is-disabled", Boolean(reason));
+    ui.startReason.textContent = reason && ui.channel.value.trim() ? reason : (reason && !snap.license.valid ? reason : "");
+    ui.startReason.hidden = !ui.startReason.textContent;
+    const banner = StartGuide.licenseBanner(snap.license);
+    ui.banner.hidden = !banner;
+    if (banner) {
+      ui.banner.className = `notice ${banner.kind === "info" ? "info" : ""}`;
+      ui.banner.replaceChildren(el("span", { text: banner.text + " " }),
+        banner.action === "settings" ? el("button", { class: "btn", type: "button", text: "Open Settings", onclick: () => show("settings") })
+          : banner.action === "buy" && snap.license.checkoutUrl ? el("button", { class: "btn", type: "button", text: "Buy a license", onclick: () => show("settings") }) : "");
+    }
   }
 
   function updateRecentClips() {
@@ -229,7 +248,7 @@
       if (lic.hasKey) {
         rows.push(el("div", { class: "row" },
           el("button", { class: "btn", type: "button", text: "Check now", onclick: () => guarded(async () => { await hd.license.validate(); await refresh(); }) }),
-          el("button", { class: "btn danger", type: "button", text: "Remove from this PC", onclick: () => guarded(async () => { await hd.license.deactivate(); await refresh(); }) })));
+          el("button", { class: "btn danger", type: "button", text: "Remove from this PC", onclick: () => { if (!window.confirm("Remove the license from this PC? You can activate it again later with your key.")) return; guarded(async () => { await hd.license.deactivate(); await refresh(); }); } })));
       } else {
         rows.push(el("label", { for: "license-key", text: "License key" }), keyInput,
           el("div", { class: "row", style: false },
