@@ -243,11 +243,12 @@ test("a stored secret that cannot be read is reported once, and still counts as 
     if (broken && op === "unprotect") throw new Error("Could not run PowerShell: spawnSync powershell.exe ETIMEDOUT");
     return inner.run(op, account, input, legacy);
   };
-  const store = createCredentialStore({ platform: "win32", env: {}, dir, run, respectDisableFlag: false, onReadError: (account, error) => reports.push([account, error.message]) });
+  let clock = 0;
+  const store = createCredentialStore({ platform: "win32", env: {}, dir, run, respectDisableFlag: false, now: () => clock, onReadError: (account, error) => reports.push([account, error.message]) });
   try {
     store.set("license.key", "SECRET-VALUE");
     broken = true;
-    const fresh = createCredentialStore({ platform: "win32", env: {}, dir, run, respectDisableFlag: false, onReadError: (account, error) => reports.push([account, error.message]) });
+    const fresh = createCredentialStore({ platform: "win32", env: {}, dir, run, respectDisableFlag: false, now: () => clock, onReadError: (account, error) => reports.push([account, error.message]) });
     assert.equal(fresh.get("license.key"), "", "an unreadable secret reads as empty");
     assert.equal(fresh.has("license.key"), true, "but the entry is still there, so callers can tell it from no key");
     fresh.get("license.key");
@@ -255,6 +256,7 @@ test("a stored secret that cannot be read is reported once, and still counts as 
     assert.equal(reports.length, 1, "reported once, not on every read");
     assert.match(reports[0][1], /ETIMEDOUT/);
     broken = false;
+    clock += 61000;
     assert.equal(fresh.get("license.key"), "SECRET-VALUE", "a later read works again");
     broken = true;
     const again = createCredentialStore({ platform: "win32", env: {}, dir, run, respectDisableFlag: false, onReadError: (a, e) => reports.push([a, e.message]) });
