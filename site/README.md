@@ -7,7 +7,7 @@ Static marketing site for the ClipSpike apps (macOS and Windows). There is no bu
 | File | Purpose |
 |---|---|
 | `index.html` | Landing page. Leads with the live clip browser, then the $39 Windows license. The trial installer is on `windows.html`. Mac is described as unpublished. |
-| `windows.html` | Windows download page. The $39 Polar checkout is first. The published `win-v0.1.3` setup and portable assets follow, with the unsigned/SmartScreen warning. |
+| `windows.html` | Windows download page. The $39 Polar checkout is first. The published `win-v0.1.5` setup and portable assets follow, with the unsigned/SmartScreen warning. |
 | `privacy.html`, `terms.html`, `eula.html` | Privacy policy, terms, and EULA for the Windows license. |
 
 ## Deploy with GitHub Pages
@@ -23,11 +23,11 @@ python3 -m http.server 8080 --directory site
 
 ## Download status
 
-The clip browser is live at `/app/` and `/app/clips/`. Windows `win-v0.1.3` is a published (not draft) release. There is no public Mac release, so the site does not link a Mac download.
+The clip browser is live at `/app/` and `/app/clips/`. Windows `win-v0.1.5` is a published (not draft) release. There is no public Mac release, so the site does not link a Mac download.
 
 | Platform | On the site now | To go live |
 |---|---|---|
-| Windows | The homepage links the Polar checkout and `windows.html`. That page links `ClipSpike-0.1.3-x64.exe` and `ClipSpike-0.1.3-x64-portable.exe` on the published `win-v0.1.3` GitHub release. The release is unsigned; the page says SmartScreen will warn. `win-v0.1.4` is a draft and is not linked. | When a newer non-draft Windows release exists, replace those exact asset URLs and the guard test `web/src/monetization/siteWindows.test.ts`. Do not host binaries in this repo. Do not link a draft. A signed installer needs an Authenticode certificate in the release secrets; until then the SmartScreen note stays. |
+| Windows | The homepage links the Polar checkout and `windows.html`. That page links `ClipSpike-0.1.5-x64.exe` and `ClipSpike-0.1.5-x64-portable.exe` on the published `win-v0.1.5` GitHub release. The release is unsigned; the page says SmartScreen will warn. | When a newer non-draft Windows release exists, replace those exact asset URLs and the guard test `web/src/monetization/siteWindows.test.ts`. Do not host binaries in this repo. Do not link a draft. A signed installer needs an Authenticode certificate in the release secrets; until then the SmartScreen note stays. |
 | Mac | Honest “no public Mac release” copy. No download link. | Link a Mac build only after a public release exists. Do not call a build notarized unless it is. |
 
 Never link GitHub's `/releases/latest` or a draft release. Release versions are immutable: the workflow refuses to overwrite an installer that is already on the feed, and a `win-v*` tag must match the version in `win/package.json`. See `docs/WINDOWS_RELEASE.md`.

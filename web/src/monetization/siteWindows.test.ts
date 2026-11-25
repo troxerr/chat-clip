@@ -6,11 +6,11 @@ import { publicOffer } from './offer'
 // vitest runs with cwd = web/
 const html = readFileSync('../site/windows.html', 'utf8')
 const home = readFileSync('../site/index.html', 'utf8')
-const setup = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.3/ClipSpike-0.1.3-x64.exe'
-const portable = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.3/ClipSpike-0.1.3-x64-portable.exe'
+const setup = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64.exe'
+const portable = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64-portable.exe'
 
 describe('site/windows.html', () => {
-  it('links the published 0.1.3 trial and the Polar checkout, and warns that the build is unsigned', () => {
+  it('links the published 0.1.5 trial and the Polar checkout, and warns that the build is unsigned', () => {
     expect(html).toContain(setup)
     expect(html).toContain(portable)
     expect(html).toContain(publicOffer.checkoutUrl)
