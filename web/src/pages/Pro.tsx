@@ -6,10 +6,9 @@ import type { MonetizationConfig } from '../monetization/config'
 import { isEmail, joinWaitlist, mailtoHref, type WaitlistResult } from '../monetization/waitlist'
 
 const features = [
-  ['Ad-free browsing', 'No display ads or sponsored cards, anywhere in the web app.'],
-  ['Instant live alerts', 'Be notified the moment a followed streamer goes live or a spike hits.'],
-  ['More streamers', 'Follow beyond the free limit and track whole communities.'],
-  ['Export', 'Download highlight lists and timestamps for your editor or spreadsheet.'],
+  ['Free clip browser', 'Browse Twitch clips on the web at no charge. That does not require a license.'],
+  ['Desktop capture', 'The Windows app watches chat and saves the moment as a vertical clip.'],
+  ['7-day trial', 'Capture runs for 7 days. After that, a license is required to keep capturing.'],
 ]
 
 export default function Pro({ config = monetization }: { config?: MonetizationConfig }) {
@@ -41,7 +40,10 @@ export default function Pro({ config = monetization }: { config?: MonetizationCo
   return (
     <>
       <h1>ClipSpike Pro</h1>
-      <p className="meta">Coming soon. Free stays free; Pro is for people who want more. No payment is taken yet.</p>
+      <p className="meta">
+        Web clip browsing stays free. Pro is a license for the desktop app: a 7-day trial, then a license to keep capturing.
+        This page does not list a price.
+      </p>
       <ul className="pro-features">
         {features.map(([t, d]) => (
           <li key={t}>
@@ -50,6 +52,19 @@ export default function Pro({ config = monetization }: { config?: MonetizationCo
           </li>
         ))}
       </ul>
+      {config.checkoutUrl ? (
+        <p>
+          <a
+            className="btn"
+            href={config.checkoutUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('pro_checkout_click', undefined, config)}
+          >
+            Get ClipSpike Pro
+          </a>
+        </p>
+      ) : null}
       <section className="waitlist" aria-labelledby="waitlist-h">
         <h2 id="waitlist-h">Join the waitlist</h2>
         {!canSubmit ? (

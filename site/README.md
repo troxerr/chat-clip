@@ -6,8 +6,8 @@ Static marketing site for the ClipSpike apps (macOS and Windows). There is no bu
 
 | File | Purpose |
 |---|---|
-| `index.html` | Landing page. Mac-focused copy, pricing card, and the download section (which links to the Windows page). |
-| `windows.html` | Windows download status and notes (Setup vs Portable, SmartScreen). |
+| `index.html` | Landing page. Leads with the live clip browser (`/app/` and `/app/clips/`), then the Windows download. Mac is described as unpublished. |
+| `windows.html` | Windows download page. Links the published `win-v0.1.3` setup and portable assets, with the unsigned/SmartScreen warning. |
 | `privacy.html`, `terms.html`, `eula.html` | Legal pages. Starting templates, not legal advice. |
 
 ## Deploy with GitHub Pages
@@ -23,14 +23,14 @@ python3 -m http.server 8080 --directory site
 
 ## Download status
 
-Neither app has a public release yet, so the site shows "coming soon" instead of a download link.
+The clip browser is live at `/app/` and `/app/clips/`. Windows `win-v0.1.3` is a published (not draft) release. There is no public Mac release, so the site does not link a Mac download.
 
 | Platform | On the site now | To go live |
 |---|---|---|
-| Windows | `windows.html` shows a "Windows release coming soon" status. | After the Windows 11 smoke test (`docs/WINDOWS_TEST_CHECKLIST.md`), link the versioned installer on the download host, `https://downloads.astlabs.dev/win/ClipSpike-<version>-x64.exe`, which the `windows-release.yml` workflow uploads to Cloudflare R2. Check that it downloads without a GitHub login, and update the copy and the guard test `web/src/monetization/siteWindows.test.ts` to match. |
-| Mac | `index.html` shows "Mac release coming soon" in the nav, hero, pricing card and download section. | Link the notarized DMG once it exists and restore the trial and download wording. |
+| Windows | `windows.html` and the homepage download section link `ClipSpike-0.1.3-x64.exe` and `ClipSpike-0.1.3-x64-portable.exe` on the `win-v0.1.3` GitHub release. The release is unsigned; the pages say SmartScreen will warn. | When a newer non-draft Windows release exists, replace those exact asset URLs and the guard test `web/src/monetization/siteWindows.test.ts`. Do not host binaries in this repo. |
+| Mac | Honest “no public Mac release” copy. No download link. | Link a Mac build only after a public release exists. Do not call a build notarized unless it is. |
 
-Never link GitHub's `/releases/latest`, a draft release, or an unsigned test build. Release versions are immutable: the workflow refuses to overwrite an installer that is already on the feed, and a `win-v*` tag must match the version in `win/package.json`. See `docs/WINDOWS_RELEASE.md`.
+Never link GitHub's `/releases/latest` or a draft release. Release versions are immutable: the workflow refuses to overwrite an installer that is already on the feed, and a `win-v*` tag must match the version in `win/package.json`. See `docs/WINDOWS_RELEASE.md`.
 
 ## Payments and licensing
 

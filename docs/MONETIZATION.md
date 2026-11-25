@@ -25,6 +25,7 @@ Config lives in `web/src/monetization/config.ts` (`buildConfig` validates every 
 | `VITE_SUPPORT_URL` | Ko-fi / Buy Me a Coffee / GitHub Sponsors `http(s)://` URL. |
 | `VITE_WAITLIST_ENDPOINT` | Formspree-style JSON POST URL for `/pro`. |
 | `VITE_WAITLIST_EMAIL` | Fallback mailto address for `/pro`. |
+| `VITE_CHECKOUT_URL` | https checkout URL for the desktop license. Invalid values are dropped. Unset = no buy button. |
 | `VITE_ANALYTICS_PROVIDER` | `plausible` to enable analytics (needs the domain too); else off. |
 | `VITE_PLAUSIBLE_DOMAIN` | Site domain, e.g. `clipspike.com`. |
 | `VITE_PLAUSIBLE_SRC` | Optional self-hosted Plausible script URL. |
@@ -51,11 +52,13 @@ When you add a new `VITE_*` variable to `web/.env.example`, also add it to the b
 ### 4. Support / tip jar
 - Set `VITE_SUPPORT_URL` to your Ko-fi, Buy Me a Coffee or GitHub Sponsors page. Shown in the sidebar, footer and on the clip page.
 
-### 5. Pro tier teaser (`/pro`)
-- Set `VITE_WAITLIST_ENDPOINT` (e.g. `https://formspree.io/f/<your-form-id>`; JSON POST) and/or `VITE_WAITLIST_EMAIL` (mailto fallback). With neither, the page says the waitlist is not open. No payments are processed.
+### 5. Pro (`/pro`)
+- What is sold is the desktop app: a 7-day trial, then a license to keep capturing. Web clip browsing stays free. The page does not list a price and does not promise web-only features that are not enforced.
+- Set `VITE_CHECKOUT_URL` to an https checkout link (the same public URL the desktop app uses). `/pro` then shows **Get ClipSpike Pro** (new tab). Anything that is not https is dropped and the button stays hidden. Do not put a secret in this variable.
+- Set `VITE_WAITLIST_ENDPOINT` (e.g. `https://formspree.io/f/<your-form-id>`; JSON POST) and/or `VITE_WAITLIST_EMAIL` (mailto fallback) to keep the waitlist as the secondary path. With neither, the page says the waitlist is not open.
 
 ### 6. Analytics hooks
-- `track()` in `web/src/monetization/analytics.ts` is a no-op unless `VITE_ANALYTICS_PROVIDER=plausible`, `VITE_PLAUSIBLE_DOMAIN` is set and the user accepted analytics. Events: `support_click`, `affiliate_click`, `sponsor_click`, `pro_waitlist_view`, `pro_waitlist_submit`, `pro_cta_click`. No personal data is sent. Self-host via `VITE_PLAUSIBLE_SRC`.
+- `track()` in `web/src/monetization/analytics.ts` is a no-op unless `VITE_ANALYTICS_PROVIDER=plausible`, `VITE_PLAUSIBLE_DOMAIN` is set and the user accepted analytics. Events: `support_click`, `affiliate_click`, `sponsor_click`, `pro_waitlist_view`, `pro_waitlist_submit`, `pro_cta_click`, `pro_checkout_click`. No personal data is sent. Self-host via `VITE_PLAUSIBLE_SRC`.
 - **Setup**: in Plausible add the site `clipspike.com`, then set the repository Variables `VITE_ANALYTICS_PROVIDER=plausible` and `VITE_PLAUSIBLE_DOMAIN=clipspike.com` (optionally `VITE_PLAUSIBLE_SRC`); `pages.yml` passes them to the build. Nothing loads until the visitor accepts analytics in the consent banner.
 - **Pageviews with path routing**: `initAnalytics()` injects Plausible's `script.js`, which records the initial pageview and every `history.pushState` navigation, so `/app/clips`, `/app/streamer/<login>` etc. each show up as their own page. 404-fallback deep links are restored with `replaceState` before the script loads, so they count under their real path. Accepting consent mid-session loads the script and records the current page.
 

@@ -67,8 +67,8 @@ const STATIC_PAGES: StaticPage[] = [
   },
   {
     path: '/pro',
-    title: `ClipSpike Pro — Pricing & Waitlist`,
-    description: 'ClipSpike Pro adds auto-clipping, alerts and more for serious streamers and clip editors. Join the waitlist.',
+    title: `ClipSpike Pro — Desktop license`,
+    description: 'Web clip browsing stays free. ClipSpike Pro is a 7-day trial, then a license to keep capturing in the desktop app.',
   },
   {
     path: '/about',

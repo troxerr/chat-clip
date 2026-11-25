@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { adsenseReady, buildConfig, hasSponsoredContent, consentRequired, type AffiliateItem, type MonetizationConfig } from './config'
+import { adsenseReady, buildConfig, hasSponsoredContent, consentRequired, httpsOrEmpty, type AffiliateItem, type MonetizationConfig } from './config'
 import { monetization } from './index'
 import { CONSENT_KEY, getConsent, reloadConsent, resetConsent, setConsent } from './consent'
 import { initAnalytics, track } from './analytics'
@@ -37,7 +37,7 @@ describe('config defaults', () => {
   })
 
   it('treats empty-string env values (unset GitHub repo variables) the same as unset', () => {
-    const names = ['VITE_ADS_ENABLED', 'VITE_AD_PROVIDER', 'VITE_ADSENSE_CLIENT', 'VITE_ADSENSE_SLOT_GRID', 'VITE_ADSENSE_SLOT_SIDEBAR', 'VITE_SPONSOR_NAME', 'VITE_SPONSOR_URL', 'VITE_SPONSOR_TEXT', 'VITE_AFFILIATES_ENABLED', 'VITE_SUPPORT_URL', 'VITE_WAITLIST_ENDPOINT', 'VITE_WAITLIST_EMAIL', 'VITE_ANALYTICS_PROVIDER', 'VITE_PLAUSIBLE_DOMAIN', 'VITE_PLAUSIBLE_SRC']
+    const names = ['VITE_ADS_ENABLED', 'VITE_AD_PROVIDER', 'VITE_ADSENSE_CLIENT', 'VITE_ADSENSE_SLOT_GRID', 'VITE_ADSENSE_SLOT_SIDEBAR', 'VITE_SPONSOR_NAME', 'VITE_SPONSOR_URL', 'VITE_SPONSOR_TEXT', 'VITE_AFFILIATES_ENABLED', 'VITE_SUPPORT_URL', 'VITE_WAITLIST_ENDPOINT', 'VITE_WAITLIST_EMAIL', 'VITE_CHECKOUT_URL', 'VITE_ANALYTICS_PROVIDER', 'VITE_PLAUSIBLE_DOMAIN', 'VITE_PLAUSIBLE_SRC']
     const empty = Object.fromEntries(names.map((n) => [n, '']))
     expect(buildConfig(empty, aff)).toEqual(buildConfig({}, aff))
     const c = buildConfig(empty, [])
@@ -60,6 +60,7 @@ describe('config defaults', () => {
     expect(c.supportUrl).toBe('')
     expect(c.waitlist.email).toBe('')
     expect(c.affiliates).toHaveLength(1)
+    expect(c.checkoutUrl).toBe('')
     expect(adsenseReady(c)).toBe(false)
     expect(adsenseReady(adsense)).toBe(true)
   })
@@ -168,6 +169,46 @@ describe('analytics', () => {
     expect(scripts).toHaveLength(1)
     expect(scripts[0].dataset.domain).toBe('clipspike.com')
     scripts[0].remove()
+  })
+})
+
+describe('checkout URL', () => {
+  it('accepts https and drops junk', () => {
+    expect(httpsOrEmpty(' https://buy.example/pro ')).toBe('https://buy.example/pro')
+    expect(httpsOrEmpty('http://buy.example/pro')).toBe('')
+    expect(httpsOrEmpty('javascript:alert(1)')).toBe('')
+    expect(httpsOrEmpty('not a url')).toBe('')
+    expect(httpsOrEmpty('')).toBe('')
+    expect(buildConfig({ VITE_CHECKOUT_URL: 'https://buy.example/pro' }, []).checkoutUrl).toBe('https://buy.example/pro')
+    expect(buildConfig({ VITE_CHECKOUT_URL: 'http://buy.example/pro' }, []).checkoutUrl).toBe('')
+  })
+
+  it('shows Get ClipSpike Pro only when checkout is configured', async () => {
+    const { unmount } = render(<Pro config={monetization} />)
+    expect(screen.queryByRole('link', { name: 'Get ClipSpike Pro' })).toBeNull()
+    expect(screen.getByText(/isn.t open yet/)).toBeInTheDocument()
+    unmount()
+
+    const http = buildConfig({ VITE_CHECKOUT_URL: 'http://buy.example/pro' }, [])
+    const { unmount: unmountHttp } = render(<Pro config={http} />)
+    expect(screen.queryByRole('link', { name: 'Get ClipSpike Pro' })).toBeNull()
+    unmountHttp()
+
+    setConsent({ ads: false, analytics: true })
+    const spy = vi.fn()
+    window.plausible = spy as never
+    const paid = buildConfig(
+      { VITE_CHECKOUT_URL: 'https://buy.example/pro', VITE_ANALYTICS_PROVIDER: 'plausible', VITE_PLAUSIBLE_DOMAIN: 'clipspike.com' },
+      [],
+    )
+    render(<Pro config={paid} />)
+    const link = screen.getByRole('link', { name: 'Get ClipSpike Pro' })
+    expect(link).toHaveAttribute('href', 'https://buy.example/pro')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(screen.queryByText(/Ad-free/)).toBeNull()
+    await userEvent.click(link)
+    expect(spy).toHaveBeenCalledWith('pro_checkout_click', undefined)
   })
 })
 
