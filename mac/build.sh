@@ -60,6 +60,9 @@ fi
 if [[ -n "${CHECKOUT_URL:-}" ]]; then
   /usr/libexec/PlistBuddy -c "Set :HDCheckoutURL $CHECKOUT_URL" "$APP_DIR/Contents/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :HDCheckoutURL string $CHECKOUT_URL" "$APP_DIR/Contents/Info.plist"
 fi
+if [[ -n "${PRICE_LABEL:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :HDPriceLabel $PRICE_LABEL" "$APP_DIR/Contents/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :HDPriceLabel string $PRICE_LABEL" "$APP_DIR/Contents/Info.plist"
+fi
 if [[ -n "${LEMON_PRODUCT_ID:-}" ]]; then
   /usr/libexec/PlistBuddy -c "Set :HDProductId $LEMON_PRODUCT_ID" "$APP_DIR/Contents/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :HDProductId string $LEMON_PRODUCT_ID" "$APP_DIR/Contents/Info.plist"
 fi

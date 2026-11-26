@@ -55,6 +55,7 @@ typedef NS_ENUM(NSInteger, HDPage) {
 @property(strong) NSTextField *telemetryLabel;
 @property(strong) NSButton *toggleButton;
 @property(strong) NSButton *saveButton;
+@property(strong) NSButton *missedButton;
 @property(strong) NSButton *lastClipButton;
 
 // Capture: VOD mode
@@ -92,7 +93,7 @@ typedef NS_ENUM(NSInteger, HDPage) {
 // License
 @property(strong) NSTextField *licenseStatusLabel;
 @property(strong) NSTextField *licenseTrialLabel;
-@property(strong) NSSecureTextField *licenseKeyField;
+@property(strong) NSTextField *licenseKeyField;
 @property(strong) NSButton *licenseActivateButton;
 @property(strong) NSButton *licenseDeactivateButton;
 @property(strong) NSButton *licenseCheckButton;
@@ -128,6 +129,11 @@ typedef NS_ENUM(NSInteger, HDPage) {
 - (void)showClipPreviewForEntry:(NSDictionary *)entry;
 - (void)stopClipPreview;
 - (void)setLicenseState:(HDLicenseState)state;
+- (void)setLicenseEntryVisible:(BOOL)visible;
+// Trial and purchase banner on Capture. An empty text hides it. Buy stays hidden when this build has no checkout.
+- (void)setCaptureOfferText:(NSString *)text buyTitle:(NSString *)buyTitle showBuy:(BOOL)showBuy showKey:(BOOL)showKey;
+// Sidebar foot, for example "v3.0.0 · Trial · 7d".
+- (void)setAccountLine:(NSString *)line;
 // Free-plan allowance, shown after the session summary on Capture. Pass nil to clear.
 - (void)setPlanNote:(NSString *)note;
 

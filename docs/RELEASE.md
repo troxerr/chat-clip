@@ -36,6 +36,7 @@ STREAMLINK_BIN=/path/to/self-contained-streamlink \
   LEMON_API_BASE=https://api.polar.sh \
   LEMON_PRODUCT_ID=<organization-id>:<benefit-id from win/build-config.json> \
   CHECKOUT_URL=<checkoutUrl from win/build-config.json> \
+  PRICE_LABEL=<priceLabel from win/build-config.json> \
   npm run build:mac
   ```
 - Use an **LGPL FFmpeg** build with VideoToolbox; do not bundle libx264 in the proprietary app.
@@ -60,7 +61,7 @@ NOTARY_PROFILE="clipspike-notary" \
 ./mac/release.sh --verify   # after notarizing; must pass
 ```
 
-`--check` runs before anything is signed. It verifies the signing identity, notary credentials, bundled runtime, Sparkle, a public HTTPS `SUFeedURL`, `SUPublicEDKey`, license enforcement, and the Dropbox and Google OAuth client ID and secret in the built `Info.plist`. It also requires `HDCheckoutURL`, `HDProductId`, and `HDLicenseApiBase` to be the production Polar offer in `win/build-config.json` (`https://buy.polar.sh/…`, the `organization:benefit` id, and `https://api.polar.sh`). A Lemon Squeezy or sandbox build fails. Any missing value fails it, so run it in every release pipeline, including CI. `--verify [DMG]` runs after notarization: it checks the stapled ticket and that Gatekeeper accepts the DMG and the app inside it. Unsigned CI artifacts are built by [docs/CI.md](CI.md).
+`--check` runs before anything is signed. It verifies the signing identity, notary credentials, bundled runtime, Sparkle, a public HTTPS `SUFeedURL`, `SUPublicEDKey`, license enforcement, and the Dropbox and Google OAuth client ID and secret in the built `Info.plist`. It also requires `HDCheckoutURL`, `HDProductId`, `HDPriceLabel`, and `HDLicenseApiBase` to be the production Polar offer in `win/build-config.json` (`https://buy.polar.sh/…`, the `organization:benefit` id, the `$39` price label, and `https://api.polar.sh`). A Lemon Squeezy or sandbox build fails. Any missing value fails it, so run it in every release pipeline, including CI. `--verify [DMG]` runs after notarization: it checks the stapled ticket and that Gatekeeper accepts the DMG and the app inside it. Unsigned CI artifacts are built by [docs/CI.md](CI.md).
 
 `mac/release.sh` signs nested Node/FFmpeg/Streamlink binaries, then Sparkle's helper bundles (`Updater.app`, XPC services) and the framework inside-out, signs the app with hardened runtime and `mac/ClipSpike.entitlements`, builds a DMG, submits it to `notarytool`, staples it, and verifies Gatekeeper.
 
@@ -106,7 +107,7 @@ The release workflow lives in the separate public repo [troxerr/chatclip-release
 The release workflow must run `./mac/release.sh --check` after building and before signing, and `./mac/release.sh --verify` after notarizing, so a build missing any required value or a rejected DMG cannot be uploaded. It must pass `ARCH` to `tools/make-appcast.sh`.
 
 **Secrets (set in chatclip-release, not here); all of these are required for a sellable build:** `MACOS_CERT_P12` (base64 .p12), `MACOS_CERT_PASSWORD`, `APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`, `SPARKLE_PRIVATE_KEY` (contents of `generate_keys -x`), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, and `GOOGLE_CLIENT_SECRET`.
-**Variables:** `R2_PUBLIC_BASE_URL` (custom domain of the bucket, no trailing slash), `SU_PUBLIC_ED_KEY`, `LEMON_API_BASE` (`https://api.polar.sh`), `LEMON_PRODUCT_ID` and `CHECKOUT_URL` (the same values as `win/build-config.json`), `TRIAL_DAYS`, `DROPBOX_APP_KEY`, `GOOGLE_CLIENT_ID`.
+**Variables:** `R2_PUBLIC_BASE_URL` (custom domain of the bucket, no trailing slash), `SU_PUBLIC_ED_KEY`, `LEMON_API_BASE` (`https://api.polar.sh`), `LEMON_PRODUCT_ID`, `CHECKOUT_URL` and `PRICE_LABEL` (the same values as `win/build-config.json`), `TRIAL_DAYS`, `DROPBOX_APP_KEY`, `GOOGLE_CLIENT_ID`.
 
 R2 setup: create a bucket, attach a custom domain, and create an R2 API token scoped to that bucket. The app reads `${R2_PUBLIC_BASE_URL}/appcast.xml`, so objects must be readable over HTTPS without credentials: anyone with the DMG link can download it, and the license key is what protects the product. There is no `ExportOptions.plist` because the app is not built with `xcodebuild`; `mac/release.sh` does the Developer ID signing.
 

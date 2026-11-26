@@ -18,8 +18,8 @@ set -euo pipefail
 #   ./mac/release.sh --verify [DMG]     after notarizing: stapled ticket and Gatekeeper
 #
 # mac/build.sh reads SU_FEED_URL, SU_PUBLIC_ED_KEY, LICENSE_REQUIRED, LEMON_PRODUCT_ID,
-# LEMON_API_BASE, CHECKOUT_URL, DROPBOX_APP_KEY, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.
-# --check requires the built checkout, product id and API base to be the production
+# LEMON_API_BASE, CHECKOUT_URL, PRICE_LABEL, DROPBOX_APP_KEY, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.
+# --check requires the built checkout, product id, price and API base to be the production
 # Polar offer in win/build-config.json. A Lemon Squeezy or sandbox build fails.
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -55,7 +55,7 @@ if [[ "${1:-}" == "--check" ]]; then
   [[ "$(plist SUFeedURL)" == https://* && "$(plist SUFeedURL)" != *localhost* && "$(plist SUFeedURL)" != *127.0.0.1* ]] && pass "SUFeedURL is a public HTTPS URL" || fail "SUFeedURL missing, not HTTPS, or local"
   [[ -n "$(plist SUPublicEDKey)" ]] && pass "SUPublicEDKey configured" || fail "SUPublicEDKey missing"
   [[ "$(plist HDLicenseRequired)" == "true" ]] && pass "license enforcement enabled" || fail "HDLicenseRequired is not true"
-  if node "$ROOT/tools/check-mac-offer.js" --checkout "$(plist HDCheckoutURL)" --product "$(plist HDProductId)" --api "$(plist HDLicenseApiBase)"; then
+  if node "$ROOT/tools/check-mac-offer.js" --checkout "$(plist HDCheckoutURL)" --product "$(plist HDProductId)" --api "$(plist HDLicenseApiBase)" --price "$(plist HDPriceLabel)"; then
     pass "checkout, product id, and API match the production Polar offer"
   else
     fail "Mac license config must match the production Polar offer in win/build-config.json"

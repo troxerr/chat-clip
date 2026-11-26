@@ -36,6 +36,8 @@
   <integer>7</integer>
   <key>HDCheckoutURL</key>
   <string></string>
+  <key>HDPriceLabel</key>
+  <string></string>
   <key>HDProductId</key>
   <string></string>
   <key>HDLicenseApiBase</key>
