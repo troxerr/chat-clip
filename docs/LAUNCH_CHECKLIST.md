@@ -292,7 +292,7 @@ Do these after steps 4–7. Use throwaway versions so nothing real is published,
 
 ### Mac (arm64 and x86_64)
 
-1. Confirm all required secrets and variables are set in `troxerr/chatclip-release` (full list in [RELEASE.md](RELEASE.md#automated-release-github-actions--cloudflare-r2)). Set `SU_PUBLIC_ED_KEY`, `LEMON_PRODUCT_ID`, `CHECKOUT_URL`, `TRIAL_DAYS`, `R2_PUBLIC_BASE_URL`, and the secrets.
+1. Confirm all required secrets and variables are set in `troxerr/chatclip-release` (full list in [RELEASE.md](RELEASE.md#automated-release-github-actions--cloudflare-r2)). Set `SU_PUBLIC_ED_KEY`, `R2_PUBLIC_BASE_URL`, `DROPBOX_APP_KEY`, `GOOGLE_CLIENT_ID`, and the secrets. The Polar offer comes from `win/build-config.json`.
 2. In `mac/Info.plist` bump `CFBundleShortVersionString` to a throwaway version (for example `3.1.0-dryrun`) and `CFBundleVersion`; the tag must equal `CFBundleShortVersionString`. Do this on a scratch branch, not `main`.
 3. Tag and run:
 
