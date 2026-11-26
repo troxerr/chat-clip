@@ -26,6 +26,12 @@ export const BLOCKED_TITLE_TERMS = [
 /** Twitch clip ids (the Helix `id`) to always hide, e.g. clips a human reviewed. */
 export const BLOCKED_CLIP_IDS: string[] = []
 
+/** Twitch channel content-classification labels that count as mature (channel-level; others are ignored). */
+export const MATURE_LABELS = ['SexualThemes', 'ViolentGraphic']
+
+export const hasMatureLabel = (labels: unknown): boolean =>
+  Array.isArray(labels) && labels.some((l) => MATURE_LABELS.includes(l))
+
 const LEET: Record<string, string> = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', $: 's' }
 
 /** Lowercases, strips accents, undoes leetspeak next to letters ("s3x") and joins dotted letters ("s.e.x"). Match-only: never shown. */

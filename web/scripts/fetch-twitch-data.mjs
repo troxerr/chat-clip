@@ -3,6 +3,7 @@
 // Never logs credentials or tokens. Run from web/: `node scripts/fetch-twitch-data.mjs`.
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { labelsByBroadcaster } from './channel-labels.mjs'
 
 // The shared default list (config/streamers.json) drives which streamers get live data.
 const config = JSON.parse(await readFile(new URL('../../config/streamers.json', import.meta.url), 'utf8'))
@@ -75,6 +76,13 @@ async function main() {
     ),
   )
   const rawClips = perStreamer.flat()
+  // Channel content-classification labels (channel-level) feed the site's mature-content filter.
+  const channelLabels = labelsByBroadcaster(
+    await helix('channels', new URLSearchParams(users.map((u) => ['broadcaster_id', u.id]))).catch((err) => {
+      console.warn(`Skipping channel labels: ${err.message}`)
+      return []
+    }),
+  )
   const gameIds = [...new Set(rawClips.map((c) => c.game_id).filter(Boolean))].slice(0, 100)
   const games = gameIds.length
     ? await helix('games', new URLSearchParams(gameIds.map((id) => ['id', id]))).catch((err) => {
@@ -98,6 +106,7 @@ async function main() {
       views: c.view_count,
       url: c.url,
       thumbnailUrl: c.thumbnail_url,
+      matureLabels: channelLabels.get(c.broadcaster_id) ?? [],
     })),
   }
 
