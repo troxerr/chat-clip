@@ -66,11 +66,12 @@ that file and redeploy.
 ## Real Twitch data
 
 `scripts/fetch-twitch-data.mjs` gets an app access token (client-credentials) and calls Helix
-Get Streams, Get Users, Get Clips and Get Games for the streamers in `config/streamers.json`, writing
+Get Streams, Get Users, Get Channels, Get Clips and Get Games for the streamers in `config/streamers.json`.
+Id lookups are batched at 100 and clip requests run a few at a time. Unknown logins are skipped. It writes
 `public/data/status.json` and `public/data/clips.json` (both with `generatedAt`). These files are
 gitignored and generated at deploy time, so nothing is committed on each run.
 
-- `pages.yml` also runs on a 5-minute cron and on `workflow_dispatch`; it runs the script with the
+- `pages.yml` also runs hourly at :17 and :47 (a `*/5` cron was dropped for hours) and on `workflow_dispatch`; it runs the script with the
   `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` repo secrets before the build. The secrets only exist
   in the CI step and never reach the browser bundle.
 - The app fetches `${BASE_URL}data/*.json` on load and every 60s; live status drives backup fallback.
