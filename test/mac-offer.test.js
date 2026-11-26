@@ -6,14 +6,16 @@ const shipped = require("../win/build-config.json");
 const offer = {
   checkoutUrl: "https://buy.polar.sh/polar_cl_example",
   productId: "org:benefit",
-  apiBase: "https://api.polar.sh"
+  apiBase: "https://api.polar.sh",
+  priceLabel: "$39"
 };
 
 test("the shipped Windows offer is a valid Mac release target", () => {
   assert.deepEqual(checkMacOffer({
     checkoutUrl: shipped.checkoutUrl,
     productId: shipped.productId,
-    apiBase: shipped.apiBase
+    apiBase: shipped.apiBase,
+    priceLabel: shipped.priceLabel
   }, shipped), []);
 });
 
@@ -21,12 +23,14 @@ test("a Mac build passes only when it matches the production Polar offer", () =>
   assert.deepEqual(checkMacOffer({
     checkoutUrl: offer.checkoutUrl,
     productId: offer.productId,
-    apiBase: offer.apiBase
+    apiBase: offer.apiBase,
+    priceLabel: offer.priceLabel
   }, offer), []);
   assert.deepEqual(checkMacOffer({
     checkoutUrl: offer.checkoutUrl,
     productId: offer.productId,
-    apiBase: "https://api.polar.sh/"
+    apiBase: "https://api.polar.sh/",
+    priceLabel: offer.priceLabel
   }, offer), []);
 });
 
@@ -39,6 +43,7 @@ test("Lemon, sandbox, and a different product fail", () => {
   assert.match(lemon.join("\n"), /HDCheckoutURL/);
   assert.match(lemon.join("\n"), /HDProductId/);
   assert.match(lemon.join("\n"), /HDLicenseApiBase/);
+  assert.match(lemon.join("\n"), /HDPriceLabel/);
 
   const sandbox = checkMacOffer({
     checkoutUrl: "https://buy.polar.sh/sandbox",

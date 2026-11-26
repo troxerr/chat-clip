@@ -759,7 +759,12 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
 @property(strong) NSMutableArray<HDNavButton *> *navButtons;
 @property(strong) NSStackView *sidebarStatusStack;
 @property(strong) NSTextField *sidebarStatusText;
+@property(strong) NSTextField *sidebarAccountText;
 @property(strong) NSImageView *sidebarStatusIcon;
+@property(strong) NSView *offerCard;
+@property(strong) NSTextField *offerLabel;
+@property(strong) NSButton *offerBuyButton;
+@property(strong) NSButton *offerKeyButton;
 @property(strong) NSImageView *licenseStatusIcon;
 @property(strong) NSWindow *onboardingWindow;
 @property(strong) NSTextField *captureHeroTitle;
@@ -960,7 +965,11 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   self.sidebarStatusIcon = HDSymbolImageView(HDSymbolRoleStatusReady, 11, NSColor.secondaryLabelColor, @"Capture status");
   self.sidebarStatusText = HDLabel(@"Idle", 11, NSFontWeightRegular, NSColor.secondaryLabelColor);
   [status addArrangedSubview:self.sidebarStatusIcon]; [status addArrangedSubview:self.sidebarStatusText];
-  [stack addArrangedSubview:status]; [stack setCustomSpacing:12 afterView:status];
+  [stack addArrangedSubview:status];
+  self.sidebarAccountText = HDLabel(@"", 11, NSFontWeightRegular, NSColor.secondaryLabelColor);
+  self.sidebarAccountText.lineBreakMode = NSLineBreakByTruncatingTail;
+  [stack addArrangedSubview:self.sidebarAccountText];
+  [stack setCustomSpacing:12 afterView:self.sidebarAccountText];
   HDNavButton *settings = [[HDNavButton alloc] initWithTitle:@"Settings" role:HDSymbolRoleSettings target:self action:@selector(settingsClicked:)];
   settings.tag = HDPageSettings; [self.navButtons addObject:settings];
   [stack addArrangedSubview:settings]; [settings.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
@@ -1075,7 +1084,27 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
 - (void)buildCapturePage {
   NSView *page; NSStackView *stack = [self formPage:&page compact:NO]; self.capturePage = page;
   [stack addArrangedSubview:[self titleRowWithRole:HDSymbolRoleCapture title:@"Capture"]];
-  [stack addArrangedSubview:HDLabel(@"Turn live reactions into clips worth sharing.", 12, NSFontWeightRegular, NSColor.secondaryLabelColor)];
+
+  HDCardView *offer = [self card];
+  self.offerCard = offer;
+  offer.hidden = YES;
+  NSStackView *offerRow = [self insetStack:offer];
+  offerRow.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+  offerRow.alignment = NSLayoutAttributeCenterY;
+  offerRow.spacing = 8;
+  self.offerLabel = HDLabel(@"", 13, NSFontWeightMedium, NSColor.labelColor);
+  self.offerLabel.maximumNumberOfLines = 2;
+  self.offerLabel.lineBreakMode = NSLineBreakByWordWrapping;
+  [self.offerLabel setContentHuggingPriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+  self.offerBuyButton = HDButton(@"Buy a license", self.target, @selector(buyLicense:), YES);
+  self.offerKeyButton = HDButton(@"Enter license key", self.target, @selector(showLicense:), NO);
+  [offerRow addArrangedSubview:self.offerLabel];
+  [offerRow addArrangedSubview:self.offerBuyButton];
+  [offerRow addArrangedSubview:self.offerKeyButton];
+  [stack addArrangedSubview:offer];
+  [offer.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
+
+  [stack addArrangedSubview:HDLabel(@"Start a capture on a live channel. Chat spikes save a vertical clip on their own. Save highlight now keeps a moment the chat missed.", 12, NSFontWeightRegular, NSColor.secondaryLabelColor)];
 
   NSStackView *channelBox = [NSStackView new];
   channelBox.orientation = NSUserInterfaceLayoutOrientationVertical;
@@ -1095,7 +1124,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   self.channelField.action = @selector(channelChanged:);
   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(channelChanged:) name:NSControlTextDidChangeNotification object:self.channelField];
   [self.channelField.heightAnchor constraintEqualToConstant:36].active = YES;
-  self.toggleButton = HDButtonWithSymbol(@"Start Capture", self.target, @selector(toggleCapture:), YES, HDSymbolRoleRecord);
+  self.toggleButton = HDButtonWithSymbol(@"Start capture", self.target, @selector(toggleCapture:), YES, HDSymbolRoleRecord);
   [self.toggleButton.widthAnchor constraintEqualToConstant:144].active = YES;
   [input addArrangedSubview:self.channelField];
   [input addArrangedSubview:self.toggleButton];
@@ -1262,13 +1291,17 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   }
   NSStackView *actions = [NSStackView new];
   actions.spacing = 6;
-  self.saveButton = HDButtonWithSymbol(@"Save Highlight", self.target, @selector(saveHighlight:), NO, HDSymbolRoleSave);
+  self.saveButton = HDButtonWithSymbol(@"Save highlight now", self.target, @selector(saveHighlight:), NO, HDSymbolRoleSave);
   self.saveButton.toolTip = @"Save a highlight during capture (⌘S).";
+  self.missedButton = HDButton(@"Mark missed moment", self.target, @selector(markMissedMoment:), NO);
+  self.missedButton.toolTip = @"Records this time for review. It does not save a clip.";
   self.lastClipButton = HDButtonWithSymbol(@"Open Last Clip", self.target, @selector(openLastClip:), NO, HDSymbolRoleOpenClip);
   self.lastClipButton.toolTip = @"Available after a clip has finished.";
   self.saveButton.enabled = NO;
+  self.missedButton.enabled = NO;
   self.lastClipButton.enabled = NO;
   [actions addArrangedSubview:self.saveButton];
+  [actions addArrangedSubview:self.missedButton];
   [actions addArrangedSubview:self.lastClipButton];
   NSButton *monitorButton = HDButton(@"Capture Health…", self.target, @selector(showMonitoring:), NO);
   monitorButton.toolTip = @"Capture health, clip feedback and per-channel learning";
@@ -2098,8 +2131,8 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   NSStackView *row = [[NSStackView alloc] init];
   row.orientation = NSUserInterfaceLayoutOrientationHorizontal;
   row.spacing = 10;
-  self.licenseKeyField = [NSSecureTextField textFieldWithString:@""];
-  self.licenseKeyField.placeholderString = @"Paste license key";
+  self.licenseKeyField = [NSTextField textFieldWithString:@""];
+  self.licenseKeyField.placeholderString = @"Paste your license key";
   self.licenseKeyField.translatesAutoresizingMaskIntoConstraints = NO;
   [self.licenseKeyField.widthAnchor constraintGreaterThanOrEqualToConstant:300].active = YES;
   [row addArrangedSubview:self.licenseKeyField];
@@ -2107,14 +2140,20 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   [self.licenseActivateButton.widthAnchor constraintEqualToConstant:96].active = YES;
   [self.licenseActivateButton.heightAnchor constraintEqualToConstant:30].active = YES;
   [row addArrangedSubview:self.licenseActivateButton];
-  self.licenseEntry = row;
-  [box addArrangedSubview:row];
+  NSStackView *entry = [NSStackView new];
+  entry.orientation = NSUserInterfaceLayoutOrientationVertical;
+  entry.alignment = NSLayoutAttributeLeading;
+  entry.spacing = 6;
+  [entry addArrangedSubview:row];
+  [entry addArrangedSubview:HDLabel(@"The license key arrives by email. Paste it here.", 12, NSFontWeightRegular, NSColor.secondaryLabelColor)];
+  self.licenseEntry = entry;
+  [box addArrangedSubview:entry];
   NSStackView *actions = [[NSStackView alloc] init];
   actions.orientation = NSUserInterfaceLayoutOrientationHorizontal;
   actions.spacing = 8;
-  self.licenseCheckButton = HDButtonWithSymbol(@"Check License", self.target, @selector(checkLicense:), NO, HDSymbolRoleCheck);
-  self.licenseDeactivateButton = HDButtonWithSymbol(@"Deactivate", self.target, @selector(deactivateLicense:), NO, HDSymbolRoleDeactivate);
-  self.licenseBuyButton = HDButtonWithSymbol(@"Buy a License", self.target, @selector(buyLicense:), NO, HDSymbolRoleBuy);
+  self.licenseCheckButton = HDButtonWithSymbol(@"Check now", self.target, @selector(checkLicense:), NO, HDSymbolRoleCheck);
+  self.licenseDeactivateButton = HDButtonWithSymbol(@"Remove from this Mac", self.target, @selector(deactivateLicense:), NO, HDSymbolRoleDeactivate);
+  self.licenseBuyButton = HDButtonWithSymbol(@"Buy a license", self.target, @selector(buyLicense:), NO, HDSymbolRoleBuy);
   [actions addArrangedSubview:self.licenseCheckButton];
   [actions addArrangedSubview:self.licenseDeactivateButton];
   [actions addArrangedSubview:self.licenseBuyButton];
@@ -2150,7 +2189,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   NSTextField *supportNote = HDCaption(@"Export a diagnostic report when you need help with a capture or upload.");
   [supportBox addArrangedSubview:supportNote];
   [supportNote.widthAnchor constraintEqualToAnchor:supportBox.widthAnchor].active = YES;
-  [stack addArrangedSubview:HDCaption(@"⌘1 Capture   ·   ⌘2 Clips   ·   ⌘3 Storage   ·   ⌘S Save Highlight")];
+  [stack addArrangedSubview:HDCaption(@"⌘1 Capture   ·   ⌘2 Clips   ·   ⌘3 Storage   ·   ⌘S Save highlight now")];
   NSButton *advanced = [NSButton checkboxWithTitle:@"Show advanced options" target:self action:@selector(advancedChanged:)];
   [stack addArrangedSubview:advanced];
   self.advancedOptions = [NSStackView new]; self.advancedOptions.orientation = NSUserInterfaceLayoutOrientationVertical;
@@ -2324,7 +2363,6 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   self.licenseBuyButton.hidden = disabled || active;
   self.licenseCheckButton.hidden = !active && !self.licenseCheckButton.enabled;
   self.licenseDeactivateButton.hidden = !active && !self.licenseDeactivateButton.enabled;
-  if (active) self.licenseTrialLabel.stringValue = @"License active";
   HDSymbolRole role = HDSymbolRoleLicenseTrial;
   NSColor *color = NSColor.secondaryLabelColor;
   switch (state) {
@@ -2335,6 +2373,24 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   }
   self.licenseStatusIcon.image = HDSymbolImage(role, 22, NSFontWeightSemibold, @"License status");
   self.licenseStatusIcon.contentTintColor = color;
+}
+
+- (void)setLicenseEntryVisible:(BOOL)visible {
+  self.licenseEntry.hidden = !visible;
+}
+
+- (void)setCaptureOfferText:(NSString *)text buyTitle:(NSString *)buyTitle showBuy:(BOOL)showBuy showKey:(BOOL)showKey {
+  BOOL show = text.length > 0;
+  self.offerCard.hidden = !show;
+  self.offerLabel.stringValue = text ?: @"";
+  if (buyTitle.length) self.offerBuyButton.title = buyTitle;
+  self.offerBuyButton.hidden = !showBuy;
+  self.offerKeyButton.hidden = !showKey;
+}
+
+- (void)setAccountLine:(NSString *)line {
+  self.sidebarAccountText.stringValue = line ?: @"";
+  self.sidebarAccountText.hidden = !line.length;
 }
 
 - (void)presentOnboarding {
@@ -2367,7 +2423,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   [stack addArrangedSubview:self.onboardingPermission];
   NSStackView *actions = [NSStackView new]; actions.spacing = 8;
   NSButton *later = HDButton(@"Set Up Later", self.target, @selector(onboardingSkip:), NO);
-  self.onboardingContinue = HDButton(@"Start Capture", self.target, @selector(onboardingStart:), YES);
+  self.onboardingContinue = HDButton(@"Start capture", self.target, @selector(onboardingStart:), YES);
   self.onboardingContinue.keyEquivalent = @"\r";
   [actions addArrangedSubview:later]; [actions addArrangedSubview:self.onboardingContinue]; [stack addArrangedSubview:actions];
   [stack addArrangedSubview:HDCaption(@"Keep the app running while the stream is live. Output is vertical (9:16).")];
@@ -2382,7 +2438,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
 - (void)onboardingDestinationChanged:(id)sender {
   BOOL local = self.onboardingStoragePopup.indexOfSelectedItem == 0;
   self.onboardingStorageNote.stringValue = local ? @"Clips are saved on this Mac. You can change the folder in Storage." : @"Connect this account in Storage before starting cloud capture.";
-  if (self.onboardingContinue) self.onboardingContinue.title = local ? @"Start Capture" : @"Continue to Storage";
+  if (self.onboardingContinue) self.onboardingContinue.title = local ? @"Start capture" : @"Continue to Storage";
 }
 
 - (void)onboardingInputChanged:(id)sender {

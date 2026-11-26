@@ -483,7 +483,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 - (NSString *)newCaptureBlockReason {
   [self refreshLicenseState];
   if (!self.licenseRequired || self.licenseValid) return nil;
-  if ([self licenseKeyValue].length) return @"This license is not active. Enter a license key to keep capturing.";
+  if ([self licenseKeyValue].length) return @"The license could not be checked for over 14 days. Connect to the internet to keep using the app.";
   return @"The trial has ended. Enter a license key to keep capturing.";
 }
 
@@ -538,6 +538,17 @@ static NSString *HDByteString(unsigned long long bytes) {
   return value ?: @"";
 }
 
+- (NSString *)priceLabel {
+  NSString *value = NSBundle.mainBundle.infoDictionary[@"HDPriceLabel"];
+  if (![value isKindOfClass:[NSString class]] || !value.length) value = HDEnv(@"CLIPSPIKE_PRICE_LABEL");
+  return [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] ?: @"";
+}
+
+- (NSString *)buyButtonTitle {
+  NSString *price = [self priceLabel];
+  return price.length ? [NSString stringWithFormat:@"Buy for %@", price] : @"Buy a license";
+}
+
 - (void)clearLicense {
   [self.licenseManager clear];
   NSMutableDictionary *config = [self licenseConfig];
@@ -577,7 +588,12 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.licenseActivateButton.enabled = NO;
     self.licenseDeactivateButton.enabled = NO;
     self.licenseCheckButton.enabled = NO;
-    if (self.ui) [self.ui setLicenseState:HDLicenseStateDisabled];
+    if (self.ui) {
+      [self.ui setLicenseState:HDLicenseStateDisabled];
+      [self.ui setCaptureOfferText:@"" buyTitle:@"" showBuy:NO showKey:NO];
+      NSString *version = NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"];
+      [self.ui setAccountLine:([version isKindOfClass:[NSString class]] && version.length) ? [NSString stringWithFormat:@"v%@", version] : @""];
+    }
     return;
   }
   NSInteger daysLeft = [self licenseTrialDaysLeft];
@@ -585,33 +601,61 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSString *instance = [self licenseInstanceValue];
   NSMutableDictionary *config = [self licenseConfig];
   NSString *email = config[@"license"][@"email"];
-  NSString *product = config[@"license"][@"productName"];
+  BOOL hasKey = key.length > 0 && instance.length > 0;
+  BOOL checkout = [self checkoutURL].length > 0;
+  NSString *buyTitle = [self buyButtonTitle];
   HDLicenseState state = HDLicenseStateTrial;
+  NSString *offer = @"";
+  BOOL showBuy = NO;
+  BOOL showKey = NO;
+  NSString *account = @"";
   if (key.length && self.licenseValid) {
-    self.licenseStatusLabel.stringValue = email.length
-      ? [NSString stringWithFormat:@"Licensed to %@%@.", email, product.length ? [NSString stringWithFormat:@" · %@", product] : @""]
-      : @"License active.";
+    self.licenseStatusLabel.stringValue = email.length ? [NSString stringWithFormat:@"Licensed to %@.", email] : @"Licensed.";
     state = HDLicenseStateValid;
+    account = @"Licensed";
+  } else if (key.length && daysLeft > 0) {
+    self.licenseStatusLabel.stringValue = @"Licensed. The license could not be checked recently; it will be checked again when you are online.";
+    state = HDLicenseStateTrial;
+    offer = self.licenseStatusLabel.stringValue;
+    account = @"Licensed";
   } else if (key.length) {
-    self.licenseStatusLabel.stringValue = @"License needs validation. Check your connection and click Check License.";
-    state = HDLicenseStateTrial;
+    self.licenseStatusLabel.stringValue = @"The license could not be checked for over 14 days. Connect to the internet to keep using the app.";
+    state = HDLicenseStateExpired;
+    offer = self.licenseStatusLabel.stringValue;
+    showBuy = checkout;
+    showKey = YES;
+    account = @"Trial ended";
   } else if (daysLeft > 0) {
-    self.licenseStatusLabel.stringValue = [NSString stringWithFormat:@"Trial active: %ld day%@ left. Enter a license key to continue after the trial.", (long)daysLeft, daysLeft == 1 ? @"" : @"s"];
+    self.licenseStatusLabel.stringValue = [NSString stringWithFormat:@"Trial: %ld day%@ left.", (long)daysLeft, daysLeft == 1 ? @"" : @"s"];
     state = HDLicenseStateTrial;
+    offer = self.licenseStatusLabel.stringValue;
+    showBuy = checkout;
+    account = [NSString stringWithFormat:@"Trial · %ldd", (long)daysLeft];
   } else {
     self.licenseStatusLabel.stringValue = @"The trial has ended. Enter a license key to keep capturing.";
     state = HDLicenseStateExpired;
+    offer = self.licenseStatusLabel.stringValue;
+    showBuy = checkout;
+    showKey = YES;
+    account = @"Trial ended";
   }
-  self.licenseTrialLabel.stringValue = daysLeft > 0
-    ? [NSString stringWithFormat:@"Trial: %ld day%@ remaining", (long)daysLeft, daysLeft == 1 ? @"" : @"s"]
-    : @"Trial: expired";
+  self.licenseTrialLabel.stringValue = state == HDLicenseStateValid || (key.length && daysLeft > 0) ? @"Licensed" : (daysLeft > 0 ? @"Trial" : @"Expired");
   self.licenseKeyField.enabled = !(self.licenseTask && self.licenseTask.running);
-  if (key.length && !self.licenseKeyField.stringValue.length) self.licenseKeyField.stringValue = key;
   self.licenseActivateButton.enabled = self.licenseKeyField.enabled;
-  self.licenseDeactivateButton.enabled = key.length > 0 && instance.length > 0;
-  self.licenseCheckButton.enabled = key.length > 0 && instance.length > 0;
-  self.licenseBuyButton.enabled = [self checkoutURL].length > 0;
-  if (self.ui) [self.ui setLicenseState:state];
+  self.licenseDeactivateButton.enabled = hasKey;
+  self.licenseCheckButton.enabled = hasKey;
+  self.licenseBuyButton.enabled = checkout;
+  self.licenseBuyButton.title = buyTitle;
+  if (self.ui) {
+    [self.ui setLicenseState:state];
+    [self.ui setLicenseEntryVisible:!hasKey && state != HDLicenseStateDisabled && state != HDLicenseStateValid];
+    if (!checkout) self.ui.licenseBuyButton.hidden = YES;
+    [self.ui setCaptureOfferText:offer buyTitle:buyTitle showBuy:showBuy showKey:showKey];
+    NSString *version = NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"];
+    NSString *line = [version isKindOfClass:[NSString class]] && version.length ? [NSString stringWithFormat:@"v%@", version] : @"";
+    if (account.length) line = line.length ? [NSString stringWithFormat:@"%@ · %@", line, account] : account;
+    [self.ui setAccountLine:line];
+  }
 }
 
 - (void)showLicense:(id)sender {
@@ -644,7 +688,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     keyLabel.frame = NSMakeRect(24, 218, 100, 18);
     [view addSubview:keyLabel];
 
-    self.licenseKeyField = [NSSecureTextField textFieldWithString:@""];
+    self.licenseKeyField = [NSTextField textFieldWithString:@""];
     self.licenseKeyField.placeholderString = @"Paste your license key";
     self.licenseKeyField.frame = NSMakeRect(24, 184, 472, 28);
     [view addSubview:self.licenseKeyField];
@@ -661,7 +705,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.licenseCheckButton.frame = NSMakeRect(250, 140, 130, 32);
     [view addSubview:self.licenseCheckButton];
 
-    self.licenseBuyButton = [NSButton buttonWithTitle:@"Buy a License" target:self action:@selector(buyLicense:)];
+    self.licenseBuyButton = [NSButton buttonWithTitle:[self buyButtonTitle] target:self action:@selector(buyLicense:)];
     self.licenseBuyButton.frame = NSMakeRect(388, 140, 108, 32);
     [view addSubview:self.licenseBuyButton];
 
@@ -1056,11 +1100,22 @@ static NSString *HDByteString(unsigned long long bytes) {
 - (void)refreshMonitoring:(id)sender { [self runMonitorCommand:nil]; }
 - (void)toggleMonitorLearning:(NSButton *)sender { [self runMonitorCommand:sender.state == NSControlStateValueOn ? @"--resume" : @"--pause"]; }
 - (void)rollbackMonitoring:(id)sender { [self runMonitorCommand:@"--rollback"]; }
+- (void)syncMissedButton {
+  BOOL ready = self.task.running && [self.monitorSnapshot[@"lastWindow"] isKindOfClass:[NSDictionary class]];
+  self.ui.missedButton.enabled = ready;
+}
+
 - (void)markMissedMoment:(id)sender {
-  if (self.task.running && self.monitorSnapshot[@"lastWindow"]) {
-    kill(self.task.processIdentifier, SIGUSR1);
-    self.monitorHealth.stringValue = @"Missed moment marked for review. Capture continues.";
+  if (!(self.task.running && [self.monitorSnapshot[@"lastWindow"] isKindOfClass:[NSDictionary class]])) {
+    self.status.stringValue = self.task.running
+      ? @"The video buffer is still filling. Try again in a few seconds."
+      : @"Start a capture first.";
+    return;
   }
+  kill(self.task.processIdentifier, SIGUSR1);
+  NSString *note = @"Marked this moment for review. It does not save a clip.";
+  self.status.stringValue = note;
+  if (self.monitorHealth) self.monitorHealth.stringValue = note;
 }
 - (void)showMonitoring:(id)sender {
   if (!self.monitorWindow) {
@@ -1090,7 +1145,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     [stack addArrangedSubview:self.monitorAuto];
     NSStackView *actions = [NSStackView new]; actions.spacing = 8;
     [actions addArrangedSubview:[NSButton buttonWithTitle:@"Refresh Report" target:self action:@selector(refreshMonitoring:)]];
-    self.monitorMissed = [NSButton buttonWithTitle:@"Mark Missed Moment" target:self action:@selector(markMissedMoment:)];
+    self.monitorMissed = [NSButton buttonWithTitle:@"Mark missed moment" target:self action:@selector(markMissedMoment:)];
     [actions addArrangedSubview:self.monitorMissed];
     [actions addArrangedSubview:[NSButton buttonWithTitle:@"Rollback & Pause Tuning" target:self action:@selector(rollbackMonitoring:)]];
     [stack addArrangedSubview:actions];
@@ -1904,7 +1959,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     license.frame = NSMakeRect(162, 126, 100, 32);
     [view addSubview:license];
 
-    NSButton *start = [NSButton buttonWithTitle:@"Start Capture" target:self action:@selector(onboardingStart:)];
+    NSButton *start = [NSButton buttonWithTitle:@"Start capture" target:self action:@selector(onboardingStart:)];
     start.frame = NSMakeRect(270, 126, 140, 32);
     start.keyEquivalent = @"\r";
     [view addSubview:start];
@@ -2159,9 +2214,9 @@ static NSString *HDByteString(unsigned long long bytes) {
   NSMenuItem *save = [menu addItemWithTitle:@"Save Highlight" action:@selector(saveHighlight:) keyEquivalent:@"s"];
   save.keyEquivalentModifierMask = NSEventModifierFlagCommand;
   save.target = self;
-  NSMenuItem *missed = [menu addItemWithTitle:@"Mark Missed Moment" action:@selector(statusItemMarkMissed:) keyEquivalent:@""];
+  NSMenuItem *missed = [menu addItemWithTitle:@"Mark missed moment" action:@selector(statusItemMarkMissed:) keyEquivalent:@""];
   missed.target = self;
-  self.statusToggleItem = [menu addItemWithTitle:@"Start Capture" action:@selector(toggleCapture:) keyEquivalent:@""];
+  self.statusToggleItem = [menu addItemWithTitle:@"Start capture" action:@selector(toggleCapture:) keyEquivalent:@""];
   self.statusToggleItem.target = self;
   [menu addItem:[NSMenuItem separatorItem]];
   NSMenuItem *show = [menu addItemWithTitle:@"Show ClipSpike" action:@selector(showMainWindow:) keyEquivalent:@""];
@@ -2184,7 +2239,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   if ([signature isEqualToString:self.statusItemSignature]) return;
   self.statusItemSignature = signature;
   self.statusStateItem.title = state;
-  self.statusToggleItem.title = live ? @"Stop Capture" : @"Start Capture";
+  self.statusToggleItem.title = live ? @"Stop capture" : @"Start capture";
   if (live) {
     NSMutableAttributedString *title = [[NSMutableAttributedString alloc] initWithString:@" ● " attributes:@{NSForegroundColorAttributeName:[NSColor systemRedColor], NSFontAttributeName:[NSFont systemFontOfSize:10]}];
     [title appendAttributedString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Live · %ld", (long)clips] attributes:@{NSFontAttributeName:[NSFont monospacedDigitSystemFontOfSize:12 weight:NSFontWeightMedium]}]];
@@ -2510,6 +2565,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 
   if ([type isEqualToString:@"monitor-status"]) {
     self.monitorSnapshot = event;
+    [self syncMissedButton];
     if (self.monitorWindow.visible) [self renderMonitoring];
     return;
   }
@@ -2805,6 +2861,7 @@ static NSString *HDByteString(unsigned long long bytes) {
       weakSelf.toggle.enabled = YES;
       weakSelf.toggle.title = @"Start capture";
       weakSelf.saveButton.enabled = NO;
+      [weakSelf syncMissedButton];
       if (finished.terminationStatus == 0) {
         weakSelf.status.stringValue = @"Capture stopped.";
       } else if (weakSelf.lastError.length) {
@@ -2839,6 +2896,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   self.channel.enabled = NO;
   self.toggle.title = @"Stop capture";
   self.saveButton.enabled = YES;
+  [self syncMissedButton];
   self.status.stringValue = [@"Monitoring #" stringByAppendingString:name];
   self.telemetry.stringValue = @"Starting recorder…";
   [self.ui setCaptureRunning:YES];
