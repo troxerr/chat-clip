@@ -84,4 +84,5 @@ Twitch's clips API has no mature flag, so `web/src/lib/matureFilter.ts` flags cl
 
 - Flagged clips are **blurred** with a "Mature" tag by default.
 - Once ads, a sponsor or affiliate links are configured (the same condition that shows the sponsored-links footer notice), flagged clips are **hidden entirely**, so no ad sits next to them.
-- It is a title heuristic: it cannot see the video. Review the top clips before applying to an ad network, and add reviewed ids to `BLOCKED_CLIP_IDS`.
+- The Twitch fetch also records each channel's content-classification labels as `matureLabels`; channels labelled `SexualThemes` or `ViolentGraphic` have all their clips flagged (`MATURE_LABELS` in `matureFilter.ts`). Labels are channel-level and current, not per-clip. `MatureGame` and `ProfanityVulgarity` are recorded but not used.
+- Beyond that it is a title heuristic: it cannot see the video. Review the top clips before applying to an ad network, and add reviewed ids to `BLOCKED_CLIP_IDS`.

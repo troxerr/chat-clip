@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isLikelyMature, normalizeTitle, visibleClips } from './matureFilter'
+import { hasMatureLabel, isLikelyMature, normalizeTitle, visibleClips } from './matureFilter'
 
 const t = (title: string, id = 'x') => isLikelyMature({ id, title })
 
@@ -59,5 +59,15 @@ describe('visibleClips', () => {
   it('keeps flagged clips (to be blurred) unless hiding', () => {
     expect(visibleClips(clips, false)).toHaveLength(3)
     expect(visibleClips(clips, true).map((c) => c.id)).toEqual(['b', 'c'])
+  })
+})
+
+describe('hasMatureLabel', () => {
+  it('counts only sexual and graphic-violence channel labels', () => {
+    expect(hasMatureLabel(['SexualThemes'])).toBe(true)
+    expect(hasMatureLabel(['MatureGame', 'ViolentGraphic'])).toBe(true)
+    expect(hasMatureLabel(['MatureGame', 'ProfanityVulgarity', 'Gambling'])).toBe(false)
+    expect(hasMatureLabel(undefined)).toBe(false)
+    expect(hasMatureLabel('SexualThemes')).toBe(false)
   })
 })

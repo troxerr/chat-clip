@@ -42,6 +42,21 @@ describe('parseClips', () => {
     expect(clips.map((c) => [c.id, c.mature])).toEqual([['a', true], ['b', false]])
   })
 
+  it('flags clips from channels labelled with sexual or graphic-violence themes', () => {
+    const clips = parseClips(
+      {
+        clips: [
+          { ...raw('a', 50), matureLabels: ['SexualThemes'] },
+          { ...raw('b', 40), matureLabels: ['MatureGame', 'ProfanityVulgarity'] },
+          { ...raw('c', 30), matureLabels: 'bogus' },
+          raw('d', 20),
+        ],
+      },
+      NAMES,
+    )!
+    expect(clips.map((c) => [c.id, c.mature])).toEqual([['a', true], ['b', false], ['c', false], ['d', false]])
+  })
+
   it('rejects invalid payloads', () => {
     expect(parseClips({}, NAMES)).toBeNull()
   })
