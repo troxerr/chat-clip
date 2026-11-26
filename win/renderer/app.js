@@ -61,27 +61,29 @@
         el("div", {}, el("dt", { text: "Video buffered" }), ui.status.buffered),
         el("div", {}, el("dt", { text: "Highlights this session" }), ui.status.saved)));
 
-    ui.channel = el("input", { type: "text", id: "channel", placeholder: "username or twitch.tv/username", autocomplete: "off", spellcheck: "false", "aria-describedby": "channel-help" });
+    ui.channel = el("input", { type: "text", id: "channel", placeholder: "username or twitch.tv/username", autocomplete: "off", spellcheck: "false", "aria-describedby": "capture-intro" });
     ui.ack = el("input", { type: "checkbox", id: "ack" });
     ui.ackRow = el("label", { class: "check", for: "ack" }, ui.ack, el("span", { text: "I have permission to record this channel, and I will follow Twitch's terms and the streamer's wishes." }));
     ui.startBtn = el("button", { class: "btn primary", type: "submit", text: "Start capture", "aria-describedby": "start-reason" });
     ui.startReason = el("p", { class: "help", id: "start-reason" });
+    ui.intro = el("p", { class: "help", id: "capture-intro" });
     ui.banner = el("div", { class: "notice info", id: "license-banner", hidden: true });
     ui.stopBtn = el("button", { class: "btn", type: "button", text: "Stop", onclick: () => guarded(async () => { snap = await hd.stop(); updateCapture(); }) });
     ui.saveBtn = el("button", { class: "btn", type: "button", text: "Save highlight now", title: "Ctrl+S", onclick: () => guarded(() => hd.saveHighlight()) });
+    ui.missedBtn = el("button", { class: "btn", type: "button", text: "Mark missed moment", title: "Records this time for review. It does not save a clip.", onclick: () => guarded(async () => { await hd.markMissed(); notify("Marked this moment for review. It does not save a clip.", "info", 6000); }) });
     const form = el("form", { class: "card", novalidate: true, onsubmit: (event) => { event.preventDefault(); onStart(); } },
       el("label", { for: "channel", text: "Twitch channel" }),
       ui.channel,
-      el("p", { class: "help", id: "channel-help", text: "ClipSpike watches the channel's chat. When chat reacts strongly it saves the 30 seconds around the moment as a vertical clip." }),
+      ui.intro,
       ui.ackRow,
-      el("div", { class: "row", style: false }, ui.startBtn, ui.stopBtn, ui.saveBtn),
+      el("div", { class: "row", style: false }, ui.startBtn, ui.stopBtn, ui.saveBtn, ui.missedBtn),
       ui.startReason);
     ui.channel.addEventListener("input", () => updateCapture());
     ui.ack.addEventListener("change", () => updateCapture());
 
     ui.recent = el("ul", { class: "clip-list", "aria-label": "Recent highlights" });
     ui.recentHead = el("h2", { text: "Recent highlights" });
-    root.replaceChildren(el("h1", { id: "h-capture", text: "Capture" }), ui.banner, statusCard, form, ui.recentHead, ui.recent);
+    root.replaceChildren(el("h1", { id: "h-capture", text: "Capture" }), ui.banner, form, statusCard, ui.recentHead, ui.recent);
   }
 
   async function onStart() {
@@ -108,7 +110,11 @@
     ui.startBtn.hidden = running;
     ui.stopBtn.hidden = !running;
     ui.saveBtn.hidden = !running;
-    ui.saveBtn.disabled = !["watching"].includes(c.phase);
+    ui.saveBtn.disabled = c.phase !== "watching";
+    ui.missedBtn.hidden = !running;
+    ui.missedBtn.disabled = c.phase !== "watching";
+    ui.intro.textContent = StartGuide.captureIntro(c.phase);
+    ui.intro.hidden = !ui.intro.textContent;
     ui.ackRow.hidden = snap.settings.permissionAcknowledged || running;
     const reason = running ? "" : StartGuide.startBlocker({ license: snap.license, channel: ui.channel.value, ackNeeded: !snap.settings.permissionAcknowledged, ack: ui.ack.checked });
     // aria-disabled keeps the button focusable, so the reason below it can be read.
@@ -249,7 +255,7 @@
 
   function updateSettings() {
     const lic = snap.license;
-    const keyInput = el("input", { type: "password", id: "license-key", placeholder: "Paste your license key", autocomplete: "off", "aria-label": "License key" });
+    const keyInput = el("input", { type: "text", id: "license-key", placeholder: "Paste your license key", autocomplete: "off", spellcheck: "false", "aria-label": "License key" });
     const badge = el("span", { class: `badge ${lic.mode === "expired" ? "expired" : lic.valid ? "ok" : "error"}`, text: { development: "Development build", trial: "Trial", licensed: "Licensed", "licensed-unverified": "Licensed", expired: "Expired" }[lic.mode] || lic.mode });
     const rows = [el("div", { class: "row" }, el("h2", { text: "License" }), badge), el("p", { text: lic.message })];
     if (lic.required) {
@@ -273,7 +279,8 @@
     const v = snap.versions || {};
     ui.about.replaceChildren(
       ...[["Version", snap.version], ["Electron", v.electron], ["Node", v.node]].filter(([, x]) => x).flatMap(([k, x]) => [el("dt", { text: k }), el("dd", { text: x })]));
-    $("sidebar-foot").textContent = lic.required ? lic.message : `v${snap.version}`;
+    const licenseShort = { trial: `Trial · ${lic.daysLeft}d`, licensed: "Licensed", "licensed-unverified": "Licensed", expired: "Trial ended", development: "Development" }[lic.mode];
+    $("sidebar-foot").textContent = [snap.version ? `v${snap.version}` : "", lic.required ? licenseShort : ""].filter(Boolean).join(" · ");
   }
 
   // ---- shell -------------------------------------------------------------

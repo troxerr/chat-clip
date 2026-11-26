@@ -64,6 +64,12 @@
     return buttons;
   }
 
-  const api = { channelProblem, startBlocker, licenseBanner, buyLabel, bannerButtons };
+  // Shown before a capture is running. Once the recorder is up, the status line takes over.
+  function captureIntro(phase) {
+    if (phase && phase !== "idle" && phase !== "error") return "";
+    return "Start a capture on a live channel. Chat spikes save a vertical clip on their own. Save highlight now keeps a moment the chat missed.";
+  }
+
+  const api = { channelProblem, startBlocker, licenseBanner, buyLabel, bannerButtons, captureIntro };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.StartGuide = api;
 })(typeof window !== "undefined" ? window : globalThis);
