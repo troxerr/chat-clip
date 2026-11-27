@@ -1,12 +1,5 @@
 # ClipSpike
 
-Kick live automatic highlights are being integrated. See [Kick setup and live
-validation status](docs/KICK.md) before using the separate Kick-enabled build. Kick capture needs Google Chrome or Chromium installed.
-
-## Capture Monitor
-
-Open **Monitor…** on Capture (or Command–Shift–M) for live recorder health, chat decisions and per-channel learning. Rate clips with thumbs up/down; right-click for Duplicate / Started Late / Ended Early. **Mark Missed Moment** records a review timestamp. A separate worker logs decisions and tests bounded settings; validated changes apply only on a future capture after enough explicit ratings and later-session validation. Pause or roll back tuning from the monitor. See [Monitoring](docs/MONITORING.md) for evaluation limits, retention and CLI commands.
-
 ClipSpike watches a Twitch channel's chat and saves the moments chat reacts to. A desktop clip is exported, reframed to 1080×1920 with the full video centered over a blurred background, and then either kept on the Mac or uploaded to Dropbox or Google Drive.
 
 - **Local only** — no cloud account; clips stay on the Mac.
@@ -25,6 +18,15 @@ ClipSpike watches a Twitch channel's chat and saves the moments chat reacts to. 
 - **macOS app:** macOS 13.5+. The built app includes Node, Streamlink, and an LGPL FFmpeg runtime; no Homebrew install is required for the app. Running from source still uses the Streamlink/FFmpeg on `PATH`.
 
 > Node 22+ is required because the chat client uses the built-in global `WebSocket`.
+
+## Status
+
+Kick live automatic highlights are being integrated. See [Kick setup and live
+validation status](docs/KICK.md) before using the separate Kick-enabled build. Kick capture needs Google Chrome or Chromium installed.
+
+## Capture Monitor
+
+Open **Monitor…** on Capture (or Command–Shift–M) for live recorder health, chat decisions and per-channel learning. Rate clips with thumbs up/down; right-click for Duplicate / Started Late / Ended Early. **Mark Missed Moment** records a review timestamp. A separate worker logs decisions and tests bounded settings; validated changes apply only on a future capture after enough explicit ratings and later-session validation. Pause or roll back tuning from the monitor. See [Monitoring](docs/MONITORING.md) for evaluation limits, retention and CLI commands.
 
 ## Storage modes
 
@@ -301,6 +303,7 @@ The browser has no build step: `dist/` is the deployed site. Shared browser modu
 ```text
 background.cjs           Recorder, chat, reframe, storage, queue orchestration
 dist/                    Browser dashboard (separate local tool)
+web/                     React site app (Vite); builds to web/dist and is deployed at /app by pages.yml
 lib/manifest.js          Segment-list parsing and clip-window planning
 lib/exporter.js          Async landscape export + JSON sidecar
 lib/reframe.js           9:16 reframe with blurred background

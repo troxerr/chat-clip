@@ -45,6 +45,3 @@ docs/screenshots/
 win/stage/
 win/dist/
 docs/USAGE_LOG.md
-node_modules/
-win/stage/
-win/dist/
