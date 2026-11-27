@@ -1,6 +1,6 @@
 :root {
   --bg: #0e0e10; --panel: #18181b; --panel-2: #1f1f23; --border: #2f2f35;
-  --text: #efeff1; --muted: #adadb8; --accent: #9147ff; --accent-2: #bf94ff;
+  --text: #efeff1; --muted: #adadb8; --accent: #9147ff; --accent-2: #bf94ff; --accent-fill: #9d5cff; --accent-hover: #a46bff; --on-accent: #10091c;
   --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
   --font-body: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: dark;
@@ -32,8 +32,8 @@ a { color: var(--accent-2); text-decoration: none; }
 .hero h1 { font-size: 2.5rem; max-width: 18ch; }
 .hero p { color: var(--muted); max-width: 55ch; }
 .live-pill { color: #ff6b6b; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
-.btn { display: inline-block; background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: .55rem 1rem; font-weight: 600; cursor: pointer; font-size: .9rem; }
-.btn:hover { background: #772ce8; }
+.btn { display: inline-block; background: var(--accent-fill); color: var(--on-accent); border: 0; border-radius: 6px; padding: .55rem 1rem; font-weight: 600; cursor: pointer; font-size: .9rem; }
+.btn:hover { background: var(--accent-hover); }
 .btn-ghost { background: var(--panel-2); color: var(--text); }
 .btn-ghost:hover { background: var(--border); }
 .stats { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
@@ -80,7 +80,7 @@ main:focus-visible { outline: none; }
 
 .demo-badge { color: #f5b942; font-weight: 600; }
 
-.skip-link { position: absolute; left: -999px; top: 0; background: var(--accent); color: #fff; padding: .5rem 1rem; z-index: 10; }
+.skip-link { position: absolute; left: -999px; top: 0; background: var(--accent-fill); color: var(--on-accent); padding: .5rem 1rem; z-index: 10; }
 .skip-link:focus { left: 0; }
 .brand-row { display: flex; align-items: center; justify-content: space-between; }
 .menu-btn { display: none; background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .4rem .8rem; font-size: .9rem; cursor: pointer; }
