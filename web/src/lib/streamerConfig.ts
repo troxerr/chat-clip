@@ -11,7 +11,8 @@ export const DEFAULT_CONFIG: StreamerConfig = {
   backups: [...defaults.backups],
 }
 
-export const MAX_STREAMERS = 25
+// Shared catalog is ~40. Leave room to add a few local backups without dropping defaults on reload.
+export const MAX_STREAMERS = 50
 
 // Twitch logins: 3–25 letters, digits and underscores (legacy accounts like xqc predate the 4-char minimum).
 const LOGIN_RE = /^[a-z0-9_]{3,25}$/

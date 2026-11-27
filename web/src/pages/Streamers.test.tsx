@@ -54,12 +54,13 @@ describe('Streamers page', () => {
   it('removes, reorders and promotes', async () => {
     const user = userEvent.setup()
     renderPage()
-    await user.click(screen.getByRole('button', { name: 'Remove ishowspeed' }))
-    await user.click(screen.getByRole('button', { name: 'Move xqc up' }))
-    expect(backupNames()).toEqual(['xqc', 'kaicenat', 'pokimane'])
-    await user.click(within(screen.getByText('xqc').closest('li')!).getByRole('button', { name: 'Make primary' }))
-    expect(within(screen.getByRole('list', { name: 'Primary streamer' })).getByText('xqc')).toBeInTheDocument()
-    expect(backupNames()).toEqual(['jynxzi', 'kaicenat', 'pokimane'])
+    const [first, second, third] = DEFAULT_CONFIG.backups
+    await user.click(screen.getByRole('button', { name: `Remove ${third}` }))
+    await user.click(screen.getByRole('button', { name: `Move ${second} up` }))
+    expect(backupNames()?.slice(0, 3)).toEqual([second, first, DEFAULT_CONFIG.backups[3]])
+    await user.click(within(screen.getByText(second).closest('li')!).getByRole('button', { name: 'Make primary' }))
+    expect(within(screen.getByRole('list', { name: 'Primary streamer' })).getByText(second)).toBeInTheDocument()
+    expect(backupNames()?.slice(0, 2)).toEqual(['jynxzi', first])
   })
 
   it('restores a saved configuration', async () => {

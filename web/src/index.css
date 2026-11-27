@@ -85,6 +85,7 @@ main:focus-visible { outline: none; }
 .brand-row { display: flex; align-items: center; justify-content: space-between; }
 .menu-btn { display: none; background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: .4rem .8rem; font-size: .9rem; cursor: pointer; }
 .error-banner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; background: #3a1d1d; border: 1px solid #7a3030; color: #ffd6d6; border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; }
+.stale-banner { background: #3a2e14; border: 1px solid #8a6a2f; color: #ffe7b8; border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; }
 .updated { display: block; }
 .layout-cta { display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: 0 0 1rem; font-size: .85rem; }
 .layout-cta a { color: var(--muted); font-weight: 600; }

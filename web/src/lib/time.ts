@@ -1,3 +1,14 @@
+/** Clip JSON older than this should be called out, not only shown as a quiet relative time. */
+export const STALE_AFTER_MS = 2 * 60 * 60 * 1000
+
+/** True only for a parseable timestamp strictly older than two hours. Missing or fresh is not stale. */
+export function isStale(iso: string | null | undefined, now = Date.now()): boolean {
+  if (!iso) return false
+  const t = Date.parse(iso)
+  if (Number.isNaN(t)) return false
+  return now - t > STALE_AFTER_MS
+}
+
 export function timeAgo(iso: string | null, now = Date.now()): string | null {
   if (!iso) return null
   const t = Date.parse(iso)

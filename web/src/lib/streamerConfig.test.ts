@@ -15,7 +15,11 @@ const cfg = { primary: 'jynxzi', backups: ['kaicenat', 'xqc', 'pokimane'] }
 describe('defaults', () => {
   it('come from the shared config file', () => {
     expect(DEFAULT_CONFIG.primary).toBe('jynxzi')
-    expect(DEFAULT_CONFIG.backups).toEqual(['kaicenat', 'xqc', 'ishowspeed', 'pokimane'])
+    expect(DEFAULT_CONFIG.backups[0]).toBe('kaicenat')
+    expect(DEFAULT_CONFIG.backups).toContain('xqc')
+    expect(DEFAULT_CONFIG.backups).toContain('ishowspeed')
+    expect(DEFAULT_CONFIG.backups).toContain('pokimane')
+    expect(DEFAULT_CONFIG.backups).toHaveLength(39)
   })
 })
 

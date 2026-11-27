@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { timeAgo } from '../lib/time'
+import { isStale, timeAgo } from '../lib/time'
 import { useClipStore } from '../store/useClipStore'
 
 export function UpdatedAt() {
@@ -11,6 +11,13 @@ export function UpdatedAt() {
   }, [])
   const ago = timeAgo(generatedAt, now)
   if (!ago) return null
+  if (isStale(generatedAt, now)) {
+    return (
+      <div className="stale-banner" role="status">
+        Clip data is stale. Updated <time dateTime={generatedAt!}>{ago}</time>.
+      </div>
+    )
+  }
   return (
     <span className="meta updated">
       Updated <time dateTime={generatedAt!}>{ago}</time>
