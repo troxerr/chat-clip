@@ -12,12 +12,14 @@ const features = [
   ['7-day trial', 'Capture runs for 7 days. After that, a license is required to keep capturing.'],
 ]
 
-export default function Pro({ config = monetization }: { config?: MonetizationConfig }) {
+export default function Pro({ config = monetization, mac = false }: { config?: MonetizationConfig; mac?: boolean }) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<WaitlistResult | null>(null)
-  const canSubmit = !!(config.waitlist.endpoint || config.waitlist.email)
+  const fallbackAddress = config.waitlist.email || (mac ? 'support@clipspike.com' : '')
+  const canSubmit = !!(config.waitlist.endpoint || fallbackAddress)
+  const signupMail = mailtoHref(fallbackAddress, email.trim(), [], 'ClipSpike for macOS waitlist')
 
   useEffect(() => {
     if (canSubmit) track('pro_waitlist_view', undefined, config)
@@ -26,58 +28,70 @@ export default function Pro({ config = monetization }: { config?: MonetizationCo
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const data = new FormData(e.currentTarget)
-    if (data.get('_gotcha')) return
+    if (busy || data.get('_gotcha')) return
     if (!isEmail(email)) {
       setError('Enter a valid email address.')
       return
     }
     setError('')
     setBusy(true)
-    const r = await joinWaitlist(email.trim(), config)
+    const r = await joinWaitlist(email.trim(), {
+      ...config,
+      waitlist: { ...config.waitlist, email: fallbackAddress },
+    }, fetch, { source: 'clipspike-macos' })
     setBusy(false)
     setResult(r)
     if (r !== 'unavailable') track('pro_waitlist_submit', { via: r }, config)
-    if (r === 'mailto') window.location.href = mailtoHref(config.waitlist.email, email.trim())
+    if (r === 'mailto' && !mac) window.location.href = signupMail
   }
 
   return (
     <>
-      <h1>ClipSpike Pro</h1>
-      <p className="meta">
-        Web clip browsing stays free. Pro is {publicOffer.priceLabel} {publicOffer.billing} for the Windows app.
-        The app includes a {publicOffer.trialDays}-day trial, then the license is required to keep capturing.
-        One license covers {publicOffer.computers} computers.
-      </p>
-      <ul className="pro-features">
-        {features.map(([t, d]) => (
-          <li key={t}>
-            <strong>{t}</strong>
-            <span>{d}</span>
-          </li>
-        ))}
-      </ul>
-      {config.checkoutUrl ? (
-        <p>
-          <a
-            className="btn"
-            href={config.checkoutUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => track('pro_checkout_click', undefined, config)}
-          >
-            Get ClipSpike Pro
-          </a>
-        </p>
-      ) : null}
+      <h1>{mac ? 'ClipSpike for macOS waitlist' : 'ClipSpike Pro'}</h1>
+      {mac ? (
+        <p className="meta">Get an email when ClipSpike is available for macOS.</p>
+      ) : (
+        <>
+          <p className="meta">
+            Web clip browsing stays free. Pro is {publicOffer.priceLabel} {publicOffer.billing} for the Windows app.
+            The app includes a {publicOffer.trialDays}-day trial, then the license is required to keep capturing.
+            One license covers {publicOffer.computers} computers.
+          </p>
+          <ul className="pro-features">
+            {features.map(([t, d]) => (
+              <li key={t}>
+                <strong>{t}</strong>
+                <span>{d}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="row">
+            <a className="btn" href="/windows.html" onClick={() => track('windows_trial_click', { entry: 'pro' }, config)}>
+              Download free trial
+            </a>
+            {config.checkoutUrl && (
+              <a
+                className="btn btn-ghost"
+                href={config.checkoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => track('pro_checkout_click', { entry: 'pro' }, config)}
+              >
+                Get ClipSpike Pro
+              </a>
+            )}
+          </div>
+        </>
+      )}
       {canSubmit ? (
-        <section className="waitlist" aria-labelledby="waitlist-h">
-          <h2 id="waitlist-h">Join the waitlist</h2>
+        <section className="waitlist" aria-label={mac ? 'macOS signup form' : undefined} aria-labelledby={mac ? undefined : 'waitlist-h'}>
+          {!mac && <h2 id="waitlist-h">Join the macOS waitlist</h2>}
           {result === 'sent' ? (
             <p role="status" className="ok">Thanks! You&apos;re on the list.</p>
           ) : result === 'mailto' ? (
             <p role="status" className="ok">
-              Your email app should open. If not,{' '}
-              <a href={mailtoHref(config.waitlist.email, email.trim())}>send the email manually</a>.
+              {mac ? 'To finish joining, ' : 'If your email app did not open, '}
+              <a href={signupMail}>{mac ? 'send your request by email' : 'send the email manually'}</a>.
             </p>
           ) : (
             <form onSubmit={onSubmit} noValidate>
@@ -100,14 +114,14 @@ export default function Pro({ config = monetization }: { config?: MonetizationCo
                 <p role="alert" className="field-error">Could not join right now. Please try again later.</p>
               )}
               <button type="submit" className="btn" disabled={busy} onClick={() => track('pro_cta_click', undefined, config)}>
-                {busy ? 'Joining…' : 'Notify me'}
+                {busy ? 'Joining…' : mac && !config.waitlist.endpoint ? 'Continue by email' : 'Notify me'}
               </button>
-              <p className="meta">We only use your email to tell you about Pro. See the Privacy Policy.</p>
+              <p className="meta">We only use your email to tell you about macOS availability. <a href="/privacy.html">Privacy Policy</a></p>
             </form>
           )}
         </section>
       ) : null}
-      <LiveAlertsSignup config={config} />
+      {!mac && <LiveAlertsSignup config={config} />}
     </>
   )
 }

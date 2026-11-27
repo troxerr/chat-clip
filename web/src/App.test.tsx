@@ -20,19 +20,39 @@ describe('routing', () => {
 
   it('renders Home at /', () => {
     renderAt('/')
-    expect(screen.getByRole('heading', { name: /Never miss the moment/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Recent Twitch highlights' })).toBeInTheDocument()
     expect(screen.getByText('Top highlights')).toBeInTheDocument()
   })
 
   it('filters clips by streamer and sort on /clips', async () => {
     const user = userEvent.setup()
     renderAt('/clips')
-    expect(screen.getByRole('heading', { name: 'Highlights' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Browse recent clips' })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('10 highlights')
     await user.selectOptions(screen.getByLabelText('Streamer'), 'jynxzi')
     expect(screen.getByRole('status')).toHaveTextContent('4 highlights')
     await user.type(screen.getByLabelText('Search clips'), 'zzz')
     expect(screen.getByText('No highlights match “zzz”.')).toBeInTheDocument()
+  })
+
+  it('restores and updates a quick time range', async () => {
+    const user = userEvent.setup()
+    renderAt('/clips?range=week')
+    expect(screen.getByRole('button', { name: 'Past 7 days' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Any time' }))
+    expect(screen.getByRole('button', { name: 'Any time' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('status')).toHaveTextContent('10 highlights')
+  })
+
+  it('offers a macOS waitlist with an email fallback', async () => {
+    const user = userEvent.setup()
+    renderAt('/pro?platform=mac')
+    expect(screen.getByRole('heading', { name: 'ClipSpike for macOS waitlist' })).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Email address'), 'viewer@example.com')
+    await user.click(screen.getByRole('button', { name: 'Continue by email' }))
+    expect(screen.getByRole('link', { name: 'send your request by email' })).toHaveAttribute(
+      'href', expect.stringContaining('mailto:support@clipspike.com?subject=ClipSpike%20for%20macOS%20waitlist'),
+    )
   })
 
   it('restores filters from URL params on /clips', () => {
@@ -101,7 +121,7 @@ describe('routing', () => {
     await user.click(screen.getByRole('link', { name: 'About' }))
     expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Home' }))
-    expect(screen.getByRole('heading', { name: /Never miss/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Recent Twitch highlights' })).toBeInTheDocument()
   })
 })
 
@@ -171,7 +191,7 @@ describe('data states', () => {
   it('links the clip browser, capture page, and Pro from the layout', () => {
     renderAt('/')
     expect(screen.getByRole('link', { name: 'Browse Twitch clips' })).toHaveAttribute('href', '/clips')
-    expect(screen.getByRole('link', { name: 'Capture your stream' })).toHaveAttribute('href', 'https://clipspike.com/capture.html')
+    expect(screen.getByRole('link', { name: 'Capture your stream' })).toHaveAttribute('href', '/capture.html')
     expect(screen.getByRole('link', { name: 'ClipSpike Pro' })).toHaveAttribute('href', '/pro')
   })
 

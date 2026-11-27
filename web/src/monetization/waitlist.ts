@@ -12,10 +12,10 @@ export interface WaitlistExtras {
   source?: string
 }
 
-export function mailtoHref(address: string, email: string, streamers: string[] = []) {
+export function mailtoHref(address: string, email: string, streamers: string[] = [], subject = 'ClipSpike Pro waitlist') {
   const alerts = streamers.length ? ` I want live alerts for: ${streamers.join(', ')}.` : ''
-  const body = `Please add ${email} to the ClipSpike Pro waitlist.${alerts}`
-  return `mailto:${address}?subject=${encodeURIComponent('ClipSpike Pro waitlist')}&body=${encodeURIComponent(body)}`
+  const body = `Please add ${email} to the ${subject}.${alerts}`
+  return `mailto:${address}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }
 
 /** Posts to the configured endpoint (e.g. Formspree); falls back to mailto, else reports unavailable. */

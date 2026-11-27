@@ -11,12 +11,13 @@ const setup = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5
 const portable = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64-portable.exe'
 
 describe('site/windows.html', () => {
-  it('links the published 0.1.5 trial and the Polar checkout, and links release signing details', () => {
+  it('links the published 0.1.5 trial and the Polar checkout, and warns that the build is unsigned', () => {
     expect(html).toContain(setup)
     expect(html).toContain(portable)
     expect(html).toContain(publicOffer.checkoutUrl)
+    expect(html.indexOf(setup)).toBeLessThan(html.indexOf(publicOffer.checkoutUrl))
     expect(html).toContain(publicOffer.priceLabel)
-    expect(html).toMatch(/signing status/i)
+    expect(html).toMatch(/UNSIGNED/)
     expect(html).toMatch(/SmartScreen/)
     expect(html).not.toContain('releases/latest')
     expect(html).not.toContain('coming soon')
@@ -33,10 +34,13 @@ describe('site/windows.html', () => {
 })
 
 describe('ClipSpike landing pages', () => {
-  it('links the viewer and creator paths from the homepage', () => {
+  it('links the viewer and creator paths and puts the trial before checkout', () => {
     expect(home).toContain('href="/app/clips/"')
     expect(home).toContain('href="/capture.html"')
-    expect(home).not.toContain(publicOffer.checkoutUrl)
+    expect(home).toContain('class="btn primary" href="windows.html"')
+    expect(home).toContain(`href="${publicOffer.checkoutUrl}" data-checkout="homepage"`)
+    expect(home.indexOf('class="btn primary" href="windows.html"'))
+      .toBeLessThan(home.indexOf(`href="${publicOffer.checkoutUrl}"`))
   })
 
   it('shows Windows pricing, the trial link, and a downloadable sample on the capture page', () => {
@@ -46,7 +50,7 @@ describe('ClipSpike landing pages', () => {
     expect(capture).toContain('href="media/sample-highlight.mp4" download')
     expect(capture).not.toContain(setup)
     expect(capture).not.toContain(portable)
-    expect(capture).toContain("release notes")
+    expect(capture).toMatch(/unsigned/i)
     expect(capture).not.toContain('Mac release coming soon')
   })
 })

@@ -29,8 +29,7 @@ export default function ConsentBanner({ config = monetization }: { config?: Mone
     <section className="consent" role="region" aria-labelledby="consent-h">
       <h2 id="consent-h">Your privacy choices</h2>
       <p>
-        ClipSpike uses optional cookies for advertising and anonymous analytics. Nothing optional loads until you
-        choose. Twitch embeds are only loaded when you press play and are governed by Twitch&apos;s own policies.{' '}
+        Advertising and analytics load only if you allow them. Twitch players follow Twitch&apos;s own policies. They load when you press play or when you open a featured watch page.{' '}
         <Link to="/privacy">Privacy Policy</Link>
       </p>
       {custom && (

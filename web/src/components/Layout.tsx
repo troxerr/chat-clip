@@ -72,7 +72,7 @@ export default function Layout() {
         <div className="content">
           <nav className="layout-cta" aria-label="Product">
             <Link to="/clips">Browse Twitch clips</Link>
-            <a href="https://clipspike.com/capture.html">Capture your stream</a>
+            <a href="/capture.html">Capture your stream</a>
             <Link to="/pro">ClipSpike Pro</Link>
           </nav>
           <ErrorBanner />
@@ -84,6 +84,7 @@ export default function Layout() {
             {hasSponsoredContent(monetization) && 'Some links on ClipSpike are sponsored or affiliate links; we may earn a commission. '}
             Not affiliated with or endorsed by Twitch.
           </p>
+          <ConsentBanner />
           <nav aria-label="Footer" className="footer-links">
             <Link to="/privacy">Privacy</Link>
             <Link to="/terms">Terms</Link>
@@ -93,7 +94,6 @@ export default function Layout() {
           </nav>
         </footer>
       </main>
-      <ConsentBanner />
     </div>
   )
 }

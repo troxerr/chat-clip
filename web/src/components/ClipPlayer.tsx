@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Clip } from '../data/clips'
 import { scoreTier } from '../lib/clips'
 import { track } from '../monetization/analytics'
@@ -7,11 +7,16 @@ import { clipEmbedUrl } from '../lib/embed'
 /** 16:9 player: a poster until clicked, then the Twitch embed iframe is mounted. */
 export default function ClipPlayer({ clip, preloadEmbed = false }: { clip: Clip; preloadEmbed?: boolean }) {
   const [playing, setPlaying] = useState(false)
+  const frame = useRef<HTMLIFrameElement>(null)
+  useEffect(() => {
+    if (playing) frame.current?.focus()
+  }, [playing])
   const slug = clip.slug
   return (
     <div className="player" style={{ ['--hue' as string]: clip.hue }}>
       {slug && (playing || preloadEmbed) && (
         <iframe
+          ref={frame}
           className="player-frame"
           src={clipEmbedUrl(slug, playing)}
           tabIndex={playing ? undefined : -1}

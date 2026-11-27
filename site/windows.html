@@ -16,17 +16,13 @@
   <main class="wrap legal" id="windows-download">
     <h1>ClipSpike for Windows</h1>
     <p>Windows 10 or 11, 64-bit. The license is $39, one-time, and covers two computers. The app includes a 7-day trial, then a license is required to start a new capture.</p>
-    <p>
-      <a class="btn" href="https://buy.polar.sh/polar_cl_per43WQXkviGSWYLBkNSb86XNDIVkW3ZcDc7z0WOJ7G">Get ClipSpike Pro — $39</a>
+    <p class="cta-row">
+      <a class="btn primary" href="https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64.exe" data-download="setup">Download free trial</a>
+      <a class="btn" href="https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64-portable.exe" data-download="portable">Download portable</a>
     </p>
+    <p><span class="status" id="windows-status">UNSIGNED. SmartScreen will warn.</span></p>
     <p>The Windows trial is version 0.1.5. <a href="https://github.com/troxerr/chat-clip/releases/tag/win-v0.1.5">Read the GitHub release notes</a>.</p>
-    <p>
-      <a class="btn primary" href="https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64.exe" data-download="setup">Download setup (ClipSpike-0.1.5-x64.exe)</a>
-    </p>
-    <p>
-      <a class="btn" href="https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64-portable.exe" data-download="portable">Download portable (ClipSpike-0.1.5-x64-portable.exe)</a>
-    </p>
-    <p><span class="status" id="windows-status">Check the release notes for signing status.</span></p>
+    <p>Ready to keep capturing? <a class="purchase-link" href="https://buy.polar.sh/polar_cl_per43WQXkviGSWYLBkNSb86XNDIVkW3ZcDc7z0WOJ7G" data-checkout="windows">Buy a license for $39</a>.</p>
     <h2>Save your first clip</h2>
     <ol>
       <li>Open ClipSpike and enter a live Twitch channel you have permission to record.</li>
@@ -38,10 +34,10 @@
       <li><strong>Setup (<code>ClipSpike-0.1.5-x64.exe</code>)</strong> — installs per user, no admin rights needed, adds a Start menu entry, and updates itself.</li>
       <li><strong>Portable (<code>ClipSpike-0.1.5-x64-portable.exe</code>)</strong> — a single exe you run from anywhere, with no install. It never updates itself; download a newer exe to upgrade. Settings and clips still live in <code>%APPDATA%\ClipSpike</code>.</li>
     </ul>
-    <h2>About the SmartScreen warning</h2>
-    <p>An <strong>UNSIGNED</strong> release can trigger an unknown-publisher warning (“Windows protected your PC”). Check the GitHub release notes before opening the installer.</p>
+    <h2 id="smartscreen">About the SmartScreen warning</h2>
+    <p>This release is <strong>UNSIGNED</strong>: no code-signing certificate was configured. Windows SmartScreen will show an unknown-publisher warning (“Windows protected your PC”). That does not mean the file was flagged as malware.</p>
     <p>If you trust the download (you got it from the link on this page), choose <strong>More info</strong>, then <strong>Run anyway</strong>.</p>
-    <p>There is no public Mac release. Browse clips in the browser at <a href="/app/clips/">clipspike.com/app/clips</a>.</p>
+    <p><a href="/app/pro/?platform=mac">Join the macOS waitlist</a> or browse clips in the browser at <a href="/app/clips/">clipspike.com/app/clips</a>.</p>
   </main>
   <footer><div class="wrap foot"><div>© 2026 ClipSpike.</div><div class="foot-links"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="eula.html">EULA</a></div></div></footer>
 </body>

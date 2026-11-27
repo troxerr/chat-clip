@@ -24,11 +24,9 @@ export default function Home() {
   return (
     <>
       <section className="hero">
-        <span className="live-pill">● Live highlight detection</span>
-        <h1>Never miss the moment chat loses it.</h1>
+        <h1>Recent Twitch highlights</h1>
         <p>
-          Browse the moments a Twitch chat reacts to. The Windows app watches chat and saves the 30 seconds
-          around a spike, a raid, a moderator&apos;s !clip, or Save highlight.
+          Find clips by streamer, game, or date, and follow channels to keep their recent highlights together.
         </p>
         <Link className="btn" to="/clips">
           Browse highlights

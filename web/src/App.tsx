@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useSearchParams } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Clips from './pages/Clips'
@@ -12,6 +12,12 @@ import NotFound from './pages/NotFound'
 import Streamer from './pages/Streamer'
 import RouteHead from './components/RouteHead'
 
+function ProRoute() {
+  const [params] = useSearchParams()
+  const mac = params.get('platform') === 'mac'
+  return <Pro key={mac ? 'mac' : 'pro'} mac={mac} />
+}
+
 export default function App() {
   return (
     <>
@@ -24,7 +30,7 @@ export default function App() {
           <Route path="streamers" element={<Streamers />} />
           <Route path="streamer/:login" element={<Streamer />} />
           <Route path="about" element={<About />} />
-          <Route path="pro" element={<Pro />} />
+          <Route path="pro" element={<ProRoute />} />
           <Route path="privacy" element={<Privacy />} />
           <Route path="terms" element={<Terms />} />
           <Route path="*" element={<NotFound />} />

@@ -212,7 +212,7 @@ describe('checkout URL', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
     expect(screen.queryByText(/Ad-free/)).toBeNull()
     await userEvent.click(link)
-    expect(spy).toHaveBeenCalledWith('pro_checkout_click', undefined)
+    expect(spy).toHaveBeenCalledWith('pro_checkout_click', { props: { entry: 'pro' } })
   })
 })
 
@@ -228,16 +228,29 @@ describe('waitlist', () => {
     expect(await joinWaitlist('u@x.co', monetization, bad as never)).toBe('unavailable')
   })
 
-  it('Pro page hides the waitlist until it is configured, then validates email', async () => {
+  it('validates email and submits a macOS signup when the waitlist is configured', async () => {
     const { unmount } = render(<Pro config={monetization} />)
-    expect(screen.queryByRole('heading', { name: 'Join the waitlist' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Join the macOS waitlist' })).toBeNull()
     expect(screen.queryByText(/isn.t open yet/)).toBeNull()
     unmount()
     render(<Pro config={withEndpoint} />)
-    expect(screen.getByRole('heading', { name: 'Join the waitlist' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Join the macOS waitlist' })).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Email address'), 'nope')
     await userEvent.click(screen.getByRole('button', { name: 'Notify me' }))
     expect(screen.getByRole('alert')).toHaveTextContent('valid email')
+    const send = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }))
+    try {
+      const email = screen.getByLabelText('Email address')
+      await userEvent.clear(email)
+      await userEvent.type(email, 'creator@example.com')
+      await userEvent.click(screen.getByRole('button', { name: 'Notify me' }))
+      expect(await screen.findByText(/on the list/)).toBeInTheDocument()
+      expect(send).toHaveBeenCalledWith(withEndpoint.waitlist.endpoint, expect.objectContaining({
+        body: JSON.stringify({ email: 'creator@example.com', source: 'clipspike-macos' }),
+      }))
+    } finally {
+      send.mockRestore()
+    }
   })
 })
 

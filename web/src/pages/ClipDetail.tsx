@@ -55,6 +55,7 @@ export default function ClipDetail() {
   return (
     <>
       <Link to="/clips" className="back">← All highlights</Link>
+      <h1>{clip.title}</h1>
       <ClipPlayer
         key={clip.id}
         clip={clip}
@@ -63,7 +64,11 @@ export default function ClipDetail() {
           document.head.querySelector('meta[name="robots"]')?.getAttribute('content') === 'index,follow' &&
           document.head.querySelector('link[rel="canonical"]')?.getAttribute('href') === canonicalClipUrl(clip.id)}
       />
-      <h1>{clip.title}</h1>
+      {clip.url && (
+        <a className="back" href={clip.url} target="_blank" rel="noreferrer">
+          Open on Twitch
+        </a>
+      )}
       <p className="meta">
         <span className="streamer">{clip.streamer}</span> · {clip.game} ·{' '}
         {new Date(clip.createdAt).toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' })}
@@ -78,11 +83,6 @@ export default function ClipDetail() {
         <div><dt>Views</dt><dd>{formatViews(clip.views)}</dd></div>
       </dl>
       <div className="row">
-        {clip.url && (
-          <a className="btn" href={clip.url} target="_blank" rel="noreferrer">
-            Open on Twitch
-          </a>
-        )}
         <button className="btn" onClick={() => toggleFavorite(clip.id)} aria-pressed={clip.favorite}>
           {clip.favorite ? '★ Saved' : '☆ Save'}
         </button>
@@ -100,14 +100,14 @@ export default function ClipDetail() {
         </button>
       </div>
       <p className="toast" role="status" aria-live="polite">{toast}</p>
-      <SupportCard />
-      <AffiliateCards />
       {related.length > 0 && (
         <section aria-labelledby="related-heading">
           <h2 id="related-heading">More from {clip.streamer}</h2>
           <div className="grid">{related.map((item) => <ClipCard key={item.id} clip={item} />)}</div>
         </section>
       )}
+      <SupportCard />
+      <AffiliateCards />
     </>
   )
 }

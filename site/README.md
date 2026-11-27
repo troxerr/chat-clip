@@ -6,7 +6,7 @@ Static marketing site for the ClipSpike apps (macOS and Windows). There is no bu
 
 | File | Purpose |
 |---|---|
-| `index.html` | Landing page. Leads with the live clip browser, then the $39 Windows license. The trial installer is on `windows.html`. Mac is described as unpublished. |
+| `index.html` | Landing page. Leads with the Windows trial, $39 Polar license and interactive chat demo. Also links the Mac waitlist and live clip browser. |
 | `windows.html` | Windows download page. The $39 Polar checkout is first. The published `win-v0.1.5` setup and portable assets follow, with the unsigned/SmartScreen warning. |
 | `privacy.html`, `terms.html`, `eula.html` | Privacy policy, terms, and EULA for the Windows license. |
 
@@ -28,7 +28,7 @@ The clip browser is live at `/app/` and `/app/clips/`. Windows `win-v0.1.5` is a
 | Platform | On the site now | To go live |
 |---|---|---|
 | Windows | The homepage links the Polar checkout and `windows.html`. That page links `ClipSpike-0.1.5-x64.exe` and `ClipSpike-0.1.5-x64-portable.exe` on the published `win-v0.1.5` GitHub release. The release is unsigned; the page says SmartScreen will warn. | When a newer non-draft Windows release exists, replace those exact asset URLs and the guard test `web/src/monetization/siteWindows.test.ts`. Do not host binaries in this repo. Do not link a draft. A signed installer needs an Authenticode certificate in the release secrets; until then the SmartScreen note stays. |
-| Mac | Honest “no public Mac release” copy. No download link. | Link a Mac build only after a public release exists. Do not call a build notarized unless it is. |
+| Mac | Waitlist on `/app/pro/?platform=mac`, with a support email fallback. | Link a Mac build only after a public release exists. Do not call a build notarized unless it is. |
 
 Never link GitHub's `/releases/latest` or a draft release. Release versions are immutable: the workflow refuses to overwrite an installer that is already on the feed, and a `win-v*` tag must match the version in `win/package.json`. See `docs/WINDOWS_RELEASE.md`.
 
@@ -43,7 +43,7 @@ Never link GitHub's `/releases/latest` or a draft release. Release versions are 
 
 - Windows: finish the release steps in `docs/WINDOWS_RELEASE.md` (update feed host, signing decision, production Polar values, tag build), run the smoke test, then link the installer.
 - Mac: link the notarized DMG.
-- The pricing card and `/pro` use the Polar checkout and the $39 price in `web/src/monetization/offer.ts`. Point the Mac app's `HDCheckoutURL` at that same checkout when a Mac release exists.
+- The pricing card and `/pro` use the Polar checkout and the $39 price in `web/src/monetization/offer.ts`. Set the Pages repository variable `VITE_WAITLIST_ENDPOINT` to accept email submissions with source `clipspike-macos`. Set `VITE_WAITLIST_EMAIL` to override the default Mac fallback (`support@clipspike.com`). Point the Mac app's `HDCheckoutURL` at that same checkout when a Mac release exists.
 - Have the privacy policy, terms, EULA, refund policy and third-party notices read by a lawyer when the business details change.
 - Add real screenshots and a demo video. The current hero is a CSS mockup so no personal desktop content is exposed.
 - Add analytics only if the privacy policy and consent flow cover it.

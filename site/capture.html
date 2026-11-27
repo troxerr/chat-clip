@@ -11,10 +11,12 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="home.css">
   <link rel="canonical" href="https://clipspike.com/capture.html">
+  <script src="chat-demo.js" defer></script>
   <script src="analytics.js" defer></script>
 </head>
 <body>
 
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="wrap top">
     <a class="brand" href="/" aria-label="ClipSpike home">
       <img src="icon.png" alt="" width="26" height="26">
@@ -30,7 +32,7 @@
     </nav>
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <div class="wrap hero">
       <div class="hero-copy">
         <span class="label">ClipSpike for Windows</span>
@@ -41,37 +43,42 @@
           <a class="btn" href="#sample">Try a sample session</a>
         </div>
         <p class="fine">Windows 10 or 11 (64-bit) · 7-day trial · $39 one-time</p>
+        <a class="capture-link" href="/app/pro/?platform=mac">Join the macOS waitlist</a>
       </div>
 
-      <div class="desk">
-        <div class="desk-head">
-          <span class="live"><i></i>your_channel · watching chat</span>
-          <span class="label">Simulated chat</span>
-        </div>
+      <section class="desk chat-demo" aria-labelledby="demo-title" data-chat-demo>
+        <div class="desk-head"><h2 id="demo-title">Chat spike demo</h2><span class="label">Simulated Twitch chat</span></div>
         <div class="meter">
-          <div class="meter-cap">
-            <span class="label">Unique chatters per 5 s window</span>
-            <span class="label" id="clock">21:44:06</span>
+          <p class="label meter-cap">Unique chatters per 5 seconds</p>
+          <div class="plot" aria-hidden="true">
+            <div class="bars" data-bars></div>
+            <div class="thr"><b>Threshold · 24</b></div>
           </div>
-          <div class="plot" id="plot" role="img" aria-label="Bar chart of simulated chat activity. A spike above the threshold marks a highlight, and the 30 seconds around it are saved as a clip.">
-            <div class="tick" style="bottom:100%"><b>40</b></div>
-            <div class="tick" style="bottom:50%"><b>20</b></div>
-            <div class="bars" id="bars"></div>
-            <div class="thr" id="thr"><b>spike threshold</b></div>
-          </div>
-          <div class="plot-foot"><span>3 min ago</span><span>now</span></div>
+          <div class="plot-foot" aria-hidden="true"><span>Earlier</span><span>Now</span></div>
         </div>
-        <div class="out">
-          <div>
-            <span class="label">Saved this session</span>
-            <ul class="clips" id="clips" aria-live="polite"></ul>
+        <div class="demo-output">
+          <div class="demo-controls">
+            <div class="cta-row" hidden data-demo-controls>
+              <button class="btn small primary" type="button" data-trigger="spike" aria-disabled="false">Simulate chat spike</button>
+              <button class="btn small" type="button" data-trigger="raid" aria-disabled="false">Trigger raid</button>
+            </div>
+            <p data-demo-status role="status">A chat spike crosses 24 unique chatters. A raid can trigger a clip on its own.</p>
+            <div class="demo-window">
+              <span>−15 s</span><span>Trigger</span><span>+15 s</span>
+              <progress max="30" value="0" aria-label="30-second capture window"></progress>
+            </div>
+            <p class="fine">30-second window · 15 s before and 15 s after</p>
           </div>
-          <div class="phone-wrap">
-            <div class="phone" aria-hidden="true"><div class="frame"></div></div>
-            <div class="phone-cap">1080 × 1920</div>
-          </div>
+          <figure class="demo-preview">
+            <div class="demo-video">
+              <video hidden controls playsinline muted preload="none" width="360" height="640" aria-label="Sample vertical highlight"></video>
+              <span data-preview-placeholder>Run the demo to preview</span>
+            </div>
+            <figcaption>9:16 · Sample clip</figcaption>
+          </figure>
         </div>
-      </div>
+        <noscript><p class="demo-nojs"><a href="/media/sample-highlight.mp4">Watch the vertical sample clip</a></p></noscript>
+      </section>
     </div>
 
     <section id="sample">
@@ -120,7 +127,7 @@
           <li><span class="num">00:30</span><h3>Capture</h3><p>The recorder keeps a rolling buffer, so each clip holds 15 seconds before the trigger and 15 after. The moment sits in the middle.</p></li>
           <li><span class="num">9:16</span><h3>Reframe</h3><p>Your full frame stays centered over a blurred, scaled copy of itself. Nothing is cropped off the sides.</p></li>
           <li><span class="num">.mp4</span><h3>Deliver</h3><p>The vertical clip is kept on this PC or uploaded to your Dropbox or Google Drive, under a folder for the channel.</p></li>
-          <li><span class="num">.json</span><h3>Record</h3><p>Each clip gets a sidecar file with its trigger, score, reaction counts, top emotes and where it was stored.</p></li>
+          <li><span class="num">.json</span><h3>Record</h3><p>Each clip gets a sidecar file with its trigger, score, reaction counts, top Twitch and 7TV emotes, and where it was stored.</p></li>
         </ol>
       </div>
     </section>
@@ -176,8 +183,8 @@
             <li>Local, Dropbox, and Google Drive storage</li>
             <li>Upload queue that retries across restarts</li>
           </ul>
-          <a class="btn primary" href="https://buy.polar.sh/polar_cl_per43WQXkviGSWYLBkNSb86XNDIVkW3ZcDc7z0WOJ7G">Get ClipSpike Pro</a>
-          <a class="btn" href="windows.html">Download the trial</a>
+          <a class="btn primary" href="windows.html">Download free trial</a>
+          <a class="purchase-link" href="https://buy.polar.sh/polar_cl_per43WQXkviGSWYLBkNSb86XNDIVkW3ZcDc7z0WOJ7G" data-checkout="capture">Buy a license</a>
         </div>
       </div>
     </section>
@@ -201,13 +208,12 @@
     <section class="get" id="download">
       <div class="wrap">
         <h2>Use it today</h2>
-        <p>Start with the Windows trial. The download page links the published installer and release notes.</p>
+        <p>Try automatic highlights on your own Windows PC for seven days. You can buy a license when you’re ready to keep capturing.</p>
         <div class="cta-row">
-          <a class="btn primary" href="https://buy.polar.sh/polar_cl_per43WQXkviGSWYLBkNSb86XNDIVkW3ZcDc7z0WOJ7G">Get ClipSpike Pro</a>
+          <a class="btn primary" href="windows.html">Download free trial</a>
           <a class="btn" href="/app/clips/">Browse clips</a>
-          <a class="btn" href="windows.html">Windows trial download</a>
         </div>
-        <p>There is no public Mac release. The trial installer and the SmartScreen steps are on the <a href="windows.html">Windows download page</a>.</p>
+        <p>The Windows installer is unsigned. See the SmartScreen steps on the <a href="windows.html">Windows download page</a>. There is no public Mac release.</p>
       </div>
     </section>
   </main>
@@ -219,82 +225,5 @@
     </div>
   </footer>
 
-  <script>
-  (function () {
-    var N = 36, MAX = 40, TICK_MS = 900;
-    var bars = document.getElementById("bars"), thrEl = document.getElementById("thr");
-    var clipsEl = document.getElementById("clips"), clockEl = document.getElementById("clock");
-
-    // Seeded generator so the first frame is the same for everyone.
-    var seed = 20261116;
-    function rnd() { seed = (seed + 0x6D2B79F5) | 0; var t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
-
-    var win = [];            // { v, trig, clip }
-    var clips = [];          // newest first
-    var sinceSpike = 6, nextSpike = 26, spikeQueue = [];
-    var cooldown = 0, pending = null, thr = 0;
-    var secs = 21 * 3600 + 41 * 60 + 6;
-
-    function median(a) { var s = a.slice().sort(function (x, y) { return x - y; }); var m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
-    function pad(n) { return (n < 10 ? "0" : "") + n; }
-    function hms(s, sep) { return pad(Math.floor(s / 3600) % 24) + sep + pad(Math.floor(s / 60) % 60) + sep + pad(s % 60); }
-
-    function step() {
-      secs += 5; sinceSpike++;
-      if (!spikeQueue.length && sinceSpike >= nextSpike) { spikeQueue = [27, 35, 22, 14]; sinceSpike = 0; nextSpike = 24 + Math.floor(rnd() * 8); }
-      var v = spikeQueue.length ? spikeQueue.shift() + Math.floor(rnd() * 4) : 6 + Math.floor(rnd() * 7);
-
-      // Baseline from earlier windows: median plus a multiple of the median absolute deviation.
-      var prior = win.slice(-24).map(function (w) { return w.v; });
-      var w = { v: v, trig: false, clip: false };
-      if (prior.length >= 12) {
-        var med = median(prior);
-        var mad = median(prior.map(function (x) { return Math.abs(x - med); }));
-        thr = med + 5 * Math.max(mad, 1.5);
-        if (cooldown === 0 && !pending && v > thr) {
-          w.trig = true; cooldown = 12;
-          for (var i = Math.max(0, win.length - 3); i < win.length; i++) win[i].clip = true;
-          pending = { left: 2, at: secs, v: v };
-        }
-      }
-      if (!w.trig && pending) {
-        w.clip = true; pending.left--;
-        if (pending.left === 0) {
-          clips.unshift({ file: "your_channel-20261116-" + hms(pending.at, "") + "-auto-9x16.mp4", meta: pending.v + " chatters in 5 s · 30 s clip · saved " + hms(secs, ":"), fresh: true });
-          clips = clips.slice(0, 3); pending = null;
-        }
-      }
-      if (cooldown > 0 && !w.trig) cooldown--;
-      win.push(w); if (win.length > N) win.shift();
-    }
-
-    function draw() {
-      bars.textContent = "";
-      win.forEach(function (w) {
-        var b = document.createElement("span");
-        b.style.height = Math.min(100, (w.v / MAX) * 100) + "%";
-        if (w.trig) b.className = "trig"; else if (w.clip) b.className = "clip";
-        bars.appendChild(b);
-      });
-      thrEl.style.bottom = Math.min(100, (thr / MAX) * 100) + "%";
-      clockEl.textContent = hms(secs, ":");
-      clipsEl.textContent = "";
-      clips.forEach(function (c) {
-        var li = document.createElement("li"); if (c.fresh) li.className = "new";
-        var f = document.createElement("span"); f.className = "file"; f.textContent = c.file;
-        var m = document.createElement("span"); m.className = "meta"; m.textContent = c.meta;
-        li.appendChild(f); li.appendChild(m); clipsEl.appendChild(li);
-        c.fresh = false;
-      });
-    }
-
-    // Three minutes of history, so the page is complete before anything moves.
-    for (var i = 0; i < N; i++) step();
-    draw();
-
-    var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!still) setInterval(function () { if (!document.hidden) { step(); draw(); } }, TICK_MS);
-  })();
-  </script>
 </body>
 </html>

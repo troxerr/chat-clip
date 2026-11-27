@@ -54,10 +54,9 @@ export default function Privacy() {
         If a support link is shown, it leads to a third-party site (such as Ko-fi) that has its own privacy practices. Nothing is sent to it
         unless you click.
       </p>
-      <h2>Pro waitlist</h2>
+      <h2>macOS waitlist and live alerts</h2>
       <p>
-        If you join the waitlist, your email address is sent to our form provider (Formspree) or, if that fails, to our inbox by your own email app and used only to
-        notify you about ClipSpike Pro. Ask us to delete it at any time.
+        If you join the macOS waitlist or sign up for live alerts, your email address goes to our form provider (Formspree, when configured) or to our inbox through your email app. We use it for the updates you requested. Ask us to delete it at any time.
       </p>
       <h2>Your rights</h2>
       <p>Depending on where you live (GDPR, UK GDPR, CCPA/CPRA) you may request access, correction, deletion, or object to processing. Contact the operator above.</p>

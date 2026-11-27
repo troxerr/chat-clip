@@ -3,54 +3,144 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>ClipSpike — Watch recent Twitch highlights</title>
-  <meta name="description" content="Watch recent Twitch highlights and find clips from your favorite streamers.">
+  <title>ClipSpike — Twitch Chat Spike Clip Recorder for Windows</title>
+  <meta name="description" content="Turn Twitch chat spikes and raids into 30-second vertical clips with ClipSpike for Windows. Try it free for 7 days or browse Twitch highlights on the web.">
   <link rel="icon" href="icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,700;125,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="home.css">
   <link rel="canonical" href="https://clipspike.com/">
-  <script src="home.js" defer></script>
-  <script src="analytics.js" defer></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ClipSpike">
+  <meta property="og:title" content="ClipSpike — Twitch Chat Spike Clip Recorder for Windows">
+  <meta property="og:description" content="Turn Twitch chat spikes and raids into 30-second vertical clips with ClipSpike for Windows. Try it free for 7 days or browse Twitch highlights on the web.">
   <meta property="og:url" content="https://clipspike.com/">
-  <meta property="og:title" content="ClipSpike — Watch recent Twitch highlights">
-  <meta property="og:description" content="Watch recent Twitch highlights and find clips from your favorite streamers.">
   <meta property="og:image" content="https://clipspike.com/clipspike-x-card.jpg">
   <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1376">
   <meta property="og:image:height" content="768">
-  <meta property="og:image:alt" content="ClipSpike — Watch recent Twitch highlights, with a purple chat spike and a vertical gameplay preview.">
+  <meta property="og:image:alt" content="ClipSpike with a purple chat spike and a vertical gameplay preview">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="ClipSpike — Watch recent Twitch highlights">
-  <meta name="twitter:description" content="Watch recent Twitch highlights and find clips from your favorite streamers.">
+  <meta name="twitter:title" content="ClipSpike — Twitch Chat Spike Clip Recorder for Windows">
+  <meta name="twitter:description" content="Turn Twitch chat spikes and raids into 30-second vertical clips with ClipSpike for Windows. Try it free for 7 days or browse Twitch highlights on the web.">
   <meta name="twitter:image" content="https://clipspike.com/clipspike-x-card.jpg">
-  <meta name="twitter:image:alt" content="ClipSpike — Watch recent Twitch highlights, with a purple chat spike and a vertical gameplay preview.">
+  <meta name="twitter:image:alt" content="ClipSpike with a purple chat spike and a vertical gameplay preview">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ClipSpike",
+      "url": "https://clipspike.com/",
+      "description": "Turn Twitch chat spikes and raids into 30-second vertical clips with ClipSpike for Windows. Try it free for 7 days or browse Twitch highlights on the web.",
+      "image": "https://clipspike.com/clipspike-x-card.jpg",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Windows 10, Windows 11 (64-bit)",
+      "softwareVersion": "0.1.5",
+      "downloadUrl": "https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64.exe",
+      "publisher": {
+        "@type": "Organization",
+        "name": "AST Labs"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "39.00",
+        "priceCurrency": "USD",
+        "url": "https://buy.polar.sh/polar_cl_per43WQXkviGSWYLBkNSb86XNDIVkW3ZcDc7z0WOJ7G"
+      }
+    }
+  </script>
+  <script src="chat-demo.js" defer></script>
+  <script src="home.js" defer></script>
+  <script src="analytics.js" defer></script>
 </head>
-<body>
+<body class="home-page">
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="wrap top">
     <a class="brand" href="/" aria-label="ClipSpike home"><img src="icon.png" alt="" width="26" height="26">ClipSpike</a>
-    <nav aria-label="Main">
+    <nav class="desktop-nav" aria-label="Main">
+      <a href="/" aria-current="page">Home</a>
+      <a href="/app/clips/">Clips</a>
       <a href="/app/streamers/">Streamers</a>
-      <a href="/capture.html">Capture your stream</a>
-      <a class="btn small primary" href="/app/clips/">Watch Twitch clips</a>
+      <a href="/capture.html">Capture</a>
     </nav>
+    <details class="home-menu">
+      <summary>Menu</summary>
+      <nav aria-label="Main">
+        <a href="/" aria-current="page">Home</a>
+        <a href="/app/clips/">Clips</a>
+        <a href="/app/streamers/">Streamers</a>
+        <a href="/capture.html">Capture</a>
+      </nav>
+    </details>
   </header>
-  <main class="wrap hero">
-    <div class="hero-copy">
-      <h1>Catch up on Twitch highlights.</h1>
-      <p class="lede">Watch recent clips from tracked streamers and find more by channel, game, or date.</p>
-      <div class="cta-row">
-        <a class="btn primary" href="/app/clips/">Watch Twitch clips</a>
-        <a class="btn" href="/capture.html">Capture your stream</a>
+  <main id="main" tabindex="-1">
+    <div class="wrap hero">
+      <div class="hero-copy">
+        <span class="label">ClipSpike for Windows · v0.1.5</span>
+        <h1>Clip the moments <span>chat reacts to.</span></h1>
+        <p class="lede">Turn Twitch chat spikes and raids into 30-second vertical clips. Save locally, to Dropbox, or to Google Drive. No Twitch login required.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="windows.html">Download Windows trial</a>
+          <a class="btn" href="https://buy.polar.sh/polar_cl_per43WQXkviGSWYLBkNSb86XNDIVkW3ZcDc7z0WOJ7G" data-checkout="homepage">Buy for $39</a>
+        </div>
+        <p class="fine">Windows 10 or 11 (64-bit) · 7-day trial · One-time license through Polar</p>
+        <p class="fine">The unsigned installer may trigger <a href="windows.html#smartscreen">Windows SmartScreen</a>.</p>
+        <a class="capture-link" href="/app/pro/?platform=mac">Join the macOS waitlist</a>
       </div>
+      <section class="desk chat-demo" aria-labelledby="demo-title" data-chat-demo>
+        <div class="desk-head"><h2 id="demo-title">Chat spike demo</h2><span class="label">Simulated Twitch chat</span></div>
+        <div class="meter">
+          <p class="label meter-cap">Unique chatters per 5 seconds</p>
+          <div class="plot" aria-hidden="true">
+            <div class="bars" data-bars></div>
+            <div class="thr"><b>Threshold · 24</b></div>
+          </div>
+          <div class="plot-foot" aria-hidden="true"><span>Earlier</span><span>Now</span></div>
+        </div>
+        <div class="demo-output">
+          <div class="demo-controls">
+            <div class="cta-row" hidden data-demo-controls>
+              <button class="btn small primary" type="button" data-trigger="spike" aria-disabled="false">Simulate chat spike</button>
+              <button class="btn small" type="button" data-trigger="raid" aria-disabled="false">Trigger raid</button>
+            </div>
+            <p data-demo-status role="status">A chat spike crosses 24 unique chatters. A raid can trigger a clip on its own.</p>
+            <div class="demo-window">
+              <span>−15 s</span><span>Trigger</span><span>+15 s</span>
+              <progress max="30" value="0" aria-label="30-second capture window"></progress>
+            </div>
+            <p class="fine">30-second window · 15 s before and 15 s after</p>
+          </div>
+          <figure class="demo-preview">
+            <div class="demo-video">
+              <video hidden controls playsinline muted preload="none" width="360" height="640" aria-label="Sample vertical highlight"></video>
+              <span data-preview-placeholder>Run the demo to preview</span>
+            </div>
+            <figcaption>9:16 · Sample clip</figcaption>
+          </figure>
+        </div>
+        <noscript><p class="demo-nojs"><a href="/media/sample-highlight.mp4">Watch the vertical sample clip</a></p></noscript>
+      </section>
     </div>
-    <section class="desk featured" aria-labelledby="featured-title">
-      <div class="desk-head"><h2 id="featured-title">Featured highlight</h2></div>
-      <div class="featured-media" id="featured-media" hidden></div>
-      <p class="featured-caption"><a id="featured-link" href="/app/clips/">Browse recent clips</a></p>
+    <section class="wrap home-highlights" aria-labelledby="highlights-title">
+      <div class="sec-head">
+        <h2 id="highlights-title">Watch Twitch highlights</h2>
+        <p>Find recent clips by channel, game, or date.</p>
+        <a class="capture-link" href="/app/clips/">Browse Twitch clips</a>
+      </div>
+      <section class="desk featured" aria-labelledby="featured-title">
+        <div class="desk-head"><h3 id="featured-title">Featured highlight</h3></div>
+        <div class="featured-media" id="featured-media" hidden></div>
+        <div class="featured-caption">
+          <p class="featured-fallback" id="featured-fallback">No featured clip right now. <a href="/app/clips/">Browse recent clips</a></p>
+          <a id="featured-link" href="/app/clips/" hidden></a>
+          <div class="featured-meta" id="featured-meta" hidden>
+            <span class="featured-streamer" id="featured-streamer"></span>
+            <span class="featured-game" id="featured-game"></span>
+            <time id="featured-time" hidden></time>
+          </div>
+        </div>
+      </section>
     </section>
   </main>
   <footer>

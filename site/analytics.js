@@ -59,10 +59,17 @@
   });
 
   document.addEventListener('click', (event) => {
-    const link = event.target.closest?.('[data-download]');
+    const link = event.target.closest?.('[data-download], [data-checkout]');
     if (link) {
-      const creatorReferral = document.referrer === location.origin + '/capture.html';
-      window.clipSpikeTrack('windows_download', { installer: link.dataset.download, entry: creatorReferral ? 'creator' : 'direct' });
+      if (link.dataset.checkout) {
+        window.clipSpikeTrack('pro_checkout_click', { entry: link.dataset.checkout });
+        return;
+      }
+      const referrer = document.referrer.split(/[?#]/, 1)[0].replace(/\/$/, '');
+      const entry = referrer === location.origin + '/capture.html' ? 'creator'
+        : referrer === location.origin ? 'homepage'
+        : referrer === location.origin + '/app/pro' ? 'pro' : 'direct';
+      window.clipSpikeTrack('windows_download', { installer: link.dataset.download, entry });
     }
   });
 })();

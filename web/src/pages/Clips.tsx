@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import SponsorSlot from '../monetization/SponsorSlot'
 import ClipCard from '../components/ClipCard'
@@ -10,11 +10,10 @@ import {
   filtersToParams,
   type ClipFilters,
   type SortKey,
-  type TimeRange,
 } from '../lib/clips'
 import { useClipStore } from '../store/useClipStore'
 
-const AD_EVERY = 8
+const quickRanges = [['all', 'Any time'], ['today', 'Past 24 hours'], ['week', 'Past 7 days']] as const
 
 export default function Clips() {
   const clips = useClipStore((s) => s.clips)
@@ -29,28 +28,28 @@ export default function Clips() {
   const active = JSON.stringify(filters) !== JSON.stringify(defaultFilters)
 
   return (
-    <>
-      <h1>Highlights</h1>
-      <div className="toolbar" role="search" aria-label="Filter highlights">
+    <section className="clip-discovery" aria-labelledby="clips-title">
+      <h1 id="clips-title">Browse recent clips</h1>
+      <div className="toolbar clip-filters" role="search" aria-label="Filter highlights">
         <label className="field field-grow">
           <span>Search clips</span>
           <input
-          type="search"
-          placeholder="Search clips, streamers, games"
-          value={filters.query}
-          onChange={(e) => set('query', e.target.value)}
-        />
+            type="search"
+            placeholder="Search clips, streamers, games"
+            value={filters.query}
+            onChange={(e) => set('query', e.target.value)}
+          />
         </label>
         <label className="field">
           <span>Streamer</span>
-        <select value={filters.streamer} onChange={(e) => set('streamer', e.target.value)}>
-          <option value="all">All streamers</option>
-          {streamers.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+          <select value={filters.streamer} onChange={(e) => set('streamer', e.target.value)}>
+            <option value="all">All streamers</option>
+            {streamers.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="field">
           <span>Game</span>
@@ -61,14 +60,6 @@ export default function Clips() {
                 {g}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Time range</span>
-          <select value={filters.range} onChange={(e) => set('range', e.target.value as TimeRange)}>
-            <option value="all">All time</option>
-            <option value="today">Today</option>
-            <option value="week">This week</option>
           </select>
         </label>
         <label className="field">
@@ -92,22 +83,23 @@ export default function Clips() {
         </select>
         </label>
       </div>
-      <p className="meta" role="status" aria-live="polite">
+      <div className="quick-filters" role="group" aria-label="Time range">
+        {quickRanges.map(([range, label]) => (
+          <button key={range} type="button" className="btn btn-ghost" aria-pressed={filters.range === range}
+            onClick={() => set('range', range)}>{label}</button>
+        ))}
+        {active && <button type="button" className="linklike" onClick={() => update(defaultFilters)}>Clear filters</button>}
+      </div>
+      <p className="meta clip-results" role="status" aria-live="polite">
         {loading ? 'Loading highlights…' : `${shown.length} highlight${shown.length === 1 ? '' : 's'}`}
       </p>
       {loading ? (
         <SkeletonGrid />
       ) : shown.length ? (
-        <div className="grid">
-          {shown.map((c, i) => (
-            <Fragment key={c.id}>
-              <ClipCard clip={c} />
-              {(i + 1) % AD_EVERY === 0 && i + 1 < shown.length && (
-                <div className="grid-ad"><SponsorSlot placement="grid" /></div>
-              )}
-            </Fragment>
-          ))}
-        </div>
+        <>
+          <div className="grid">{shown.map((clip) => <ClipCard key={clip.id} clip={clip} />)}</div>
+          <div className="browse-sponsor"><SponsorSlot placement="grid" /></div>
+        </>
       ) : (
         <div className="empty">
           <p>
@@ -118,13 +110,8 @@ export default function Clips() {
                 : 'No highlights match your filters.'}
           </p>
           {clips.length > 0 && active && <p className="meta">Try a broader search or a wider time range.</p>}
-          {clips.length > 0 && active && (
-            <button type="button" className="btn btn-ghost" onClick={() => update(defaultFilters)}>
-              Clear filters
-            </button>
-          )}
         </div>
       )}
-    </>
+    </section>
   )
 }
