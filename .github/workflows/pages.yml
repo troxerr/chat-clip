@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "tools/update-windows-download.mjs"
       - "web/**"
       - "config/**"
       - ".github/workflows/pages.yml"
@@ -74,6 +75,15 @@ jobs:
           cp -R site/. _site/
           echo clipspike.com > _site/CNAME
           cp -R web/dist _site/app
+      - name: Resolve published Windows download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api --paginate --slurp "repos/${{ github.repository }}/releases?per_page=100" > "$RUNNER_TEMP/clipspike-releases.json"; then
+            node tools/update-windows-download.mjs "$RUNNER_TEMP/clipspike-releases.json" _site/windows.html
+          else
+            echo "::warning::Could not fetch release metadata. Using the bundled Windows download."
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

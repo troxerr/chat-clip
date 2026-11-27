@@ -1104,7 +1104,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   [stack addArrangedSubview:offer];
   [offer.widthAnchor constraintEqualToAnchor:stack.widthAnchor].active = YES;
 
-  [stack addArrangedSubview:HDLabel(@"Start a capture on a live channel. Chat spikes save a vertical clip on their own. Save highlight now keeps a moment the chat missed.", 12, NSFontWeightRegular, NSColor.secondaryLabelColor)];
+  [stack addArrangedSubview:HDLabel(@"Enter a live Twitch channel and start capture. Once video is recording, choose Save highlight now to save a test clip. Open Clips to play your vertical clip.", 12, NSFontWeightRegular, NSColor.secondaryLabelColor)];
 
   NSStackView *channelBox = [NSStackView new];
   channelBox.orientation = NSUserInterfaceLayoutOrientationVertical;
