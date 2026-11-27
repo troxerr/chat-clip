@@ -1,16 +1,16 @@
-/* Layout: the chat-activity meter is the hero. Bars are chat windows, the amber spike is the moment,
-   the bracket is the 30 seconds that get saved. Everything below is quiet ruled rows on control-room slate. */
+/* Layout: the chat-activity meter is the hero. Bars are chat windows, the purple spike is the moment,
+   the bracket is the 30 seconds that get saved. Everything below is quiet ruled rows on dark surfaces. */
 :root {
-  --bg: #0D1820;
-  --surface: #14232E;
-  --raise: #1B2F3D;
-  --ink: #E8F0F4;
-  --muted: #93A7B4;
-  --line: #243846;
-  --bar: #3C5567;
-  --accent: #FFB224;
-  --accent-fill: #FFB224;
-  --on-accent: #201400;
+  --bg: #0E0E10;
+  --surface: #18181B;
+  --raise: #211B2D;
+  --ink: #EFEFF1;
+  --muted: #ADADB8;
+  --line: #352B45;
+  --bar: #514266;
+  --accent: #BF94FF;
+  --accent-fill: #9D5CFF;
+  --on-accent: #10091C;
   --cyan: #5CC8D8;
   color-scheme: dark;
 
@@ -21,14 +21,14 @@
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #EDF2F5; --surface: #FFFFFF; --raise: #E1E9EE; --ink: #0F1F2A; --muted: #4E6473;
-    --line: #CBD7DF; --bar: #A9BBC7; --accent: #9A5600; --accent-fill: #F5A816; --on-accent: #201400; --cyan: #0E7C8C;
+    --bg: #F5F0FC; --surface: #FFFFFF; --raise: #EBE0FA; --ink: #21182E; --muted: #5F536E;
+    --line: #DACEEC; --bar: #B7A5D0; --accent: #5F24B5; --accent-fill: #9D5CFF; --on-accent: #10091C; --cyan: #0E7C8C;
     color-scheme: light;
   }
 }
 :root[data-theme="light"] {
-  --bg: #EDF2F5; --surface: #FFFFFF; --raise: #E1E9EE; --ink: #0F1F2A; --muted: #4E6473;
-  --line: #CBD7DF; --bar: #A9BBC7; --accent: #9A5600; --accent-fill: #F5A816; --on-accent: #201400; --cyan: #0E7C8C;
+  --bg: #F5F0FC; --surface: #FFFFFF; --raise: #EBE0FA; --ink: #21182E; --muted: #5F536E;
+  --line: #DACEEC; --bar: #B7A5D0; --accent: #5F24B5; --accent-fill: #9D5CFF; --on-accent: #10091C; --cyan: #0E7C8C;
   color-scheme: light;
 }
 
@@ -103,10 +103,10 @@ code, .mono { font-family: var(--mono); font-size: 0.9em; }
 .clips .meta { font-size: 0.8rem; color: var(--muted); }
 .clips li.new .file { color: var(--accent); }
 .phone { width: 96px; aspect-ratio: 9 / 16; max-width: 100%; border-radius: 8px; position: relative; overflow: hidden; border: 1px solid var(--line);
-  background: linear-gradient(160deg, #2B5266, #7A4B1E 55%, #1C2F3B); }
-.phone::before { content: ""; position: absolute; inset: -20%; background: radial-gradient(circle at 30% 40%, #E7A53A 0, transparent 45%), radial-gradient(circle at 70% 65%, #3E93A6 0, transparent 50%); filter: blur(14px); opacity: .8; }
+  background: linear-gradient(160deg, #33205D, #542598 55%, #201931); }
+.phone::before { content: ""; position: absolute; inset: -20%; background: radial-gradient(circle at 30% 40%, #9147FF 0, transparent 45%), radial-gradient(circle at 70% 65%, #6D48BD 0, transparent 50%); filter: blur(14px); opacity: .8; }
 .phone .frame { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); aspect-ratio: 16 / 9;
-  background: linear-gradient(135deg, #20485A 0 48%, #E7A53A 48% 52%, #173340 52%); box-shadow: 0 0 0 1px rgba(255,255,255,.25); }
+  background: linear-gradient(135deg, #38205F 0 48%, #9147FF 48% 52%, #241839 52%); box-shadow: 0 0 0 1px rgba(255,255,255,.25); }
 .phone-cap { margin-top: 6px; text-align: center; font: 400 0.68rem/1.3 var(--mono); color: var(--muted); }
 @media (max-width: 420px) { .out { grid-template-columns: minmax(0, 1fr); } .phone-wrap { justify-self: start; } }
 
