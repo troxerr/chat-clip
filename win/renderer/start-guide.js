@@ -67,7 +67,7 @@
   // Shown before a capture is running. Once the recorder is up, the status line takes over.
   function captureIntro(phase) {
     if (phase && phase !== "idle" && phase !== "error") return "";
-    return "Start a capture on a live channel. Chat spikes save a vertical clip on their own. Save highlight now keeps a moment the chat missed.";
+    return "Enter a live Twitch channel and start capture. Once video is recording, choose Save highlight now to save a test clip. Open Clips to play your vertical clip.";
   }
 
   const api = { channelProblem, startBlocker, licenseBanner, buyLabel, bannerButtons, captureIntro };
