@@ -23,6 +23,7 @@ npm run preview  # serve the production build
 `VITE_BASE=/app/` and publishes it alongside the marketing `site/`:
 
 - Marketing site: https://clipspike.com/
+- Creator guide and sample: https://clipspike.com/capture.html
 - Web app: https://clipspike.com/app/
 
 Client-side routing: the app uses `BrowserRouter` with the Vite base as basename (URLs like
@@ -43,8 +44,10 @@ JSON-LD (WebSite + Organization on home, BreadcrumbList, and an ItemList of Vide
 `clips` and streamer pages when `dist/data/clips.json` exists; mature and thumbnail-less clips are skipped)
 and a crawlable static body inside `#root`, which React replaces on boot. It also writes
 `dist/sitemap.xml` (served at `/app/sitemap.xml`); `site/sitemap.xml` is a sitemap index pointing at it
-and `site/sitemap-site.xml`. Unknown paths still hit the 404 fallback; clip permalinks and
-unlisted streamers get `noindex`.
+and `site/sitemap-site.xml`. The build also emits watch pages with clip-specific social images for eligible clips in the current feed.
+The 12 highest-view eligible clips have a non-autoplay player, VideoObject metadata, and sitemap entries
+for the indexing pilot. Other watch pages and unlisted streamers get `noindex`. Use Search Console
+URL Inspection to verify streamer pages and the pilot watch pages after deployment.
 
 Metadata lives in `src/lib/seo.ts` and is shared with `src/components/RouteHead.tsx`, which keeps
 the head in sync during client-side navigation. To add an indexable route, add it to `STATIC_PAGES`
@@ -73,6 +76,9 @@ gitignored and generated at deploy time, so nothing is committed on each run.
 - `pages.yml` also runs on a 5-minute cron and on `workflow_dispatch`; it runs the script with the
   `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` repo secrets before the build. The secrets only exist
   in the CI step and never reach the browser bundle.
+- Failed feed fetches fail the build, leaving the last successful Pages deployment intact.
+- The independent `site-health.yml` workflow checks public reachability, feed age, and the featured watch
+  page. Run `node web/scripts/check-public-site.mjs` from the repository root to check it on demand.
 - The app fetches `${BASE_URL}data/*.json` on load and every 60s; live status drives backup fallback.
   If the fetch fails it shows the bundled mock data with a "Demo data" badge.
 - Twitch exposes no highlight score, so scores are derived from clip views; clip text/thumbnail/link come from Twitch.
@@ -80,11 +86,12 @@ gitignored and generated at deploy time, so nothing is committed on each run.
 
 ## Sharing and link previews
 
-`index.html` carries Open Graph / Twitter card tags (absolute URLs under
-`https://clipspike.com/app/`) and `public/og-image.png` (1200x630, regenerate with
-`python3 scripts/generate-og-image.py`).
+Clip shares copy the ClipSpike watch URL with a source marker for aggregate attribution. The canonical
+URL excludes the marker. Eligible clips receive page-specific previews at build time. A clip outside
+the current feed displays an expired or removed message and a link back to the feed.
 
-**Crawlers don't see hash routes.** Everything after `#` is never sent to the server, so every
-`#/clips/...` URL previews as the app root. The clip-detail **Share** button therefore shares the
-Twitch clip URL (rich Twitch preview) when the clip has one, else the app root. It uses
-`navigator.share` and falls back to copying the link to the clipboard with a short confirmation.
+When Plausible is configured, the existing analytics consent setting also applies to the marketing
+pages. Measure the viewer funnel with `homepage_clip_play` and `clip_play` (entry `homepage`), creator
+downloads with `windows_download` (entry `creator`), and share traffic with `clip_play` (entry
+`shared_link`). The following cohort events use a date bucket and a local marker. These events count
+intent to play or download. The Windows app records sample and first real exports in local diagnostics.

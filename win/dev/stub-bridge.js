@@ -47,8 +47,10 @@
     },
     stop: async () => { state.capture = base; return structuredClone(state); },
     saveHighlight: async () => true,
+    exportSample: async () => true,
     markMissed: async () => true,
-    clips: { list: async () => structuredClone(clips), open: async () => true, reveal: async () => true, rate: async (id, r) => { const c = clips.find((x) => x.id === id); c.rating = c.rating === r ? "" : r; return c.rating; } },
+    clips: {
+      trim: async () => true, list: async () => structuredClone(clips), open: async () => true, reveal: async () => true, rate: async (id, r) => { const c = clips.find((x) => x.id === id); c.rating = c.rating === r ? "" : r; return c.rating; } },
     license: { activate: async () => { throw new Error("That license key could not be activated."); }, validate: async () => structuredClone(state.license), deactivate: async () => structuredClone(state.license), buy: async () => true },
     settings: { set: async (c) => { Object.assign(state.settings, c); return structuredClone(state.settings); } },
     // ?update=disabled|idle|checking|downloading|ready|up-to-date|error picks the starting state.

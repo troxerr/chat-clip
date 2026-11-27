@@ -18,11 +18,11 @@ describe('shareUrl', () => {
 })
 
 describe('shareClip', () => {
-  it('copies the canonical URL and reports copied', async () => {
+  it('copies the permalink with share attribution and reports copied', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     stubNav({ share: vi.fn(), clipboard: { writeText } as never })
     expect(await shareClip(clip)).toBe('copied')
-    expect(writeText).toHaveBeenCalledWith('https://clipspike.com/app/clips/FunnyMoment/')
+    expect(writeText).toHaveBeenCalledWith('https://clipspike.com/app/clips/FunnyMoment/?from=share')
   })
 
   it('returns failed when clipboard is unavailable', async () => {

@@ -86,3 +86,10 @@ button { font: inherit; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 .btn.is-disabled { opacity: .55; cursor: not-allowed; }
+
+.sample-session > summary { cursor: pointer; font-weight: 600; }
+.sample-session video { display: block; width: min(100%, 180px); aspect-ratio: 9 / 16; background: #141822; border-radius: 8px; margin: 12px 0; }
+dialog { color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+dialog::backdrop { background: rgb(0 0 0 / 55%); }
+dialog form, dialog label { display: grid; gap: 8px; }
+dialog form { min-width: min(280px, 70vw); gap: 12px; }

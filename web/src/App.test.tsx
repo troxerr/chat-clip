@@ -79,6 +79,7 @@ describe('routing', () => {
   })
 
   it('shows not found for an unknown clip', () => {
+    useClipStore.setState({ loadState: 'ready' })
     renderAt('/clips/999')
     expect(screen.getByRole('heading', { name: 'Clip not found' })).toBeInTheDocument()
   })
@@ -167,10 +168,10 @@ describe('data states', () => {
     expect(document.querySelector('.updated')).toBeNull()
   })
 
-  it('links the clip browser, Windows download, and Pro from the layout', () => {
+  it('links the clip browser, capture page, and Pro from the layout', () => {
     renderAt('/')
     expect(screen.getByRole('link', { name: 'Browse Twitch clips' })).toHaveAttribute('href', '/clips')
-    expect(screen.getByRole('link', { name: 'Windows download' })).toHaveAttribute('href', 'https://clipspike.com/windows.html')
+    expect(screen.getByRole('link', { name: 'Capture your stream' })).toHaveAttribute('href', 'https://clipspike.com/capture.html')
     expect(screen.getByRole('link', { name: 'ClipSpike Pro' })).toHaveAttribute('href', '/pro')
   })
 

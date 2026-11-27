@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pageMeta, prerenderPaths, type SeoContext } from '../src/lib/seo'
+import { pageMeta, prerenderPaths, watchClips, watchPageMeta, type SeoContext } from '../src/lib/seo'
 import { renderPage, renderSitemap } from './prerender'
 
 const template = `<!doctype html><html><head><title>Old</title>
@@ -19,6 +19,21 @@ describe('prerender', () => {
     expect(html).not.toContain('content="old"')
     expect(html).toContain('<div id="root"><main class="prerendered"><h1>xqc Twitch Clips')
     expect(html).toContain('data-seo-jsonld="/streamer/xqc"')
+  })
+
+  it('builds a watch page with an embed and clip-specific preview while excluding flagged clips', () => {
+    const clip = {
+      id: 'ExampleSlug', slug: 'ExampleSlug', title: 'A great play', streamer: 'xqc',
+      thumbnailUrl: 'https://example.com/clip.jpg', createdAt: '2026-01-01T12:00:00Z',
+    }
+    const clips = [clip, { ...clip, id: 'MatureClip', mature: true }]
+    expect(watchClips({ ...ctx, clips })).toEqual([clip])
+    const html = renderPage(template, watchPageMeta(clip, '/app/', true), '/app/', { ...ctx, clips })
+    expect(html).toContain('content="https://example.com/clip.jpg"')
+    expect(html).toContain('src="https://clips.twitch.tv/embed?clip=ExampleSlug')
+    expect(html).toContain('autoplay=false')
+    expect(html).toContain('"@type":"VideoObject"')
+    expect(watchPageMeta(clip, '/app/', false).indexable).toBe(false)
   })
 
   it('lists every generated page in the sitemap', () => {

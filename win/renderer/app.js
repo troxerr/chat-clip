@@ -83,7 +83,15 @@
 
     ui.recent = el("ul", { class: "clip-list", "aria-label": "Recent highlights" });
     ui.recentHead = el("h2", { text: "Recent highlights" });
-    root.replaceChildren(el("h1", { id: "h-capture", text: "Capture" }), ui.banner, form, statusCard, ui.recentHead, ui.recent);
+    const sample = el("details", { class: "card sample-session" },
+      el("summary", { text: "Try a sample session" }),
+      el("p", { class: "help", text: "In this simulation, a burst of unique chatters triggers a vertical export." }),
+      el("video", { controls: true, preload: "none", src: "../../site/media/sample-highlight.mp4", "aria-label": "Simulated vertical highlight" }),
+      el("button", { class: "btn", type: "button", text: "Save sample MP4", onclick: () => guarded(async () => {
+        if (await hd.exportSample()) notify("Sample MP4 saved.", "info", 6000);
+      }) }),
+      el("p", { class: "help", text: "To check a real export, enter your Twitch channel while it is live, then start capture. Once the status says Watching, choose Save highlight now." }));
+    root.replaceChildren(el("h1", { id: "h-capture", text: "Capture" }), ui.banner, form, sample, statusCard, ui.recentHead, ui.recent);
   }
 
   async function onStart() {
@@ -159,6 +167,39 @@
     return button;
   }
 
+  function openTrim(clip) {
+    const start = el("input", { type: "number", min: "0", step: "0.01", required: true, value: "0" });
+    const end = el("input", { type: "number", min: "0.1", step: "0.01", required: true });
+    const status = el("p", { role: "status" });
+    const save = el("button", { class: "btn primary", type: "submit", text: "Save trimmed copy" });
+    const modal = el("dialog", { "aria-labelledby": "trim-title" });
+    const close = el("button", { class: "btn", type: "button", text: "Close", onclick: () => modal.close() });
+    const form = el("form", { onsubmit: async (event) => {
+      event.preventDefault();
+      save.disabled = true;
+      close.disabled = true;
+      status.textContent = "Preparing MP4…";
+      try {
+        if (await hd.clips.trim(clip.id, start.valueAsNumber, end.valueAsNumber)) {
+          modal.close();
+          notify("Trimmed MP4 saved.", "info", 6000);
+        } else status.textContent = "";
+      } catch (error) {
+        status.textContent = error.message.replace(/^Error invoking remote method '[^']*': (Error: )?/, "");
+      } finally {
+        save.disabled = false;
+        close.disabled = false;
+      }
+    } }, el("h2", { id: "trim-title", text: "Trim highlight" }),
+      el("label", {}, "Start (seconds)", start), el("label", {}, "End (seconds)", end),
+      status, el("div", { class: "row" }, save, close));
+    modal.append(form);
+    modal.addEventListener("close", () => modal.remove(), { once: true });
+    modal.addEventListener("cancel", (event) => { if (save.disabled) event.preventDefault(); });
+    document.body.append(modal);
+    modal.showModal();
+  }
+
   function renderClipRows(list, items, compact) {
     list.replaceChildren(...items.map((clip) => el("li", { class: "clip" },
       el("div", {},
@@ -168,6 +209,7 @@
       el("div", { class: "clip-actions" },
         el("button", { class: "btn small", type: "button", text: "Open", disabled: !clip.available, onclick: () => guarded(() => hd.clips.open(clip.id)) }),
         el("button", { class: "btn small", type: "button", text: "Show in folder", disabled: !clip.available, onclick: () => guarded(() => hd.clips.reveal(clip.id)) }),
+        !compact && el("button", { class: "btn small", type: "button", text: "Trim", disabled: !clip.available, onclick: () => openTrim(clip) }),
         !compact && thumbButton(clip, "up"), !compact && thumbButton(clip, "down")))));
   }
 
@@ -200,6 +242,11 @@
   function buildSettings() {
     ui.licenseCard = el("div", { class: "card", id: "license-card" });
     ui.launch = el("input", { type: "checkbox", id: "launch", onchange: () => guarded(async () => { await hd.settings.set({ launchAtLogin: ui.launch.checked }); await refresh(); }) });
+    ui.layout = el("select", { id: "export-layout", onchange: () => guarded(async () => {
+      try { await hd.settings.set({ exportLayout: ui.layout.value }); } finally { await refresh(); }
+    }) },
+      el("option", { value: "blur", text: "Full frame over blur" }),
+      el("option", { value: "split", text: "Gameplay and facecam" }));
     ui.folder = el("dd");
     ui.about = el("dl", { class: "kv" });
     ui.updText = el("p", { id: "update-status", role: "status" });
@@ -215,6 +262,9 @@
         el("label", { class: "check", for: "launch" }, ui.launch, el("span", { text: "Start ClipSpike when I sign in to Windows" })),
         el("dl", { class: "kv" }, el("dt", { text: "Clip folder" }), ui.folder),
         el("div", { class: "row", style: false }, el("button", { class: "btn", type: "button", text: "Open clip folder", onclick: () => guarded(() => hd.openClipFolder()) }))),
+      el("div", { class: "card" }, el("h2", { text: "Vertical export" }),
+        el("label", { for: "export-layout", text: "Layout" }), ui.layout,
+        el("p", { class: "help", text: "The gameplay and facecam preset uses your configured camera crop, or the lower-left corner by default. Layout changes apply to the next capture." })),
       el("div", { class: "card", id: "update-card" }, el("h2", { text: "Updates" }), ui.updText, el("div", { class: "row", style: false }, ui.updBtn)),
       el("div", { class: "card" }, el("h2", { text: "About" }), ui.about));
   }
@@ -274,6 +324,7 @@
     ui.licenseCard.replaceChildren(...rows);
     // The key is saved but could not be read just now: look again shortly instead of showing a trial.
     if (lic.keyUnreadable && !licenseRetry) licenseRetry = setTimeout(() => { licenseRetry = null; refresh().catch(() => {}); }, 20000);
+    ui.layout.value = snap.settings.exportLayout || "blur";
     ui.launch.checked = snap.settings.launchAtLogin;
     ui.folder.textContent = snap.settings.outputFolder || "";
     const v = snap.versions || {};

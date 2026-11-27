@@ -1,12 +1,16 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { headTags, jsonLdScript, pageMeta, tagSelector } from '../lib/seo'
+import { headTags, jsonLdScript, pageMeta, pageUrl, tagSelector } from '../lib/seo'
 
 const JSONLD_ATTR = 'data-seo-jsonld'
 
 /** Keeps <title>, description, canonical, social and JSON-LD tags in sync with the route (path is relative to the base). */
 function applyHead(doc: Document, path: string, base: string) {
   const meta = pageMeta(path, base)
+  // Preserve the watch page generated with real metadata through the initial client render.
+  if (doc.head.querySelector('meta[property="og:type"][content="video.other"]') &&
+      doc.head.querySelector('link[rel="canonical"]')?.getAttribute('href') ===
+        pageUrl(base, meta.path)) return
   doc.title = meta.title
   for (const t of headTags(meta, base)) {
     let el = doc.head.querySelector(tagSelector(t))

@@ -4,11 +4,13 @@ on:
   push:
     paths:
       - 'web/**'
+      - 'site/**'
       - 'config/**'
       - '.github/workflows/web-ci.yml'
   pull_request:
     paths:
       - 'web/**'
+      - 'site/**'
       - 'config/**'
       - '.github/workflows/web-ci.yml'
 

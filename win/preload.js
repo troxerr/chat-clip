@@ -13,10 +13,12 @@ contextBridge.exposeInMainWorld("hd", {
   start: (input, options) => call("start", input, { acknowledge: Boolean(options && options.acknowledge) }),
   stop: () => call("stop"),
   saveHighlight: () => call("saveHighlight"),
+  exportSample: () => call("sample.export"),
   markMissed: () => call("markMissed"),
   clips: {
     list: () => call("clips.list"),
     open: (id) => call("clips.open", String(id)),
+    trim: (id, start, end) => call("clips.trim", String(id), start, end),
     reveal: (id) => call("clips.reveal", String(id)),
     rate: (id, rating) => call("clips.rate", String(id), String(rating))
   },
@@ -26,7 +28,10 @@ contextBridge.exposeInMainWorld("hd", {
     deactivate: () => call("license.deactivate"),
     buy: () => call("license.buy")
   },
-  settings: { set: (changes) => call("settings.set", { launchAtLogin: Boolean(changes && changes.launchAtLogin) }) },
+  settings: { set: (changes) => call("settings.set", {
+    launchAtLogin: typeof changes?.launchAtLogin === "boolean" ? changes.launchAtLogin : undefined,
+    exportLayout: typeof changes?.exportLayout === "string" ? changes.exportLayout : undefined
+  }) },
   update: {
     state: () => call("update.state"),
     check: () => call("update.check"),

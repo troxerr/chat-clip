@@ -1,5 +1,6 @@
 // Route metadata shared by the build-time prerenderer (scripts/prerender.ts) and the runtime
 // head updater (components/RouteHead.tsx), so crawlers and in-app navigation agree.
+import { clipEmbedUrl } from './embed'
 import { allStreamers, DEFAULT_CONFIG } from './streamerConfig'
 
 export const SITE_ORIGIN = 'https://clipspike.com'
@@ -16,6 +17,8 @@ export interface SeoClip {
   views?: number
   url?: string
   thumbnailUrl?: string
+  slug?: string
+  mature?: boolean
 }
 
 export interface SeoContext {
@@ -30,7 +33,8 @@ export interface PageMeta {
   /** Route path relative to the app base, e.g. "/clips" or "/streamer/jynxzi". */
   path: string
   indexable: boolean
-  ogType: 'website' | 'profile'
+  ogType: 'website' | 'profile' | 'video.other'
+  image?: string
   jsonLd: object[]
 }
 
@@ -189,7 +193,7 @@ export function pageMeta(rawPath: string, base: string, ctx: SeoContext = defaul
     }
   }
 
-  // Clip permalinks come and go with the data, and unknown paths are 404s: keep both out of the index.
+  // Non-prerendered permalinks and unknown paths are excluded from the index.
   const isClip = /^\/clips\/[^/]+$/.test(path)
   return {
     title: isClip ? `Twitch Clip | ${SITE_NAME}` : `Page not found | ${SITE_NAME}`,
@@ -201,6 +205,32 @@ export function pageMeta(rawPath: string, base: string, ctx: SeoContext = defaul
   }
 }
 
+/** Emit social previews for available clips. Keep the video indexing pilot small. */
+export function watchClips(ctx: SeoContext): SeoClip[] {
+  return ctx.clips.filter((clip) =>
+    !clip.mature && /^[a-z0-9_-]+$/i.test(String(clip.id)) && /^[a-z0-9_-]+$/i.test(clip.slug ?? '') &&
+    /^https:\/\/[^\s]+$/i.test(clip.thumbnailUrl ?? '') && Boolean(videoObject(clip)),
+  ).sort(byViews)
+}
+
+export function watchPageMeta(clip: SeoClip, base: string, indexable: boolean): PageMeta {
+  const path = `/clips/${clip.id}`
+  const video = videoObject(clip)
+  return {
+    title: `${clip.title} | ${SITE_NAME}`,
+    description: `Watch ${clip.title}, a Twitch clip from ${clip.streamer}.`,
+    path,
+    indexable,
+    ogType: 'video.other',
+    image: clip.thumbnailUrl,
+    jsonLd: indexable && video && clip.slug ? [{
+      ...video,
+      url: pageUrl(base, path),
+      embedUrl: clipEmbedUrl(clip.slug, false),
+    }] : [],
+  }
+}
+
 /** Paths that get a prerendered page, in sitemap order. */
 export function prerenderPaths(ctx: SeoContext = defaultContext()): string[] {
   return [...STATIC_PAGES.map((p) => p.path), ...ctx.streamers.map(streamerPath)]
@@ -209,7 +239,7 @@ export function prerenderPaths(ctx: SeoContext = defaultContext()): string[] {
 /** Single list of head tags (everything except <title> and JSON-LD) for a page. */
 export function headTags(meta: PageMeta, base: string): HeadTag[] {
   const url = pageUrl(base, meta.path)
-  const image = pageUrl(base, OG_IMAGE).replace(/\/$/, '')
+  const image = meta.image ?? pageUrl(base, OG_IMAGE).replace(/\/$/, '')
   const m = (key: 'name' | 'property', k: string, content: string): HeadTag => ({ tag: 'meta', attrs: { [key]: k, content } })
   return [
     m('name', 'description', meta.description),
