@@ -21,10 +21,12 @@ export function shareUrl(clip: Shareable): string {
   return APP_URL
 }
 
-/** Copies the canonical clipspike.com URL. No third-party scripts. */
+/** Copies a ClipSpike permalink with a source marker for aggregate share attribution. */
 export async function shareClip(clip: Shareable): Promise<ShareResult> {
   try {
-    await navigator.clipboard.writeText(shareUrl(clip))
+    const url = new URL(shareUrl(clip))
+    if (url.href !== APP_URL) url.searchParams.set('from', 'share')
+    await navigator.clipboard.writeText(url.href)
     return 'copied'
   } catch {
     return 'failed'

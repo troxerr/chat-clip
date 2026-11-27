@@ -3,6 +3,10 @@ import { getConsent } from './consent'
 import type { MonetizationConfig } from './config'
 
 export type AnalyticsEvent =
+  | 'clip_play'
+  | 'clip_share'
+  | 'follow_cohort_start'
+  | 'follow_cohort_day_7_return'
   | 'support_click'
   | 'affiliate_click'
   | 'sponsor_click'
@@ -44,4 +48,31 @@ export function initAnalytics(config: MonetizationConfig = monetization): boolea
 export function track(event: AnalyticsEvent, props?: Record<string, string>, config: MonetizationConfig = monetization) {
   if (config.analytics.provider !== 'plausible' || !getConsent().analytics) return
   window.plausible?.(event, props ? { props } : undefined)
+}
+
+
+const FOLLOW_COHORT_KEY = 'clipspike:follow-analytics'
+const DAY_MS = 86_400_000
+
+/** Aggregate, consented events. The browser retains only the first-follow timestamp and return flag. */
+export function trackFollowCohort(hasFollows: boolean, consent: boolean) {
+  try {
+    if (!consent) {
+      localStorage.removeItem(FOLLOW_COHORT_KEY)
+      return
+    }
+    if (!hasFollows || !initAnalytics()) return
+    const now = Date.now()
+    const cohort = JSON.parse(localStorage.getItem(FOLLOW_COHORT_KEY) ?? 'null') as
+      { started: number; returned?: boolean } | null
+    if (!cohort || !Number.isFinite(cohort.started)) {
+      localStorage.setItem(FOLLOW_COHORT_KEY, JSON.stringify({ started: now }))
+      track('follow_cohort_start', { cohort: new Date(now).toISOString().slice(0, 10) })
+    } else if (!cohort.returned && now - cohort.started >= 7 * DAY_MS && now - cohort.started < 8 * DAY_MS) {
+      localStorage.setItem(FOLLOW_COHORT_KEY, JSON.stringify({ ...cohort, returned: true }))
+      track('follow_cohort_day_7_return', { cohort: new Date(cohort.started).toISOString().slice(0, 10) })
+    }
+  } catch {
+    // Storage can be disabled. Browsing and following still work.
+  }
 }

@@ -6,6 +6,11 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { execFile } = require("node:child_process");
+const { promisify } = require("node:util");
+const { exportClip } = require("../../lib/exporter.js");
+const { resolveEncoder } = require("../../lib/encoder.js");
+const { reframeSettings } = require("../../lib/appconfig.js");
 const { app, BrowserWindow, Menu, ipcMain, shell, nativeTheme, dialog, Notification } = require("electron");
 
 const platform = require("../../lib/platform.js");
@@ -28,6 +33,7 @@ const SMOKE = process.env.CLIPSPIKE_SMOKE || "";
 // Moves a pre-rename "ChatClip" or "Highlight Desk" profile (state and Electron userData share one folder) before it is used.
 if (!SMOKE) require("../../lib/migrate.js").runMigration();
 const ROOT = path.join(__dirname, "..", "..");
+const SAMPLE_CLIP = path.join(ROOT, "site", "media", "sample-highlight.mp4");
 const INDEX = path.join(__dirname, "..", "renderer", "index.html");
 
 const userData = SMOKE ? path.join(SMOKE, "electron") : path.join(app.getPath("appData"), "ClipSpike");
@@ -77,12 +83,17 @@ function createServices() {
   const baseSettings = createSettings({ readConfig: readCfg, writeConfig: writeCfg, outputFolder });
   const settings = {
     ...baseSettings,
+    get: () => ({ ...baseSettings.get(), exportLayout: reframeSettings(readCfg()).layout }),
     set(changes) {
-      const result = baseSettings.set(changes);
+      if (["blur", "split"].includes(changes.exportLayout)) {
+        const config = readCfg();
+        writeCfg({ ...config, reframe: { ...config.reframe, layout: changes.exportLayout } });
+      }
+      baseSettings.set(changes);
       if (typeof changes.launchAtLogin === "boolean" && !SMOKE) {
         try { app.setLoginItemSettings({ openAtLogin: changes.launchAtLogin }); } catch {}
       }
-      return result;
+      return settings.get();
     }
   };
   const clips = createClips({
@@ -106,6 +117,7 @@ function main() {
   let services;
   let win = null;
   let updater = null;
+  let firstCapturePending = true;
 
   function announceClip(event) {
     const text = clipSavedNotice(event);
@@ -172,7 +184,57 @@ function main() {
       markMissed: () => c.markMissed(),
       "clips.list": () => c.clips.list(),
       "clips.open": (id) => c.clips.open(id),
+      "clips.trim": async (id, start, end) => {
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end - start < 0.1) {
+          throw new Error("Enter a start and end at least 0.1 seconds apart.");
+        }
+        const clip = c.clips.list().find((entry) => entry.id === id && entry.available);
+        if (!clip) throw new Error("The local clip file is unavailable.");
+        const runtime = path.join(ROOT, "runtime", "bin");
+        const probe = path.join(runtime, "ffprobe.exe");
+        const ffmpegPath = path.join(runtime, "ffmpeg.exe");
+        const { stdout } = await promisify(execFile)(probe, [
+          "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", clip.localPath
+        ], { timeout: 15000, windowsHide: true });
+        const duration = Number(stdout.trim());
+        if (!Number.isFinite(duration)) throw new Error("Could not read the clip duration.");
+        if (end > duration + 0.01) {
+          throw new Error(`Choose an end within the clip's ${duration.toFixed(2)} seconds.`);
+        }
+
+        const result = await dialog.showSaveDialog(win, {
+          title: "Save trimmed MP4", defaultPath: path.basename(clip.localPath, path.extname(clip.localPath)) + "-trimmed.mp4",
+          filters: [{ name: "MP4 video", extensions: ["mp4"] }]
+        });
+        if (result.canceled) return false;
+        if (path.extname(result.filePath).toLowerCase() !== ".mp4") throw new Error("Choose an .mp4 file.");
+        if (fs.existsSync(result.filePath)) throw new Error("Choose a new filename to save the trimmed copy.");
+
+        const working = await fs.promises.mkdtemp(path.join(path.dirname(result.filePath), ".clipspike-trim-"));
+        try {
+          const target = path.join(working, "clip.mp4");
+          const encoder = resolveEncoder({ ffmpegPath });
+          const output = await exportClip({ inputFile: clip.localPath, offset: start, duration: Math.min(end, duration) - start, target, ffmpegPath, encoder });
+          if (!output.ok) throw new Error("ClipSpike could not trim this video.");
+          await fs.promises.copyFile(target, result.filePath, fs.constants.COPYFILE_EXCL);
+          return true;
+        } finally {
+          await fs.promises.rm(working, { recursive: true, force: true });
+        }
+      },
       "clips.reveal": (id) => c.clips.reveal(id),
+      "sample.export": async () => {
+        const result = await dialog.showSaveDialog(win, {
+          title: "Save sample MP4", defaultPath: "ClipSpike-Sample.mp4",
+          filters: [{ name: "MP4 video", extensions: ["mp4"] }]
+        });
+        if (result.canceled) return false;
+        if (path.extname(result.filePath).toLowerCase() !== ".mp4") throw new Error("Choose an .mp4 file.");
+        if (fs.existsSync(result.filePath)) throw new Error("Choose a new filename to save the sample.");
+        await fs.promises.copyFile(SAMPLE_CLIP, result.filePath, fs.constants.COPYFILE_EXCL);
+        record("onboarding.sample_export");
+        return true;
+      },
       "clips.rate": (id, rating) => c.clips.rate(id, rating),
       "license.activate": tracked("license.activate", (key) => c.license.activate(key)),
       "license.validate": tracked("license.validate", () => c.license.validate()),
@@ -221,7 +283,16 @@ function main() {
     services.engine.on("event", (event) => {
       const name = engineErrors.get(event.type);
       if (name) record(name, event.error || event.message || "");
-      if (event.type === "clip-saved") announceClip(event);
+      if (event.type === "clip-saved") {
+        announceClip(event);
+        if (firstCapturePending) {
+          const marker = path.join(userData, "first-capture");
+          firstCapturePending = false;
+          fs.promises.writeFile(marker, "", { flag: "wx" })
+            .then(() => record("onboarding.first_capture"))
+            .catch((error) => { firstCapturePending = error.code !== "EEXIST"; });
+        }
+      }
     });
     services.engine.on("exit", ({ unexpected, detail }) => {
       if (unexpected) record("capture.exited", detail);

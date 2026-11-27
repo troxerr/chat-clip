@@ -1,5 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { trackFollowCohort } from '../monetization/analytics'
+import { useConsent } from '../monetization/consent'
+import { useFollowStore } from '../store/useFollowStore'
 import { useClipStore } from '../store/useClipStore'
 import { ErrorBanner, UpdatedAt } from './DataStatus'
 import LiveNotifier from './LiveNotifier'
@@ -33,6 +36,9 @@ export default function Layout() {
     const id = setInterval(advance, 8000)
     return () => clearInterval(id)
   }, [advance])
+  const hasFollows = useFollowStore((s) => s.follows.length > 0)
+  const { analytics } = useConsent()
+  useEffect(() => trackFollowCohort(hasFollows, analytics), [hasFollows, analytics])
   const [open, setOpen] = useState(false)
   return (
     <div className="layout">
@@ -66,7 +72,7 @@ export default function Layout() {
         <div className="content">
           <nav className="layout-cta" aria-label="Product">
             <Link to="/clips">Browse Twitch clips</Link>
-            <a href="https://clipspike.com/windows.html">Windows download</a>
+            <a href="https://clipspike.com/capture.html">Capture your stream</a>
             <Link to="/pro">ClipSpike Pro</Link>
           </nav>
           <ErrorBanner />

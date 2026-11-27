@@ -2,16 +2,20 @@ import FollowButton from '../components/FollowButton'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { formatOffset, formatViews } from '../lib/clips'
+import ClipCard from '../components/ClipCard'
 import ClipPlayer from '../components/ClipPlayer'
 import { useClipStore } from '../store/useClipStore'
 import SupportCard from '../monetization/SupportCard'
 import AffiliateCards from '../monetization/AffiliateCards'
-import { shareClip } from '../lib/share'
+import { track } from '../monetization/analytics'
+import { canonicalClipUrl, shareClip } from '../lib/share'
 
 export default function ClipDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const clip = useClipStore((s) => s.clips.find((c) => String(c.id) === id))
+  const clips = useClipStore((s) => s.clips)
+  const loadState = useClipStore((s) => s.loadState)
+  const clip = clips.find((c) => String(c.id) === id)
   const { toggleFavorite, removeClip } = useClipStore()
   const [toast, setToast] = useState('')
 
@@ -24,23 +28,41 @@ export default function ClipDetail() {
   async function onShare() {
     if (!clip) return
     const result = await shareClip(clip)
-    if (result === 'copied') setToast('Link copied')
+    if (result === 'copied') {
+      setToast('Link copied')
+      track('clip_share')
+    }
     else if (result === 'failed') setToast('Could not share — copy the link manually')
+  }
+
+  if (!clip && (loadState === 'idle' || loadState === 'loading')) {
+    return <p role="status">Loading highlight…</p>
   }
 
   if (!clip) {
     return (
       <>
         <h1>Clip not found</h1>
+        <p>This highlight may have expired or been removed.</p>
         <Link to="/clips">Back to highlights</Link>
       </>
     )
   }
 
+  const related = clips.filter((item) => item.id !== clip.id && item.streamer === clip.streamer)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, 3)
+
   return (
     <>
       <Link to="/clips" className="back">← All highlights</Link>
-      <ClipPlayer clip={clip} />
+      <ClipPlayer
+        key={clip.id}
+        clip={clip}
+        preloadEmbed={!clip.mature &&
+          document.head.querySelector('meta[property="og:type"]')?.getAttribute('content') === 'video.other' &&
+          document.head.querySelector('meta[name="robots"]')?.getAttribute('content') === 'index,follow' &&
+          document.head.querySelector('link[rel="canonical"]')?.getAttribute('href') === canonicalClipUrl(clip.id)}
+      />
       <h1>{clip.title}</h1>
       <p className="meta">
         <span className="streamer">{clip.streamer}</span> · {clip.game} ·{' '}
@@ -80,6 +102,12 @@ export default function ClipDetail() {
       <p className="toast" role="status" aria-live="polite">{toast}</p>
       <SupportCard />
       <AffiliateCards />
+      {related.length > 0 && (
+        <section aria-labelledby="related-heading">
+          <h2 id="related-heading">More from {clip.streamer}</h2>
+          <div className="grid">{related.map((item) => <ClipCard key={item.id} clip={item} />)}</div>
+        </section>
+      )}
     </>
   )
 }

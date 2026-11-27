@@ -62,3 +62,23 @@ test("exports a real MP4 and writes a sidecar", { skip: !ffmpeg || !ffprobe }, a
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+
+test("trims one existing MP4 without changing the source", { skip: !ffmpeg || !ffprobe }, async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-trim-"));
+  const inputFile = path.join(__dirname, "..", "site", "media", "sample-highlight.mp4");
+  const target = path.join(dir, "trimmed copy.mp4");
+  try {
+    const originalSize = fs.statSync(inputFile).size;
+    const result = await exportClip({ inputFile, offset: 4, duration: 3, target, encoder: resolveEncoder() });
+    assert.equal(result.ok, true, result.error);
+    const probe = spawnSync("ffprobe", [
+      "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", target
+    ], { encoding: "utf8", timeout: 15000 });
+    assert.equal(probe.status, 0);
+    assert.ok(Math.abs(Number(probe.stdout) - 3) <= 0.05);
+    assert.equal(fs.statSync(inputFile).size, originalSize);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

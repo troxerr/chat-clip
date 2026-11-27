@@ -19,7 +19,7 @@ describe('ClipDetail share', () => {
       </MemoryRouter>,
     )
     await userEvent.click(screen.getByRole('button', { name: 'Share' }))
-    expect(writeText).toHaveBeenCalledWith(`https://clipspike.com/app/clips/${id}/`)
+    expect(writeText).toHaveBeenCalledWith(`https://clipspike.com/app/clips/${id}/?from=share`)
     expect(await screen.findByText('Link copied')).toBeInTheDocument()
   })
 })

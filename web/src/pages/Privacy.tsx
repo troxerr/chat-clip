@@ -21,7 +21,7 @@ export default function Privacy() {
       <h2>Twitch embeds and content</h2>
       <p>
         Clip thumbnails are loaded from Twitch&apos;s image servers as soon as a page is shown, so Twitch receives your IP address and
-        browser details at that point. When you press play, the clip is loaded from Twitch in an embedded player. Twitch then receives your IP address and
+        browser details at that point. Pressing play loads an embedded Twitch player. On a small set of featured watch pages, the player loads when the page opens, with autoplay off. Twitch receives your IP address and
         device information and may set cookies under its own <a href="https://www.twitch.tv/p/legal/privacy-notice/" target="_blank" rel="noopener noreferrer">Privacy Notice</a>.
         ClipSpike is not affiliated with or endorsed by Twitch. Clips belong to their creators.
       </p>
@@ -31,7 +31,7 @@ export default function Privacy() {
       </p>
       <ul>
         <li><strong>Google AdSense</strong> for display ads. Google and its partners may use cookies and similar technologies to serve and measure ads. See <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">how Google uses data</a>.</li>
-        <li><strong>Plausible Analytics</strong> (or a similar privacy-friendly tool) for aggregated, cookieless usage counts, including clicks on support, sponsor, affiliate and Pro links.</li>
+        <li><strong>Plausible Analytics</strong> (or a similar privacy-friendly tool) for aggregated, cookieless usage counts, including play and share clicks, download clicks, and clicks on support, sponsor, affiliate and Pro links.</li>
       </ul>
       <p>
         If you reject or don&apos;t choose, none of these load. You can change your choice any time with &quot;Cookie settings&quot; in the

@@ -34,6 +34,7 @@ fs.mkdirSync(path.join(stage, "tools"), { recursive: true });
 copy("tools/license.js");
 for (const item of ["main", "renderer", "preload.js", "build-config.json"]) copy(`win/${item}`);
 copy("mac/icon-512.png", "icon.png");
+copy("site/media/sample-highlight.mp4");
 
 for (const bin of ["runtime/bin/ffmpeg.exe", "runtime/bin/ffprobe.exe"]) {
   if (!fs.existsSync(path.join(repo, bin))) throw new Error(`${bin} is missing. Run tools/fetch-runtime-win.ps1 first.`);

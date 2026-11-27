@@ -3,7 +3,8 @@
 // head tags and JSON-LD, plus a sitemap listing them. The SPA still boots over the static body.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Plugin } from 'vite'
+import { loadEnv, type Plugin } from 'vite'
+import { buildConfig } from '../src/monetization/config'
 import {
   defaultContext,
   headTags,
@@ -11,11 +12,14 @@ import {
   pageMeta,
   pageUrl,
   prerenderPaths,
+  watchClips,
+  watchPageMeta,
   type HeadTag,
   type PageMeta,
   type SeoClip,
   type SeoContext,
 } from '../src/lib/seo'
+import { clipEmbedUrl } from '../src/lib/embed'
 import { parseClips } from '../src/lib/twitchData'
 
 const escapeHtml = (s: string) =>
@@ -49,9 +53,17 @@ export function renderPage(template: string, meta: PageMeta, base: string, ctx: 
     .slice(0, 10)
     .map((c) => `<li>${escapeHtml(c.title)} — ${escapeHtml(c.streamer)}</li>`)
     .join('')
-  const heading = meta.title.split(/ [|—] /)[0]
+  const watch = meta.ogType === 'video.other'
+    ? ctx.clips.find((clip) => `/clips/${clip.id}` === meta.path)
+    : undefined
+  const player = meta.indexable && watch?.slug
+    ? `<iframe src="${escapeHtml(clipEmbedUrl(watch.slug, false))}" title="${escapeHtml(watch.title)}" width="640" height="360" allowfullscreen loading="lazy"></iframe>`
+    : watch?.url && /^https:\/\/(?:clips\.|www\.)?twitch\.tv\//i.test(watch.url)
+      ? `<p><a href="${escapeHtml(watch.url)}">Open on Twitch</a></p>`
+      : ''
+  const heading = watch?.title ?? meta.title.split(/ [|—] /)[0]
   // React replaces #root's contents on boot; this is the no-JS / crawler-first view.
-  const body = `<main class="prerendered"><h1>${escapeHtml(heading)}</h1><p>${escapeHtml(meta.description)}</p>${clips ? `<ul>${clips}</ul>` : ''}<nav aria-label="Site"><ul>${nav}</ul></nav></main>`
+  const body = `<main class="prerendered"><h1>${escapeHtml(heading)}</h1>${player}<p>${escapeHtml(meta.description)}</p>${clips ? `<ul>${clips}</ul>` : ''}<nav aria-label="Site"><ul>${nav}</ul></nav></main>`
 
   return stripManagedHead(template)
     .replace('</head>', `${head}\n  </head>`)
@@ -76,24 +88,34 @@ export function loadClips(outDir: string, streamers: string[]): SeoClip[] {
 export function prerender(): Plugin {
   let base = '/'
   let outDir = 'dist'
+  let analytics = buildConfig({}, []).analytics
   return {
     name: 'clipspike-prerender',
     apply: 'build',
     configResolved(config) {
       base = config.base
       outDir = config.build.outDir
+      analytics = buildConfig(loadEnv(config.mode, config.envDir || config.root), []).analytics
     },
     writeBundle() {
       const defaults = defaultContext()
       const ctx = { ...defaults, clips: loadClips(outDir, defaults.streamers) }
       const template = readFileSync(join(outDir, 'index.html'), 'utf8')
       const paths = prerenderPaths(ctx)
-      for (const path of paths) {
+      const playable = watchClips(ctx)
+      mkdirSync(join(outDir, 'data'), { recursive: true })
+      writeFileSync(join(outDir, 'data', 'site-analytics.json'), JSON.stringify(analytics))
+      writeFileSync(join(outDir, 'data', 'featured.json'), JSON.stringify(playable[0] ?? null))
+      const indexPilotSize = 12
+      const watchPages = playable.map((clip, index) => watchPageMeta(clip, base, index < indexPilotSize))
+      const pages = [...paths.map((path) => pageMeta(path, base, ctx)), ...watchPages]
+      for (const meta of pages) {
+        const { path } = meta
         const dir = path === '/' ? outDir : join(outDir, ...path.split('/').filter(Boolean))
         mkdirSync(dir, { recursive: true })
-        writeFileSync(join(dir, 'index.html'), renderPage(template, pageMeta(path, base, ctx), base, ctx))
+        writeFileSync(join(dir, 'index.html'), renderPage(template, meta, base, ctx))
       }
-      writeFileSync(join(outDir, 'sitemap.xml'), renderSitemap(base, paths, new Date().toISOString().slice(0, 10)))
+      writeFileSync(join(outDir, 'sitemap.xml'), renderSitemap(base, pages.filter((meta) => meta.indexable).map((meta) => meta.path), new Date().toISOString().slice(0, 10)))
     },
   }
 }

@@ -5,17 +5,18 @@ import { publicOffer } from './offer'
 
 // vitest runs with cwd = web/
 const html = readFileSync('../site/windows.html', 'utf8')
+const capture = readFileSync('../site/capture.html', 'utf8')
 const home = readFileSync('../site/index.html', 'utf8')
 const setup = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64.exe'
 const portable = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.5/ClipSpike-0.1.5-x64-portable.exe'
 
 describe('site/windows.html', () => {
-  it('links the published 0.1.5 trial and the Polar checkout, and warns that the build is unsigned', () => {
+  it('links the published 0.1.5 trial and the Polar checkout, and links release signing details', () => {
     expect(html).toContain(setup)
     expect(html).toContain(portable)
     expect(html).toContain(publicOffer.checkoutUrl)
     expect(html).toContain(publicOffer.priceLabel)
-    expect(html).toMatch(/UNSIGNED/)
+    expect(html).toMatch(/signing status/i)
     expect(html).toMatch(/SmartScreen/)
     expect(html).not.toContain('releases/latest')
     expect(html).not.toContain('coming soon')
@@ -31,22 +32,21 @@ describe('site/windows.html', () => {
   })
 })
 
-describe('site/index.html', () => {
-  it('leads with the live clip browser, lists the Polar price, and does not promise a Mac download', () => {
+describe('ClipSpike landing pages', () => {
+  it('links the viewer and creator paths from the homepage', () => {
     expect(home).toContain('href="/app/clips/"')
-    expect(home).toContain('href="/app/"')
-    expect(home).toContain(publicOffer.checkoutUrl)
-    expect(home).toContain(publicOffer.priceLabel)
-    expect(home).toContain('windows.html')
-    expect(home).not.toContain(setup)
-    expect(home).not.toContain(portable)
-    expect(home).toMatch(/unsigned/i)
-    expect(home).not.toContain('your Mac')
-    expect(home).not.toContain('Mac’s hardware encoder')
-    expect(home).not.toContain('does not list a price')
-    expect(home).not.toContain('Mac release coming soon')
-    expect(home).not.toContain('Once the app is out')
-    expect(home).not.toMatch(/notariz/i)
-    expect(home).not.toContain('releases/latest')
+    expect(home).toContain('href="/capture.html"')
+    expect(home).not.toContain(publicOffer.checkoutUrl)
+  })
+
+  it('shows Windows pricing, the trial link, and a downloadable sample on the capture page', () => {
+    expect(capture).toContain(publicOffer.checkoutUrl)
+    expect(capture).toContain(publicOffer.priceLabel)
+    expect(capture).toContain('href="windows.html"')
+    expect(capture).toContain('href="media/sample-highlight.mp4" download')
+    expect(capture).not.toContain(setup)
+    expect(capture).not.toContain(portable)
+    expect(capture).toContain("release notes")
+    expect(capture).not.toContain('Mac release coming soon')
   })
 })

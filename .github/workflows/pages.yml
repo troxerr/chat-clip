@@ -35,9 +35,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Fetch Twitch data
         working-directory: web
-        # Push builds still deploy (the app falls back to demo data); scheduled/manual runs fail
-        # instead so a broken fetch never replaces a good deployment.
-        continue-on-error: ${{ github.event_name == 'push' }}
+        # A broken fetch must never replace a good deployment, including on pushes.
         env:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
@@ -75,6 +73,7 @@ jobs:
           cp -R site/. _site/
           echo clipspike.com > _site/CNAME
           cp -R web/dist _site/app
+          cp _site/app/data/site-analytics.json _site/analytics-config.json
       - name: Resolve published Windows download
         env:
           GH_TOKEN: ${{ github.token }}

@@ -26,6 +26,8 @@ export default function Streamers() {
   const [value, setValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const errId = useId()
+  const pipeline = useClipStore((s) => s.pipelineLogins)
+  const outsideCoverage = value.trim() && pipeline && !pipeline.includes(value.trim().toLowerCase())
   const full = backups.length + 1 >= MAX_STREAMERS
 
   const submit = (e: FormEvent) => {
@@ -52,13 +54,14 @@ export default function Streamers() {
             placeholder="Twitch username"
             autoComplete="off"
             aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errId : undefined}
+            aria-describedby={error ? errId : outsideCoverage ? `${errId}-coverage` : undefined}
             disabled={full}
           />
           <button type="submit" className="btn" disabled={full}>
             Add
           </button>
         </div>
+        {outsideCoverage && <p id={`${errId}-coverage`} className="meta">This channel can be saved to your list. ClipSpike has no live data or highlights for it yet.</p>}
         {error && (
           <p id={errId} role="alert" className="field-error">
             {error}
