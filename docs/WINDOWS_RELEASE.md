@@ -31,7 +31,7 @@ The Windows release workflow uses Azure Artifact Signing. The Public Trust profi
 1. Create a Microsoft Entra app and service principal with the **Artifact Signing Certificate Profile Signer**
    role on the certificate profile. Set up a federated credential with issuer
    `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, and subject
-   `repo:troxerr/chat-clip:environment:windows-signing`.
+   `repo:troxerr@59073831/chat-clip@1465825623:environment:windows-signing`.
 2. In the GitHub `windows-signing` environment, allow the `main` branch and `win-v*` tags.
    Set the environment variables `AZURE_SIGNING_CLIENT_ID` and `AZURE_SIGNING_TENANT_ID`.
 3. Run **Windows release** manually on `main` to validate signing before pushing a tag.

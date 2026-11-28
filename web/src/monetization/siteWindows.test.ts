@@ -7,17 +7,17 @@ import { publicOffer } from './offer'
 const html = readFileSync('../site/windows.html', 'utf8')
 const capture = readFileSync('../site/capture.html', 'utf8')
 const home = readFileSync('../site/index.html', 'utf8')
-const setup = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.6/ClipSpike-0.1.6-x64.exe'
-const portable = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.6/ClipSpike-0.1.6-x64-portable.exe'
+const setup = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.7/ClipSpike-0.1.7-x64.exe'
+const portable = 'https://github.com/troxerr/chat-clip/releases/download/win-v0.1.7/ClipSpike-0.1.7-x64-portable.exe'
 
 describe('site/windows.html', () => {
-  it('links the published 0.1.6 trial and the Polar checkout, and warns that the build is unsigned', () => {
+  it('links the published 0.1.7 trial and the Polar checkout, and identifies the signed installer', () => {
     expect(html).toContain(setup)
     expect(html).toContain(portable)
     expect(html).toContain(publicOffer.checkoutUrl)
     expect(html.indexOf(setup)).toBeLessThan(html.indexOf(publicOffer.checkoutUrl))
     expect(html).toContain(publicOffer.priceLabel)
-    expect(html).toMatch(/UNSIGNED/)
+    expect(html).toContain("Signed with Azure Artifact Signing.")
     expect(html).toMatch(/SmartScreen/)
     expect(html).not.toContain('releases/latest')
     expect(html).not.toContain('coming soon')
@@ -50,7 +50,7 @@ describe('ClipSpike landing pages', () => {
     expect(capture).toContain('href="media/sample-highlight.mp4" download')
     expect(capture).not.toContain(setup)
     expect(capture).not.toContain(portable)
-    expect(capture).toMatch(/unsigned/i)
+    expect(capture).toContain("The Windows installer is signed.")
     expect(capture).not.toContain('Mac release coming soon')
   })
 })
