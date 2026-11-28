@@ -1,9 +1,13 @@
-# Release packaging: same as electron-builder.yml, but code-signed and with an
-# update feed. Signing activates only when CSC_LINK / CSC_KEY_PASSWORD (a .pfx
-# certificate) are set in the environment; see docs/WINDOWS_RELEASE.md.
+# Release packaging uses Azure Artifact Signing and the public update feed.
 extends: electron-builder.yml
 win:
   signAndEditExecutable: true
+  forceCodeSigning: true
+  azureSignOptions:
+    publisherName: Austin Taylor
+    endpoint: https://eus.codesigning.azure.net/
+    codeSigningAccountName: ClipSpikeSigning
+    certificateProfileName: ClipSpike
   artifactName: ClipSpike-${version}-x64.exe
 portable:
   artifactName: ClipSpike-${version}-x64-portable.exe

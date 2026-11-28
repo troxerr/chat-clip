@@ -7,7 +7,7 @@ or push a `win-v*` tag), which builds with `win/electron-builder.release.yml`.
 ## Names and versions
 Everything Windows is **ClipSpike**: `productName` and `appId` (`com.clipspike.app`) in
 `win/electron-builder.yml`, the install folder, `%APPDATA%\ClipSpike`, and the artifacts. The
-Windows app version is `win/package.json` `version`, currently **0.1.6** (the root `package.json`
+Windows app version is `win/package.json` `version`, currently **0.1.7** (the root `package.json`
 3.0.0 is the Mac/engine version; the two are independent). Bump `win/package.json` before tagging.
 The pre-rename names "ChatClip" and "Highlight Desk" (and `Twitch-Highlight-Desk`) appear only in
 migration code and docs; a package still carrying them predates the rename.
@@ -24,23 +24,21 @@ clip from the simulated chat spike, and fails if it writes anything beside the e
 folder is not where expected.
 
 ## Setting up code signing
-1. Get an Authenticode code-signing certificate (OV or EV) exported as a password-protected
-   `.pfx`. EV certificates usually live on a hardware token or cloud HSM and cannot be exported;
-   they need a different signing step (e.g. Azure Trusted Signing) that this workflow does not implement.
-2. Base64-encode the file in PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("cert.pfx")) | Set-Clipboard`.
-3. In `troxerr/chat-clip` (Settings, Secrets and variables, Actions) add the secrets
-   `WIN_CSC_LINK` (the base64 text, or an https URL to the `.pfx`) and `WIN_CSC_KEY_PASSWORD`.
-   The workflow maps them to electron-builder's `CSC_LINK` / `CSC_KEY_PASSWORD`. Both must be
-   set; if either is missing the build is unsigned.
-4. Run the workflow. It signs the installer and the Portable exe, then fails unless every
-   `ClipSpike-*-x64*.exe` reports `Valid` from `Get-AuthenticodeSignature`. Never commit the
-   certificate or password.
 
-**SmartScreen:** even a signed build can show "Windows protected your PC" until it has
-reputation. An OV certificate builds reputation over downloads and time; EV generally avoids
-the warning immediately. Unsigned builds always warn ("Unknown publisher", then More info, Run
-anyway), and the Portable exe is the most likely to be flagged (a freshly downloaded,
-self-extracting exe). Manual verification: [WINDOWS_TEST_CHECKLIST.md](WINDOWS_TEST_CHECKLIST.md).
+The Windows release workflow uses Azure Artifact Signing. The Public Trust profile is
+`ClipSpike` in the `ClipSpikeSigning` account in East US.
+
+1. Create a Microsoft Entra app and service principal with the **Artifact Signing Certificate Profile Signer**
+   role on the certificate profile. Set up a federated credential with issuer
+   `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, and subject
+   `repo:troxerr/chat-clip:environment:windows-signing`.
+2. In the GitHub `windows-signing` environment, allow the `main` branch and `win-v*` tags.
+   Set the environment variables `AZURE_SIGNING_CLIENT_ID` and `AZURE_SIGNING_TENANT_ID`.
+3. Run **Windows release** manually on `main` to validate signing before pushing a tag.
+   The job uses GitHub OIDC to sign in to Azure and checks both installers with `Get-AuthenticodeSignature`.
+
+Signed installers may still show a SmartScreen warning while reputation builds.
+[Microsoft signing setup](https://learn.microsoft.com/en-us/azure/artifact-signing/how-to-signing-integrations)
 
 ## What the release workflow enforces
 - `WIN_UPDATE_URL` must be set (https). It is baked into the app as a generic
@@ -51,10 +49,7 @@ self-extracting exe). Manual verification: [WINDOWS_TEST_CHECKLIST.md](WINDOWS_T
   Sandbox Polar values (`apiBase` or `checkoutUrl` containing `sandbox`) only warn until the repo variable
   `REQUIRE_PRODUCTION_LICENSING` is set to `true`; then they fail the build and `apiBase` must be
   `https://api.polar.sh`. Set it when the production Polar product and checkout link are in `build-config.json`.
-- Code signing is **optional**. With both `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD` set the
-  installer is signed and the signature verified. Otherwise the workflow logs a warning, writes
-  an "Unsigned build" note to the run summary, builds an unsigned installer, and the draft
-  release notes say it is unsigned. A missing cert never fails the run.
+- Setup and Portable must both pass Authenticode signature verification before the workflows publish files.
 - `latest.yml` and the app feed config must exist. Tag builds attach installer + `latest.yml`
   to a draft GitHub release.
 - Tag builds also run `win/tools/release-guards.js` (unit-tested in `win/test/release-guards.test.js`):
@@ -84,11 +79,7 @@ work against the sandbox. To test against the sandbox again, point `apiBase`, `p
 `checkoutUrl` at sandbox values in a scratch build (the release guard warns about sandbox values, and
 fails them when the repo variable `REQUIRE_PRODUCTION_LICENSING` is `true`).
 
-## Unsigned-first path
-Without a certificate, Windows SmartScreen shows "Windows protected your PC" (More info, then
-Run anyway) until the installer builds reputation. Tell early users this. Add a certificate
-later by only setting the two secrets; nothing else changes. Updates still work unsigned
-(electron-updater verifies the sha512 in `latest.yml`, not a publisher signature).
+## Publishing a release
 
 1. Set `WIN_UPDATE_URL` (below) and the licensing values in `win/build-config.json`.
 2. Push a `win-v*` tag (or run the workflow manually for a test build).
@@ -124,7 +115,7 @@ otherwise copy them from the draft release or the workflow artifact). Unsigned b
 | `WIN_UPDATE_URL` (variable) | Required. Public https folder for the installer and `latest.yml`, e.g. `https://downloads.astlabs.dev/win/` |
 | Licensing | Required. `productId`, `checkoutUrl`, `licenseRequired: true` in `win/build-config.json` (matching the Polar/Lemon Squeezy setup in `tools/license.js`) |
 | R2 upload credentials | Recommended. Secrets `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` in this repo; otherwise upload by hand |
-| Code-signing cert (.pfx) + password | Optional. Secrets `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD`; unset gives an unsigned installer |
+| Azure signing identity | Required. Configure OIDC and the `windows-signing` environment as documented above. |
 | Optional runtime mirror | Variable `RUNTIME_MIRROR_URL` hosting the pinned assets from `tools/runtime-win.json` |
 | Decisions deferred | Version, app ID, product name |
 

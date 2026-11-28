@@ -1,29 +1,24 @@
 name: Windows release
 
-# Manual or tag-triggered. Builds the Windows installer and the Portable exe; signs it when a
-# code-signing certificate is configured (otherwise builds an UNSIGNED installer),
-# attaches it to a draft GitHub release for tag builds, and uploads it to
-# Cloudflare R2 for tag builds when R2 credentials are configured.
-# Versions/names are not changed here.
+# Manual runs produce signed test artifacts. Version tags also create a draft
+# release and upload the signed installer and update feed to R2.
 on:
   workflow_dispatch:
   push:
     tags: ["win-v*"]
 
-permissions:
-  contents: write
-
 jobs:
   release:
     name: Build Windows release installer
     runs-on: windows-latest
+    environment: windows-signing
+    permissions:
+      contents: write
+      id-token: write
     env:
       CLIPSPIKE_KEYCHAIN: "0"
       RUNTIME_MIRROR_URL: ${{ vars.RUNTIME_MIRROR_URL }}
       WIN_UPDATE_URL: ${{ vars.WIN_UPDATE_URL }}
-      # electron-builder signs automatically when these are set.
-      CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-      CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -44,20 +39,9 @@ jobs:
         run: node win/tools/release-guards.js tag "$env:REF_NAME"
         shell: pwsh
 
-      - name: Report signing status
+      - name: Verify the update feed URL
         shell: pwsh
         run: |
-          if ($env:CSC_LINK -and $env:CSC_KEY_PASSWORD) {
-            "Signing: certificate configured; the installer will be signed."
-            "SIGNED=true" | Out-File -FilePath $env:GITHUB_ENV -Append
-          } else {
-            # Clear both so electron-builder does not try to sign with a half-set pair.
-            "CSC_LINK=" | Out-File -FilePath $env:GITHUB_ENV -Append
-            "CSC_KEY_PASSWORD=" | Out-File -FilePath $env:GITHUB_ENV -Append
-            "SIGNED=false" | Out-File -FilePath $env:GITHUB_ENV -Append
-            Write-Host "::warning title=Unsigned build::WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD are not both set. Building an UNSIGNED installer; Windows SmartScreen will warn users."
-            "### Unsigned build`nNo code-signing certificate was configured (WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD). This installer is **unsigned** and Windows SmartScreen will warn users." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          }
           if (-not $env:WIN_UPDATE_URL) { Write-Host "::error::Repo variable WIN_UPDATE_URL is not set; the installed app would have no update feed."; exit 1 }
           if ($env:WIN_UPDATE_URL -notmatch '^https://') { Write-Host "::error::WIN_UPDATE_URL must be an https:// URL."; exit 1 }
 
@@ -85,16 +69,24 @@ jobs:
         working-directory: win
         run: npm ci --no-audit --no-fund
 
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_SIGNING_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_SIGNING_TENANT_ID }}
+          allow-no-subscriptions: true
+
       - name: Build the installer
         working-directory: win
         run: npm run pack:release
 
       - name: Verify the signature
-        if: env.SIGNED == 'true'
         shell: pwsh
         run: |
           $bad = $false
-          foreach ($exe in @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64*.exe")) {
+          $files = @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64*.exe")
+          if ($files.Count -ne 2) { Write-Host "::error::Expected setup and portable installers."; exit 1 }
+          foreach ($exe in $files) {
             $sig = Get-AuthenticodeSignature $exe.FullName
             "$($exe.Name): $($sig.Status)"
             if ($sig.Status -ne "Valid") { Write-Host "::error::$($exe.Name) signature is $($sig.Status)"; $bad = $true }
@@ -127,10 +119,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $files = @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64.exe") + @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64.exe.blockmap") + @(Get-ChildItem win\dist -Filter "ClipSpike-*-x64-portable.exe") + @(Get-ChildItem win\dist -Filter latest.yml -ErrorAction SilentlyContinue)
-          $notes = "Windows build"
-          if ($env:SIGNED -ne "true") {
-            $notes = "Windows build. **UNSIGNED**: no code-signing certificate was configured, so Windows SmartScreen will show an 'unknown publisher' warning (More info, then Run anyway)."
-          }
+          $notes = "Windows build signed with Azure Artifact Signing."
           gh release create "${{ github.ref_name }}" --draft --title "${{ github.ref_name }}" --notes $notes ($files.FullName)
 
       # Publishes the update feed. Installer first, then latest.yml, so clients never
