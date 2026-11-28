@@ -106,6 +106,12 @@ const NSTimeInterval HDLicenseGraceInterval = 14 * 24 * 60 * 60;
   [self refresh];
 }
 
+- (void)invalidateValidation {
+  [self.memory removeObjectForKey:kAccountValidated];
+  if (![HDKeychain isDisabled]) [HDKeychain deleteAccount:kAccountValidated service:kLicenseService];
+  [self refresh];
+}
+
 - (void)clear {
   [self.memory removeAllObjects];
   [HDKeychain deleteAccount:kAccountKey service:kLicenseService];

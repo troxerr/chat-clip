@@ -28,12 +28,17 @@ const platform = require("./lib/platform.js");
 const overlays = require("./lib/overlays.js");
 const captions = require("./lib/captions.js");
 const feedback = require("./lib/feedback.js");
+const { clipPayload } = require("./lib/clip-webhook.js");
+const { createWebhookDelivery } = require("./lib/webhook-delivery.js");
+const webhook = createWebhookDelivery({});
 const freeTier = require("./lib/freetier.js");
 
 const VERSION = "3.0.0";
 const EVENTS = process.env.CLIPSPIKE_EVENTS === "1";
 const round = (value) => Math.round((Number(value) || 0) * 100) / 100;
 const children = new Set();
+const partialDownloads = new Set();
+let shuttingDown = false;
 let feedbackSession = null;
 
 // Logs session-end once (normal finish or cancel) and announces a review when due.
@@ -99,10 +104,18 @@ function fatal(message) {
   shutdown(1);
 }
 
-function shutdown(code = 0) {
+async function shutdown(code = 0) {
+  if (shuttingDown) return;
+  shuttingDown = true;
   endFeedbackSession({ exitCode: code, cancelled: code === 130 || code === 143 });
-  for (const child of children) { try { child.kill("SIGTERM"); } catch {} }
-  try { killReframes(); } catch {}
+  const closed = Array.from(children, (child) => new Promise((resolve) => {
+    child.once("close", resolve);
+    try { child.kill("SIGKILL"); } catch {}
+  }));
+  await Promise.allSettled([...closed, killReframes()]);
+  for (const file of partialDownloads) {
+    try { fs.rmSync(file, { force: true }); } catch {}
+  }
   process.exit(code);
 }
 
@@ -115,6 +128,7 @@ function have(command, args) {
 }
 
 function run(command, args, { onStdoutLine } = {}) {
+  if (shuttingDown) return Promise.resolve({ code: -1, stdout: "", stderr: "VOD cancelled." });
   return new Promise((resolve) => {
     let stderr = "";
     let stdout = "";
@@ -190,6 +204,15 @@ function ffmpegSupportsHttps() {
 // Cut [start, start+duration) from the VOD into an MP4 without re-encoding.
 async function downloadRange({ vodUrl, playlist, start, duration, target, onProgress }) {
   const partial = target + ".partial";
+  partialDownloads.add(partial);
+  try {
+    return await writeDownload({ vodUrl, playlist, start, duration, target, onProgress, partial });
+  } finally {
+    try { fs.rmSync(partial, { force: true }); partialDownloads.delete(partial); } catch {}
+  }
+}
+
+async function writeDownload({ vodUrl, playlist, start, duration, target, onProgress, partial }) {
   const progress = onProgress
     ? (line) => {
       if (!line.startsWith("out_time_us=")) return;
@@ -210,23 +233,23 @@ async function downloadRange({ vodUrl, playlist, start, duration, target, onProg
   } else {
     // Fallback for an FFmpeg build without HTTPS: Streamlink fetches, FFmpeg remuxes.
     const ts = target + ".ts.partial";
+    partialDownloads.add(ts);
     const args = ["--force", "--hls-start-offset", formatTimestamp(start), "-o", ts, vodUrl, "best"];
     if (duration) args.splice(1, 0, "--hls-duration", formatTimestamp(Math.ceil(duration)));
     const fetched = await run("streamlink", args);
     if (fetched.code !== 0) {
-      try { fs.rmSync(ts, { force: true }); } catch {}
+      try { fs.rmSync(ts, { force: true }); partialDownloads.delete(ts); } catch {}
       return { ok: false, error: fetched.stderr || fetched.stdout || `Streamlink exited with ${fetched.code}` };
     }
     result = await run("ffmpeg", [
       "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-i", ts,
       "-c", "copy", "-bsf:a", "aac_adtstoasc", "-movflags", "+faststart", "-f", "mp4", partial
     ]);
-    try { fs.rmSync(ts, { force: true }); } catch {}
+    try { fs.rmSync(ts, { force: true }); partialDownloads.delete(ts); } catch {}
   }
   let size = 0;
   try { size = fs.statSync(partial).size; } catch {}
-  if (result.code !== 0 || size <= 0) {
-    try { fs.rmSync(partial, { force: true }); } catch {}
+  if (shuttingDown || result.code !== 0 || size <= 0) {
     return { ok: false, error: result.stderr || `FFmpeg exited with code ${result.code}` };
   }
   fs.renameSync(partial, target);
@@ -459,6 +482,7 @@ async function main() {
     const rawTarget = uniquePath(folder, `${base}.mp4`);
     emit("clip-requested", { reason: moment.reason, trigger: "vod", at: moment.at });
     const cut = await downloadRange({ vodUrl, playlist, start: clipStart, duration: clipEnd - clipStart, target: rawTarget });
+    if (shuttingDown) return;
     if (!cut.ok) {
       emit("clip-failed", { at: moment.at, reason: moment.reason, error: cut.error });
       continue;
@@ -496,6 +520,7 @@ async function main() {
         input: rawTarget, width: reframeConfig.width, height: reframeConfig.height,
         index: saved + 1, metadata
       });
+      if (shuttingDown) { extras.cleanup(); return; }
       // Free plan: after the weekly allowance, clips carry a watermark.
       const tier = freeTier.status({ dir: jobStore.stateDir });
       const watermark = tier.watermark ? freeTier.prepareWatermark() : null;
@@ -519,20 +544,21 @@ async function main() {
         priority: reframeConfig.priority
       };
       let reframe = await reframeClip({ ...reframeOptions, extraFilters: extras.filters, ffmpegPath: extras.filters.length ? overlayPlan.ffmpeg : "ffmpeg" });
-      if (!reframe.ok && extras.filters.length) {
+      if (!shuttingDown && !reframe.ok && extras.filters.length) {
         emit("error", { message: `Could not burn in the overlay (${reframe.error.split("\n").pop()}). Saving the clip without it.` });
         if (metadata.hook) metadata.hook.burned = false;
         if (metadata.captions) metadata.captions.burned = false;
         reframe = await reframeClip(reframeOptions);
       }
       extras.cleanup();
+      if (shuttingDown) return;
       if (reframe.ok) {
         primary = verticalTarget;
         metadata.reframed = true;
         metadata.watermarked = Boolean(watermark);
         if (tier.plan === "free" && !tier.watermark) freeTier.recordClip({ dir: jobStore.stateDir });
         if (tier.plan === "free") emit("free-tier", freeTier.status({ dir: jobStore.stateDir }));
-        metadata.vertical = { file: path.basename(verticalTarget), width: reframeConfig.width, height: reframeConfig.height };
+        metadata.vertical = { file: path.basename(verticalTarget), width: reframeConfig.width, height: reframeConfig.height, layout: reframe.layout };
         metadata.file = path.basename(verticalTarget);
         if (!storageConfig.keepRaw) {
           try { fs.rmSync(rawTarget, { force: true }); } catch {}
@@ -580,6 +606,7 @@ async function main() {
     } catch (error) {
       emit("error", { message: `Could not update clip history: ${error.message}` });
     }
+    await webhook.deliver(clipPayload("clip.saved", metadata, { localPath: primary })).catch((error) => emit("error", { message: error.message }));
     emit("clip-saved", {
       path: primary,
       provider: "local",

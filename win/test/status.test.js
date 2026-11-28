@@ -84,3 +84,19 @@ test("an automatic restart shows as starting with the reason, and clears once th
   assert.equal(state.phase, "buffering");
   assert.equal(state.lastError, "");
 });
+
+test("capture samples stay bounded and export status is independent of upload count", () => {
+  let state = started(INITIAL, "example");
+  state = reduce(state, { type: "ready", settings: { sensitivity: 1.5 } });
+  for (let index = 0; index < 40; index++) {
+    state = reduce(state, { type: "status", recording: true, joined: true, mediaTime: 10,
+      participants: index, threshold: 30, trigger: index === 39, exporting: true });
+  }
+  state = reduce(state, { type: "clip-reframed" });
+  state = reduce(state, { type: "queue-updated", items: [{ id: "clip-1" }] });
+  assert.equal(state.chatSamples.length, 30);
+  assert.deepEqual(state.chatSamples.at(-1), { participants: 39, threshold: 30, spike: true });
+  assert.equal(state.sensitivity, 1.5);
+  assert.equal(state.renderStage, "Vertical export ready");
+  assert.equal(state.queuedUploads, 1);
+});

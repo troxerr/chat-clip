@@ -82,3 +82,26 @@ test("trims one existing MP4 without changing the source", { skip: !ffmpeg || !f
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("the FFmpeg queue rejects excess work and removes timed-out partial output", async () => {
+  const { enqueueRender, cancelRenders } = require("../lib/ffmpeg-queue.js");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-render-queue-"));
+  const submit = (number, script, timeoutMs) => enqueueRender({
+    group: "test", ffmpegPath: process.execPath, target: path.join(dir, `${number}.mp4`), timeoutMs,
+    run: (render) => render((draft) => ["-e", script, draft])
+  });
+  const write = `require("node:fs").writeFileSync(process.argv[1], "video");`;
+  const target = path.join(dir, "0.mp4");
+  const blocker = submit(0, write + "setInterval(() => {}, 1000)", 1200);
+  const jobs = [submit(1, write, 5000), submit(2, write, 5000)];
+  try {
+    assert.match((await submit(0, write, 5000)).error, /already queued/);
+    assert.match((await submit(3, write, 5000)).error, /queue is full/);
+    assert.match((await blocker).error, /timed out/);
+    assert.equal(fs.existsSync(target + ".partial"), false);
+    assert.deepEqual((await Promise.all(jobs)).map((result) => result.ok), [true, true]);
+  } finally {
+    await cancelRenders("test");
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

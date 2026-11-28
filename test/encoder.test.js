@@ -90,3 +90,11 @@ test("an unsupported or 'auto' CLIPSPIKE_ENCODER is ignored", () => {
   assert.equal(resolveEncoder({ ffmpegPath: "ff-bad", platform: "win32", spawnImpl, env: { CLIPSPIKE_ENCODER: "not_an_encoder" } }), "h264_nvenc");
   assert.equal(resolveEncoder({ ffmpegPath: "ff-auto", platform: "win32", spawnImpl, env: { CLIPSPIKE_ENCODER: "auto" } }), "h264_nvenc");
 });
+
+test("Windows hardware initialization failure falls back to the bundled software encoder", () => {
+  const { fallbackEncoder } = require("../lib/encoder.js");
+  assert.equal(fallbackEncoder("h264_nvenc", "No capable devices found", "win32"), "libopenh264");
+  assert.equal(fallbackEncoder("h264_mf", "Error opening encoder", "win32"), "libopenh264");
+  assert.equal(fallbackEncoder("libopenh264", "Error opening encoder", "win32"), null);
+  assert.equal(fallbackEncoder("h264_amf", "Permission denied", "win32"), null);
+});

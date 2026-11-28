@@ -6,12 +6,6 @@ import { publicOffer } from '../monetization/offer'
 import type { MonetizationConfig } from '../monetization/config'
 import { isEmail, joinWaitlist, mailtoHref, type WaitlistResult } from '../monetization/waitlist'
 
-const features = [
-  ['Free clip browser', 'Browse Twitch clips on the web at no charge. That does not require a license.'],
-  ['Desktop capture', 'The Windows app watches chat and saves the moment as a vertical clip.'],
-  ['7-day trial', 'Capture runs for 7 days. After that, a license is required to keep capturing.'],
-]
-
 export default function Pro({ config = monetization, mac = false }: { config?: MonetizationConfig; mac?: boolean }) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
@@ -49,25 +43,16 @@ export default function Pro({ config = monetization, mac = false }: { config?: M
     <>
       <h1>{mac ? 'ClipSpike for macOS waitlist' : 'ClipSpike Pro'}</h1>
       {mac ? (
-        <p className="meta">Get an email when ClipSpike is available for macOS.</p>
+        <p className="meta">Get an email when ClipSpike is available for Macs with Apple Silicon.</p>
       ) : (
         <>
-          <p className="meta">
-            Web clip browsing stays free. Pro is {publicOffer.priceLabel} {publicOffer.billing} for the Windows app.
-            The app includes a {publicOffer.trialDays}-day trial, then the license is required to keep capturing.
-            One license covers {publicOffer.computers} computers.
+          <p className="pro-lede">
+            Capture Twitch chat spikes as vertical clips on Windows. Try it free for {publicOffer.trialDays} days.
           </p>
-          <ul className="pro-features">
-            {features.map(([t, d]) => (
-              <li key={t}>
-                <strong>{t}</strong>
-                <span>{d}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="row">
+          <p className="meta">A {publicOffer.priceLabel} {publicOffer.billing} license covers {publicOffer.computers} computers. Web clip browsing is free.</p>
+          <div className="hero-actions">
             <a className="btn" href="/windows.html" onClick={() => track('windows_trial_click', { entry: 'pro' }, config)}>
-              Download free trial
+              Download Windows free trial
             </a>
             {config.checkoutUrl && (
               <a

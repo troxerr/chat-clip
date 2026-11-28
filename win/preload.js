@@ -28,9 +28,19 @@ contextBridge.exposeInMainWorld("hd", {
     deactivate: () => call("license.deactivate"),
     buy: () => call("license.buy")
   },
+  webhooks: {
+    get: () => call("webhooks.get"),
+    save: (changes) => call("webhooks.save", {
+      url: String(changes?.url || ""), enabled: changes?.enabled === true,
+      key: String(changes?.key || ""), removeKey: changes?.removeKey === true
+    }),
+    test: () => call("webhooks.test"),
+    log: () => call("webhooks.log")
+  },
   settings: { set: (changes) => call("settings.set", {
     launchAtLogin: typeof changes?.launchAtLogin === "boolean" ? changes.launchAtLogin : undefined,
-    exportLayout: typeof changes?.exportLayout === "string" ? changes.exportLayout : undefined
+    exportLayout: typeof changes?.exportLayout === "string" ? changes.exportLayout : undefined,
+    sensitivity: typeof changes?.sensitivity === "number" ? changes.sensitivity : undefined
   }) },
   update: {
     state: () => call("update.state"),

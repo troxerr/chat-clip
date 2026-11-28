@@ -191,6 +191,7 @@ describe('checkout URL', () => {
     const { unmount } = render(<Pro config={monetization} />)
     expect(screen.getByRole('link', { name: 'Get ClipSpike Pro' })).toHaveAttribute('href', publicOffer.checkoutUrl)
     expect(screen.getByText(/\$39 one-time/)).toBeInTheDocument()
+    expect(screen.getByText(/Try it free for 7 days/)).toBeInTheDocument()
     unmount()
 
     const hidden = { ...monetization, checkoutUrl: '' }
@@ -218,6 +219,14 @@ describe('checkout URL', () => {
 
 describe('waitlist', () => {
   const withEndpoint = buildConfig({ VITE_WAITLIST_ENDPOINT: 'https://formspree.io/f/abc', VITE_WAITLIST_EMAIL: 'a@b.co' }, [])
+
+  it('offers the Windows trial from Pro and an Apple Silicon waitlist from the Mac route', () => {
+    const { rerender } = render(<Pro config={monetization} />)
+    expect(screen.getByRole('link', { name: 'Download Windows free trial' })).toHaveAttribute('href', '/windows.html')
+    rerender(<Pro config={monetization} mac />)
+    expect(screen.getByText(/Macs with Apple Silicon/)).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Download Windows free trial' })).toBeNull()
+  })
 
   it('posts JSON to the endpoint, falls back to mailto, else unavailable', async () => {
     const ok = vi.fn().mockResolvedValue({ ok: true })

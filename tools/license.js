@@ -51,6 +51,18 @@ function normalize(data, action, expectedProductId = "") {
   };
 }
 
+function rejection(message, status = "") {
+  const error = new Error(message);
+  if (status === "expired" || /^(?:this |the )?license(?: key)? (?:has )?expired[.!]?$/i.test(message)) {
+    error.licenseCode = "expired";
+  } else if (/activation limit (?:reached|exceeded)|maximum number of activations/i.test(message)) {
+    error.licenseCode = "activation-limit";
+  } else {
+    error.licenseCode = "rejected";
+  }
+  return error;
+}
+
 function transientError(message) {
   const error = new Error(message);
   error.transient = true;
@@ -103,7 +115,7 @@ async function lemonRequest(action, {
     if (response.status >= 500 || response.status === 429) {
       throw transientError(data.error || data.message || `License service unavailable (${response.status}).`);
     }
-    throw new Error(data.error || data.message || `License service failed (${response.status}).`);
+    throw rejection(data.error || data.message || `License service failed (${response.status}).`);
   }
   if (data.error) throw new Error(String(data.error));
   if (action === "activate" && !data.activated) throw new Error("The license key could not be activated.");
@@ -202,15 +214,19 @@ async function polarRequest(action, {
       throw transientError(polarErrorMessage(data, `License service unavailable (${response.status}).`));
     }
     if (response.status === 404) {
-      throw new Error(action === "deactivate" ? "The activation could not be found." : "The license key is not valid, or has been revoked or expired.");
+      throw rejection(action === "deactivate" ? "The activation could not be found." : "The license key is not valid, or has been revoked or expired.");
     }
     if (response.status === 403) {
-      throw new Error(polarErrorMessage(data, "This license cannot be activated (it may be revoked, expired, or at its activation limit)."));
+      throw rejection(polarErrorMessage(data, "The license service rejected this request. Check your key and available activations."));
     }
     throw new Error(polarErrorMessage(data, `License service failed (${response.status}).`));
   }
   try {
-    return normalizePolar(data, action, { benefitId, instanceId });
+    const result = normalizePolar(data, action, { benefitId, instanceId });
+    if (action === "activate" && !result.valid) {
+      throw rejection(result.status === "expired" ? "This license has expired." : "This license is not active.", result.status);
+    }
+    return result;
   } catch (error) {
     // Polar has already created the activation by now. A key from another product must not
     // keep one of the buyer's activation slots, so release it (best effort) before failing.
@@ -251,7 +267,7 @@ async function main() {
 
 if (require.main === module) {
   main().catch((error) => {
-    process.stdout.write(JSON.stringify({ ok: false, error: error.message, transient: Boolean(error.transient) }) + "\n");
+    process.stdout.write(JSON.stringify({ ok: false, error: error.message, code: error.transient ? "temporarily-unavailable" : error.licenseCode || "rejected", transient: Boolean(error.transient) }) + "\n");
     process.exitCode = 1;
   });
 }

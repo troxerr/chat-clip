@@ -11,7 +11,11 @@ const INITIAL = Object.freeze({
   chatConnected: false,
   clipsSaved: 0,
   lastClipPath: "",
-  lastError: ""
+  lastError: "",
+  chatSamples: Object.freeze([]),
+  sensitivity: null,
+  renderStage: "Ready",
+  queuedUploads: 0
 });
 
 const BUFFER_SECONDS = 3;
@@ -38,12 +42,22 @@ function reduce(state, event) {
       next.phase = "buffering";
       next.channel = event.channel || next.channel;
       next.lastError = "";
+      next.sensitivity = Number.isFinite(event.settings?.sensitivity) ? event.settings.sensitivity : null;
       break;
     case "status": {
       if (event.stopping) { next.phase = "stopping"; break; }
-      if (event.exporting === true) { next.phase = "exporting"; break; }
       if (typeof event.mediaTime === "number") next.mediaTime = event.mediaTime;
       if (typeof event.joined === "boolean") next.chatConnected = event.joined;
+      if (Number.isFinite(event.participants) && Number.isFinite(event.threshold)) {
+        next.chatSamples = [...state.chatSamples.slice(-29), {
+          participants: event.participants, threshold: event.threshold, spike: event.trigger === true
+        }];
+      }
+      if (event.exporting === true) {
+        next.phase = "exporting";
+        if (next.renderStage === "Ready" || next.renderStage === "Saved" || next.renderStage === "Failed") next.renderStage = "Extracting clip";
+        break;
+      }
       if (event.recording === true) {
         if (next.phase === "exporting" || next.phase === "starting" || next.phase === "buffering" || next.phase === "watching") {
           next.phase = next.mediaTime >= BUFFER_SECONDS ? "watching" : "buffering";
@@ -54,12 +68,29 @@ function reduce(state, event) {
       }
       break;
     }
+    case "clip-requested":
+      next.renderStage = "Collecting video";
+      break;
+    case "clip-exported":
+      next.renderStage = "Preparing export";
+      break;
+    case "clip-reframed":
+      next.renderStage = "Vertical export ready";
+      break;
+    case "clip-uploading":
+      next.renderStage = "Uploading";
+      break;
+    case "queue-updated":
+      next.queuedUploads = Array.isArray(event.items) ? event.items.length : 0;
+      break;
     case "clip-saved":
+      next.renderStage = event.queued ? "Waiting to upload" : "Saved";
       next.clipsSaved += 1;
       next.lastClipPath = event.path || next.lastClipPath;
       if (next.phase === "exporting") next.phase = "watching";
       break;
     case "clip-failed":
+      next.renderStage = "Failed";
       next.lastError = event.error || "A highlight could not be saved.";
       if (next.phase === "exporting") next.phase = "watching";
       break;
@@ -90,7 +121,7 @@ function stopped(state, { unexpected = false, detail = "" } = {}) {
     const lastError = detail || state.lastError || "The recorder stopped unexpectedly.";
     return { ...state, phase: "error", lastError, message: lastError };
   }
-  return { ...state, phase: "idle", mediaTime: 0, chatConnected: false, message: describe({ ...state, phase: "idle" }) };
+  return { ...state, phase: "idle", mediaTime: 0, chatConnected: false, chatSamples: [], sensitivity: null, renderStage: "Ready", message: describe({ ...state, phase: "idle" }) };
 }
 
 module.exports = { INITIAL, BUFFER_SECONDS, reduce, started, stopped };

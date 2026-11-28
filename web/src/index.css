@@ -218,3 +218,16 @@ main:focus-visible { outline: none; }
 .quick-filters .btn[aria-pressed="true"] { background: #372252; color: var(--accent-2); }
 .player-frame:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 @media (max-width: 768px) { .site-footer { padding-inline: 1rem; } }
+
+.hero { background: var(--panel); border-inline-start: 3px solid var(--accent-2); }
+.hero h1 { font-size: clamp(1.9rem, 5vw, 3rem); margin-block: 0 .65rem; }
+.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; margin-block: 1rem; }
+.hero-actions .btn { display: inline-flex; align-items: center; min-height: 44px; }
+.pro-lede { max-width: 48ch; margin-block: .5rem; }
+.clip-discovery-summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; margin-block: .75rem 1rem; }
+.clip-discovery-summary .clip-results { margin: 0; }
+.clip-discovery-summary .btn { min-height: 40px; }
+@container (max-width: 22rem) {
+  .clip-discovery .quick-filters { gap: .35rem; }
+  .clip-discovery .quick-filters .btn { padding-inline: .55rem; }
+}

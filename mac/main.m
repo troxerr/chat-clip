@@ -190,6 +190,7 @@ static NSString *const kConfigTemplate =
 #endif
 @property(copy) NSString *licenseAction;
 @property BOOL licenseValid;
+@property(nonatomic, copy) NSString *licenseValidationMessage;
 @property(strong, nonatomic) HDLicenseManager *licenseManager;
 @property(copy) NSString *pendingLicenseKey;
 @property BOOL licenseRequired;
@@ -585,6 +586,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.licenseTrialLabel.stringValue = @"No license is required.";
     self.licenseKeyField.enabled = NO;
     self.licenseKeyField.stringValue = @"";
+    self.licenseKeyField.enabled = NO;
     self.licenseActivateButton.enabled = NO;
     self.licenseDeactivateButton.enabled = NO;
     self.licenseCheckButton.enabled = NO;
@@ -609,7 +611,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   BOOL showBuy = NO;
   BOOL showKey = NO;
   NSString *account = @"";
-  if (key.length && self.licenseValid) {
+  if (key.length && [self licenseValidationFresh]) {
     self.licenseStatusLabel.stringValue = email.length ? [NSString stringWithFormat:@"Licensed to %@.", email] : @"Licensed.";
     state = HDLicenseStateValid;
     account = @"Licensed";
@@ -640,10 +642,15 @@ static NSString *HDByteString(unsigned long long bytes) {
     account = @"Trial ended";
   }
   self.licenseTrialLabel.stringValue = state == HDLicenseStateValid || (key.length && daysLeft > 0) ? @"Licensed" : (daysLeft > 0 ? @"Trial" : @"Expired");
-  self.licenseKeyField.enabled = !(self.licenseTask && self.licenseTask.running);
+  if (self.licenseValidationMessage.length) {
+    self.licenseStatusLabel.stringValue = self.licenseValidationMessage;
+    offer = self.licenseValidationMessage;
+  }
+  if (self.licenseTask) self.licenseStatusLabel.stringValue = @"Contacting the license service…";
+  self.licenseKeyField.enabled = !self.licenseTask;
   self.licenseActivateButton.enabled = self.licenseKeyField.enabled;
-  self.licenseDeactivateButton.enabled = hasKey;
-  self.licenseCheckButton.enabled = hasKey;
+  self.licenseDeactivateButton.enabled = !self.licenseTask && hasKey;
+  self.licenseCheckButton.enabled = !self.licenseTask && hasKey;
   self.licenseBuyButton.enabled = checkout;
   self.licenseBuyButton.title = buyTitle;
   if (self.ui) {
@@ -740,7 +747,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 }
 
 - (void)runLicenseAction:(NSString *)action silent:(BOOL)silent {
-  if (self.licenseTask && self.licenseTask.running) return;
+  if (self.licenseTask) return;
   if ([action isEqualToString:@"activate"] && ![self licenseProductId].length) {
     // Without a product ID any Lemon Squeezy key would activate.
     if (!silent) [self alert:@"Licensing is not configured" info:@"This build has no product ID. Set HDProductId when building the release."];
@@ -782,6 +789,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   self.licenseAction = action;
   self.licenseSilent = silent;
   if (!silent) self.licenseStatusLabel.stringValue = @"Contacting the license service…";
+  self.licenseKeyField.enabled = NO;
   self.licenseActivateButton.enabled = NO;
   self.licenseCheckButton.enabled = NO;
   self.licenseDeactivateButton.enabled = NO;
@@ -828,6 +836,7 @@ static NSString *HDByteString(unsigned long long bytes) {
   BOOL actionOK = [result[@"ok"] boolValue];
   BOOL ok = actionOK && [result[@"valid"] boolValue];
   BOOL success = [action isEqualToString:@"deactivate"] ? actionOK : ok;
+  if (success) self.licenseValidationMessage = nil;
   if ([action isEqualToString:@"deactivate"] && actionOK) {
     [self clearLicense];
     self.licenseValid = [self licenseTrialDaysLeft] > 0;
@@ -851,9 +860,13 @@ static NSString *HDByteString(unsigned long long bytes) {
     self.licenseValid = YES;
   } else if ([action isEqualToString:@"validate"]) {
     // Offline or a server error says nothing about the key: keep it, and the 14-day grace applies.
-    // Anything else (refunded, revoked, expired, not found) clears the Keychain and locks Pro.
+    // A provider rejection ends grace while preserving the activation for retry or removal.
     BOOL transient = !result || [result[@"transient"] boolValue];
-    if (!transient) [self clearLicense];
+    if (!transient) [self.licenseManager invalidateValidation];
+    self.licenseValidationMessage = [result[@"error"] isKindOfClass:[NSString class]] ? result[@"error"]
+      : [result[@"status"] isEqual:@"expired"] ? @"This license has expired."
+      : transient ? @"Could not reach the license service. Check your connection and try again."
+      : @"This license is not active.";
     self.licenseValid = (transient && self.licenseManager.isWithinGrace) || [self licenseTrialDaysLeft] > 0;
   }
   if ([action isEqualToString:@"activate"]) self.pendingLicenseKey = nil;
@@ -912,6 +925,131 @@ static NSString *HDByteString(unsigned long long bytes) {
   [handle closeFile];
 }
 
+- (void)runWebhookAction:(NSString *)action {
+  NSString *resource = NSBundle.mainBundle.resourcePath;
+  NSString *node = [resource stringByAppendingPathComponent:@"node"];
+  if (![[NSFileManager defaultManager] isExecutableFileAtPath:node]) node = [self findTool:@"node" paths:[self searchPaths]];
+  if (!node) { [self alert:@"Webhook tool unavailable" info:@"The bundled Node.js runtime is missing."]; return; }
+  NSString *configPath = self.configPath ?: @"";
+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+    NSTask *task = [NSTask new];
+    task.executableURL = [NSURL fileURLWithPath:node];
+    task.arguments = @[[resource stringByAppendingPathComponent:@"tools/webhooks.js"], action];
+    NSMutableDictionary *environment = [NSProcessInfo.processInfo.environment mutableCopy];
+    if (configPath.length) environment[@"CLIPSPIKE_CONFIG"] = configPath;
+    task.environment = environment;
+    NSPipe *output = [NSPipe pipe];
+    task.standardOutput = output;
+    NSError *error = nil;
+    NSDictionary *result = nil;
+    if ([task launchAndReturnError:&error]) {
+      NSData *data = [output.fileHandleForReading readDataToEndOfFile];
+      [task waitUntilExit];
+      id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+      if ([json isKindOfClass:[NSDictionary class]]) result = json;
+    }
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (!result || result[@"error"]) {
+        [self alert:@"Webhook request failed" info:result[@"error"] ?: error.localizedDescription ?: @"The webhook helper returned no result."];
+        return;
+      }
+      if ([action isEqualToString:@"test"]) {
+        NSDictionary *entry = result[@"entry"];
+        [self alert:[entry[@"ok"] boolValue] ? @"Webhook test delivered" : @"Webhook test failed"
+               info:entry[@"error"] ?: @"The endpoint accepted the test event."];
+        return;
+      }
+      NSArray *entries = result[@"entries"];
+      NSMutableArray<NSString *> *lines = [NSMutableArray array];
+      for (NSDictionary *entry in entries) {
+        if (lines.count >= 10) break;
+        [lines addObject:[NSString stringWithFormat:@"%@ · %@ · %@", entry[@"at"], entry[@"event"],
+                          [entry[@"ok"] boolValue] ? @"Delivered" : entry[@"error"] ?: @"Failed"]];
+      }
+      [self alert:@"Recent webhook deliveries" info:lines.count ? [lines componentsJoinedByString:@"\n"] : @"No deliveries yet."];
+    });
+  });
+}
+
+- (void)showWebhookSettings:(id)sender {
+  NSMutableDictionary *config = [self loadConfig];
+  if (!config) { [self alert:@"Webhook settings unavailable" info:@"The configuration file could not be read."]; return; }
+  NSDictionary *current = [config[@"webhook"] isKindOfClass:[NSDictionary class]] ? config[@"webhook"] : @{};
+  NSTextField *endpoint = [NSTextField textFieldWithString:[current[@"url"] isKindOfClass:[NSString class]] ? current[@"url"] : @""];
+  endpoint.placeholderString = @"https://…";
+  NSSecureTextField *key = [NSSecureTextField new];
+  key.placeholderString = [current[@"useKey"] boolValue] ? @"Key saved" : @"Optional";
+  NSButton *enabled = [NSButton checkboxWithTitle:@"Send clip events" target:nil action:nil];
+  enabled.state = [current[@"enabled"] boolValue] ? NSControlStateValueOn : NSControlStateValueOff;
+  NSButton *remove = [NSButton checkboxWithTitle:@"Remove saved key" target:nil action:nil];
+  NSStackView *fields = [NSStackView stackViewWithViews:@[[NSTextField labelWithString:@"HTTPS endpoint"], endpoint,
+    [NSTextField labelWithString:@"Bearer key"], key, enabled, remove]];
+  fields.orientation = NSUserInterfaceLayoutOrientationVertical;
+  fields.alignment = NSLayoutAttributeLeading;
+  [endpoint.widthAnchor constraintEqualToConstant:340].active = YES;
+  [key.widthAnchor constraintEqualToAnchor:endpoint.widthAnchor].active = YES;
+  NSAlert *dialog = [NSAlert new];
+  dialog.messageText = @"Clip Webhooks";
+  dialog.informativeText = @"Clip events can include a local file URL. Use an endpoint you control.";
+  fields.frame = (NSRect){NSZeroPoint, fields.fittingSize};
+  dialog.accessoryView = fields;
+  [dialog addButtonWithTitle:@"Save"];
+  [dialog addButtonWithTitle:@"Cancel"];
+  [dialog addButtonWithTitle:@"Save and Test"];
+  [dialog addButtonWithTitle:@"Delivery Log"];
+  NSModalResponse result = [dialog runModal];
+  if (result == NSAlertThirdButtonReturn + 1) { [self runWebhookAction:@"log"]; return; }
+  if (result != NSAlertFirstButtonReturn && result != NSAlertThirdButtonReturn) return;
+
+  NSString *url = [endpoint.stringValue stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+  NSURLComponents *parts = [NSURLComponents componentsWithString:url];
+  if ((url.length || enabled.state == NSControlStateValueOn || result == NSAlertThirdButtonReturn) &&
+      (!parts.host.length || ![parts.scheme.lowercaseString isEqualToString:@"https"] || parts.user || parts.password || parts.fragment)) {
+    [self alert:@"Invalid webhook endpoint" info:@"Enter a full HTTPS URL without embedded credentials or a fragment."];
+    return;
+  }
+  NSString *value = key.stringValue;
+  if (value.length && [value rangeOfString:@"^[!-~]{1,512}$" options:NSRegularExpressionSearch].location == NSNotFound) {
+    [self alert:@"Invalid webhook key" info:@"Use 1–512 visible ASCII characters."];
+    return;
+  }
+  BOOL useKey = value.length || (remove.state != NSControlStateValueOn && [current[@"useKey"] boolValue]);
+  if (value.length && !url.length) {
+    [self alert:@"Webhook endpoint required" info:@"Enter the HTTPS endpoint before saving its key."];
+    return;
+  }
+  if ([current[@"useKey"] boolValue] && ![current[@"url"] isEqual:url] && !value.length && remove.state != NSControlStateValueOn) {
+    [self alert:@"Webhook key required" info:@"Enter a key for the new endpoint or remove the existing key."];
+    return;
+  }
+  NSData *keyData = value.length ? [NSJSONSerialization dataWithJSONObject:@{@"url": url, @"key": value} options:0 error:nil] : nil;
+  NSString *credential = keyData ? [[NSString alloc] initWithData:keyData encoding:NSUTF8StringEncoding] : nil;
+  if (value.length && !HDKeychainSet(@"webhook.key", credential)) {
+    [self alert:@"Could not save webhook key" info:@"Check Keychain access and try again."];
+    return;
+  }
+  config[@"webhook"] = @{@"url": url, @"enabled": @(enabled.state == NSControlStateValueOn), @"useKey": @(useKey)};
+  if (![self writeConfig:config]) { [self alert:@"Could not save webhook settings" info:@"Check permissions on the configuration file."]; return; }
+  if (!useKey) HDKeychainDelete(@"webhook.key");
+  if (result == NSAlertThirdButtonReturn) [self runWebhookAction:@"test"];
+}
+
+- (void)changeSpikeSensitivity:(NSSlider *)sender {
+  NSMutableDictionary *config = [self loadConfig];
+  NSDictionary *saved = [config[@"app"] isKindOfClass:[NSDictionary class]] ? config[@"app"] : @{};
+  NSNumber *previous = [saved[@"sensitivity"] isKindOfClass:[NSNumber class]] ? saved[@"sensitivity"] : @1;
+  NSMutableDictionary *app = [saved mutableCopy];
+  double value = round(sender.doubleValue * 20.0) / 20.0;
+  app[@"sensitivity"] = @(value);
+  config[@"app"] = app;
+  if (![self writeConfig:config]) {
+    [self.ui setSpikeSensitivity:previous.doubleValue];
+    [self alert:@"Could not save sensitivity" info:@"Check permissions on the configuration file."];
+    return;
+  }
+  [self.ui setSpikeSensitivity:value];
+}
+
 - (void)openPreferences:(id)sender { [self.ui selectPage:HDPageSettings]; }
 
 - (void)uiPageSelected:(NSNumber *)page {
@@ -921,6 +1059,7 @@ static NSString *HDByteString(unsigned long long bytes) {
 }
 
 - (void)activateLicense:(id)sender {
+  if (self.licenseTask) return;
   NSString *key = [self.licenseKeyField.stringValue stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
   if (!key.length) {
     [self alert:@"Enter a license key" info:@"Paste the key from your purchase email."];
@@ -1773,7 +1912,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     for (NSString *key in (NSDictionary *)object) {
       id value = ((NSDictionary *)object)[key];
       NSString *lower = key.lowercaseString;
-      BOOL sensitive = [lower containsString:@"token"] || [lower containsString:@"secret"] || [lower containsString:@"password"] || [lower containsString:@"private"] || [lower isEqualToString:@"key"] || [lower isEqualToString:@"instance"];
+      BOOL sensitive = [lower containsString:@"token"] || [lower containsString:@"secret"] || [lower containsString:@"password"] || [lower containsString:@"private"] || [lower isEqualToString:@"webhook"] || [lower isEqualToString:@"key"] || [lower isEqualToString:@"instance"];
       if (sensitive && value && ![value isKindOfClass:[NSNull class]] && (![value isKindOfClass:[NSString class]] || [value length] > 0)) {
         result[key] = @"<redacted>";
       } else {
@@ -2045,6 +2184,9 @@ static NSString *HDByteString(unsigned long long bytes) {
   self.trialDays = [self configuredTrialDays];
   [self logUsageEvent:@"app-launch" details:@{@"licenseRequired": @(self.licenseRequired), @"trialDays": @(self.trialDays)}];
   self.ui = [[HDUI alloc] initWithTarget:self];
+  NSDictionary *captureConfig = [self loadConfig][@"app"];
+  NSNumber *sensitivity = [captureConfig isKindOfClass:[NSDictionary class]] ? captureConfig[@"sensitivity"] : nil;
+  if ([sensitivity isKindOfClass:[NSNumber class]]) [self.ui setSpikeSensitivity:MAX(0.25, MIN(3, sensitivity.doubleValue))];
   self.window = self.ui.window;
   self.window.delegate = self;
   self.channel = self.ui.channelField;
@@ -2642,9 +2784,11 @@ static NSString *HDByteString(unsigned long long bytes) {
       [self.ui setSessionState:HDSessionStateReconnecting status:self.status.stringValue];
     }
   } else if ([type isEqualToString:@"clip-requested"]) {
+    [self.ui setExportStage:@"Collecting video" color:NSColor.controlAccentColor];
     self.status.stringValue = @"Saving highlight…";
     [self logUsageEvent:@"clip-requested" details:@{@"reason": [event[@"reason"] description] ?: @""}];
   } else if ([type isEqualToString:@"clip-exported"]) {
+    [self.ui setExportStage:self.reframeEnabled ? @"Rendering vertical clip" : @"Preparing export" color:NSColor.controlAccentColor];
     self.status.stringValue = self.reframeEnabled ? @"Reframing the clip to 9:16…" : @"Preparing the clip…";
   } else if ([type isEqualToString:@"clip-reframed"]) {
     BOOL cloud = ![self.storageMode isEqualToString:@"local"] && self.storageConfigured;
@@ -2653,6 +2797,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     NSString *provider = [event[@"provider"] isKindOfClass:[NSString class]] ? event[@"provider"] : self.storageMode;
     if ([provider isEqualToString:@"googleDrive"]) self.storageLabel = @"Google Drive";
     else if ([provider isEqualToString:@"dropbox"]) self.storageLabel = @"Dropbox";
+    [self.ui setExportStage:@"Uploading" color:NSColor.controlAccentColor];
     self.status.stringValue = [NSString stringWithFormat:@"Uploading to %@…", self.storageLabel ?: @"storage"];
   } else if ([type isEqualToString:@"review-ready"]) {
     NSString *message = [event[@"message"] isKindOfClass:NSString.class] ? event[@"message"] : @"Open Capture Monitor to review your highlights.";
@@ -2695,6 +2840,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     else if ([provider isEqualToString:@"local"]) self.storageLabel = @"Local only";
     BOOL deleted = [event[@"deletedLocal"] boolValue];
     BOOL queued = [event[@"queued"] boolValue];
+    [self.ui setExportStage:queued ? @"Upload queued" : @"Export saved" color:queued ? NSColor.systemOrangeColor : NSColor.secondaryLabelColor];
     self.lastClipId = [metadata[@"id"] isKindOfClass:NSString.class] ? metadata[@"id"] : nil;
     if (remotePath.length && !queued) [self logFeedbackAction:@"uploaded" clipId:self.lastClipId details:@{@"provider": provider ?: @""}];
     [self logUsageEvent:@"clip-saved" details:@{
@@ -2725,6 +2871,7 @@ static NSString *HDByteString(unsigned long long bytes) {
     NSString *notificationBody = [NSString stringWithFormat:@"%@ · %@", reason, queued ? @"Saved locally; retrying in the background." : (deleted ? @"Local video removed after confirmation." : (remotePath.length ? [NSString stringWithFormat:@"Sent to %@.", self.storageLabel ?: @"cloud storage"] : @"Saved in your clips folder."))];
     [self notifyTitle:notificationTitle body:notificationBody];
   } else if ([type isEqualToString:@"clip-failed"]) {
+    [self.ui setExportStage:@"Export failed" color:NSColor.systemRedColor];
     self.status.stringValue = [NSString stringWithFormat:@"Clip export failed: %@", [event[@"error"] description]];
     [self logUsageEvent:@"clip-failed" details:@{@"error": [event[@"error"] description] ?: @"unknown"}];
   } else if ([type isEqualToString:@"error"]) {

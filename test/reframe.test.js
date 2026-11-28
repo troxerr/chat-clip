@@ -149,3 +149,27 @@ test("reframes a landscape clip into a 1080x1920 MP4", { skip: !ffmpeg || !ffpro
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("split rendering retries with blur after an FFmpeg filter failure", { skip: process.platform === "win32" }, async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clipspike-layout-fallback-"));
+  try {
+    const input = path.join(dir, "input.mp4");
+    const output = path.join(dir, "output.mp4");
+    const executable = path.join(dir, "mock-ffmpeg");
+    fs.writeFileSync(input, "input");
+    fs.writeFileSync(executable, [
+      `#!${process.execPath}`,
+      `if (process.argv.some(arg => arg.includes("[cam_src]"))) {`,
+      `  console.error("Failed to configure output pad on Parsed_crop");`,
+      `  process.exit(1);`,
+      `}`,
+      `require("node:fs").writeFileSync(process.argv.at(-1), "video");`
+    ].join("\n"), { mode: 0o755 });
+    const result = await reframeClip({ input, output, layout: "split", encoder: "libx264", ffmpegPath: executable });
+    assert.equal(result.ok, true);
+    assert.equal(result.layout, "blur");
+    assert.equal(fs.existsSync(output + ".partial"), false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
