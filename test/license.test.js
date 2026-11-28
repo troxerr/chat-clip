@@ -257,3 +257,16 @@ test("polar releases the activation it just created when the key belongs to anot
   assert.equal(calls[1].body.activation_id, "act-9");
   assert.equal(calls[1].body.organization_id, ORG);
 });
+
+test("Polar distinguishes explicit activation errors from ambiguous rejections", async () => {
+  for (const [detail, licenseCode] of [
+    ["Activation limit reached", "activation-limit"],
+    ["This license has expired.", "expired"],
+    ["This license cannot be activated.", "rejected"]
+  ]) {
+    await assert.rejects(licenseRequest("activate", {
+      provider: "polar", licenseKey: "secret", productId: "org:benefit",
+      fetchImpl: async () => response({ detail }, 403)
+    }), { licenseCode });
+  }
+});

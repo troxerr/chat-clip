@@ -403,7 +403,7 @@ static const NSTimeInterval kHDPulseTriggerLife = 25;
   NSFont *caption = [NSFont systemFontOfSize:10.5 weight:NSFontWeightSemibold];
   NSFont *numbers = [NSFont monospacedDigitSystemFontOfSize:10.5 weight:NSFontWeightRegular];
   CGFloat headerY = NSMaxY(bounds) - 19;
-  NSString *title = @"CHAT PULSE";
+  NSString *title = @"Chat activity";
   NSDictionary *titleAttributes = @{NSFontAttributeName:caption, NSForegroundColorAttributeName:HDMuted(), NSKernAttributeName:@0.6};
   [title drawAtPoint:NSMakePoint(10, headerY) withAttributes:titleAttributes];
   CGFloat titleRight = 10 + [title sizeWithAttributes:titleAttributes].width;
@@ -416,6 +416,10 @@ static const NSTimeInterval kHDPulseTriggerLife = 25;
     NSString *summary = [NSString stringWithFormat:@"%ld chatters · median %.0f · threshold %.0f", (long)[latest[@"participants"] integerValue], median, threshold];
     NSDictionary *attributes = @{NSFontAttributeName:numbers, NSForegroundColorAttributeName:HDMuted()};
     CGFloat width = [summary sizeWithAttributes:attributes].width;
+    if (width + titleRight + 18 > NSWidth(bounds)) {
+      summary = [NSString stringWithFormat:@"%ld / %.0f", (long)[latest[@"participants"] integerValue], threshold];
+      width = [summary sizeWithAttributes:attributes].width;
+    }
     rightEdge = NSMaxX(bounds) - 10 - width;
     [summary drawAtPoint:NSMakePoint(rightEdge, headerY) withAttributes:attributes];
   }
@@ -770,6 +774,9 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
 @property(strong) NSTextField *captureHeroTitle;
 @property(strong) NSTextField *captureHeroSubtitle;
 @property(strong) NSTextField *clipMetric;
+@property(strong) NSSlider *spikeSensitivitySlider;
+@property(strong) NSTextField *spikeSensitivityValue;
+@property(strong) NSTextField *exportStage;
 @property(strong) NSTextField *queueMetric;
 @property(strong) NSTextField *storageMetric;
 @property(strong) NSTextField *trialMetric;
@@ -1310,6 +1317,22 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   self.chatPulse = [[HDChatPulseView alloc] initWithFrame:NSZeroRect];
   [sessionContent addArrangedSubview:self.chatPulse];
   [self.chatPulse.widthAnchor constraintEqualToAnchor:sessionContent.widthAnchor].active = YES;
+  NSStackView *sensitivity = [NSStackView new];
+  sensitivity.spacing = 8;
+  NSTextField *sensitivityLabel = HDLabel(@"Spike sensitivity", 12, NSFontWeightMedium, NSColor.labelColor);
+  [sensitivity addArrangedSubview:sensitivityLabel];
+  self.spikeSensitivitySlider = [NSSlider sliderWithValue:1 minValue:0.25 maxValue:3 target:self.target action:@selector(changeSpikeSensitivity:)];
+  self.spikeSensitivitySlider.continuous = NO;
+  self.spikeSensitivitySlider.toolTip = @"Changes apply to the next capture.";
+  self.spikeSensitivitySlider.accessibilityLabel = @"Spike sensitivity for the next capture";
+  [sensitivity addArrangedSubview:self.spikeSensitivitySlider];
+  [self.spikeSensitivitySlider.widthAnchor constraintEqualToConstant:112].active = YES;
+  self.spikeSensitivityValue = HDLabel(@"1.00", 11, NSFontWeightRegular, NSColor.secondaryLabelColor);
+  self.spikeSensitivityValue.font = HDTabular(11);
+  [sensitivity addArrangedSubview:self.spikeSensitivityValue];
+  [sessionContent addArrangedSubview:sensitivity];
+  self.exportStage = HDLabel(@"Export ready", 12, NSFontWeightSemibold, NSColor.secondaryLabelColor);
+  [sessionContent addArrangedSubview:self.exportStage];
   [sessionContent addArrangedSubview:actions];
   [sessionRow.widthAnchor constraintEqualToAnchor:sessionContent.widthAnchor].active = YES;
   self.sessionSummary = HDCaption(@"0 clips saved · No pending uploads");
@@ -2176,6 +2199,7 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
   self.notificationsCheckbox = [NSButton checkboxWithTitle:@"Notify when clips finish" target:self.target action:@selector(toggleNotifications:)];
   [box addArrangedSubview:self.loginCheckbox]; [box addArrangedSubview:self.notificationsCheckbox];
   [box addArrangedSubview:HDButton(@"Storage Settings…", self.target, @selector(showStorageSettings:), NO)];
+  [box addArrangedSubview:HDButton(@"Clip Webhooks…", self.target, @selector(showWebhookSettings:), NO)];
   [box addArrangedSubview:HDButton(@"License…", self.target, @selector(showLicense:), NO)];
   HDCardView *support = [self card];
   [stack addArrangedSubview:support];
@@ -2343,7 +2367,18 @@ static void HDDrawPerson(NSRect rect, NSColor *color) {
 - (void)recordChatTrigger:(NSDictionary *)info { [self.chatPulse noteTrigger:info]; }
 - (void)resetChatPulse { [self.chatPulse reset]; }
 
+- (void)setSpikeSensitivity:(double)value {
+  self.spikeSensitivitySlider.doubleValue = value;
+  self.spikeSensitivityValue.stringValue = [NSString stringWithFormat:@"%.2f", value];
+}
+
+- (void)setExportStage:(NSString *)stage color:(NSColor *)color {
+  self.exportStage.stringValue = stage;
+  self.exportStage.textColor = color;
+}
+
 - (void)setCaptureRunning:(BOOL)running {
+  if (!running) [self setExportStage:@"Export ready" color:NSColor.secondaryLabelColor];
   self.liveRunning = running;
   [self.chatPulse reset];
   self.vodButton.enabled = !running;

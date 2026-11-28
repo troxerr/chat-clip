@@ -121,6 +121,8 @@ typedef NS_ENUM(NSInteger, HDPage) {
 - (void)setSessionLive:(BOOL)live status:(NSString *)status;
 - (void)setSessionState:(HDSessionState)state status:(NSString *)status;
 - (void)setCaptureRunning:(BOOL)running;
+- (void)setSpikeSensitivity:(double)value;
+- (void)setExportStage:(NSString *)stage color:(NSColor *)color;
 - (NSInteger)vodTopCount;
 - (void)recordChatSample:(NSDictionary *)event;
 - (void)recordChatTrigger:(NSDictionary *)info;

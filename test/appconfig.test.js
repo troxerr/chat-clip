@@ -222,3 +222,10 @@ test("normalizeFolder produces an absolute path", () => {
   assert.equal(config.normalizeFolder("//Clips//Lacy//"), "/Clips/Lacy");
   assert.equal(config.normalizeFolder("/"), "/");
 });
+
+test("webhook settings are opt-in and never expose the saved secret", () => {
+  const { webhookSettings } = require("../lib/appconfig.js");
+  assert.deepEqual(webhookSettings(), { enabled: false, url: "", useKey: false });
+  assert.deepEqual(webhookSettings({ webhook: { enabled: true, url: "https://example.com", useKey: true, key: "secret" } }),
+    { enabled: true, url: "https://example.com", useKey: true });
+});

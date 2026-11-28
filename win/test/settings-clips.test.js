@@ -11,11 +11,13 @@ const feedback = require("../../lib/feedback.js");
 test("settings start empty, merge into the shared config, and keep unrelated sections", () => {
   let config = { reframe: { blur: 30 }, license: { instance: "i" } };
   const s = createSettings({ readConfig: () => JSON.parse(JSON.stringify(config)), writeConfig: (c) => { config = c; }, outputFolder: "C:\\Users\\a\\Videos\\ClipSpike", now: () => new Date("2026-11-18T10:00:00Z") });
-  assert.deepEqual(s.get(), { launchAtLogin: false, permissionAcknowledged: false, permissionAt: "", outputFolder: "C:\\Users\\a\\Videos\\ClipSpike" });
+  assert.deepEqual(s.get(), { launchAtLogin: false, sensitivity: 1, permissionAcknowledged: false, permissionAt: "", outputFolder: "C:\\Users\\a\\Videos\\ClipSpike" });
   assert.equal(s.set({ launchAtLogin: true }).launchAtLogin, true);
   assert.equal(config.reframe.blur, 30);
   assert.equal(config.license.instance, "i");
   assert.equal(config.app.launchAtLogin, true);
+  assert.equal(s.set({ sensitivity: 4 }).sensitivity, 3);
+  assert.equal(s.set({ sensitivity: NaN }).sensitivity, 3);
 });
 
 test("only known, correctly typed settings are accepted", () => {

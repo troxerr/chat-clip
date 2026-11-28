@@ -62,6 +62,9 @@ function buildConfig() {
   try { return JSON.parse(fs.readFileSync(path.join(__dirname, "..", "build-config.json"), "utf8")); } catch { return {}; }
 }
 
+const { createWebhookDelivery, endpointUrl, KEY_ACCOUNT } = require("../../lib/webhook-delivery.js");
+const { webhookSettings } = require("../../lib/appconfig.js");
+
 function createServices() {
   const configPath = resolveConfigPath(process.env);
   const store = createCredentialStore({ env: process.env, onReadError: (_account, error) => record("credential.read_failed", error) });
@@ -101,8 +104,29 @@ function createServices() {
     openPath: (file) => shell.openPath(file),
     showItem: (file) => shell.showItemInFolder(file)
   });
+  const getWebhook = () => webhookSettings(readCfg());
+  const delivery = createWebhookDelivery({ readSettings: getWebhook, getSecret: (account) => store.get(account) });
+  const webhooks = {
+    get: getWebhook,
+    save({ url, enabled, key, removeKey }) {
+      const current = getWebhook();
+      const endpoint = url || enabled ? endpointUrl(url) : "";
+      if (key && !endpoint) throw new Error("Enter the HTTPS endpoint before saving its key.");
+      if (key && !/^[\x21-\x7e]{1,512}$/.test(key)) throw new Error("Use a webhook key with 1–512 visible ASCII characters.");
+      const useKey = Boolean(key || (!removeKey && current.useKey));
+      if (current.useKey && current.url !== endpoint && !key && !removeKey) {
+        throw new Error("Enter a key for the new endpoint or remove the existing key.");
+      }
+      if (key) store.set(KEY_ACCOUNT, JSON.stringify({ url: endpoint, key }));
+      writeCfg({ ...readCfg(), webhook: { enabled, url: endpoint, useKey } });
+      if (removeKey && !key) store.delete(KEY_ACCOUNT);
+      return getWebhook();
+    },
+    test: delivery.test,
+    log: delivery.log
+  };
   const core = createApp({
-    engine, license, settings, clips,
+    engine, license, settings, clips, webhooks,
     openExternal: (url) => shell.openExternal(url),
     openFolder: (folder) => { fs.mkdirSync(folder, { recursive: true }); return shell.openPath(folder); },
     version: app.getVersion(),
@@ -240,6 +264,10 @@ function main() {
       "license.validate": tracked("license.validate", () => c.license.validate()),
       "license.deactivate": tracked("license.deactivate", () => c.license.deactivate()),
       "license.buy": () => c.license.buy(),
+      "webhooks.get": () => c.webhooks.get(),
+      "webhooks.save": (changes) => c.webhooks.save(changes),
+      "webhooks.test": () => c.webhooks.test(),
+      "webhooks.log": () => c.webhooks.log(),
       "settings.set": (changes) => c.settings.set(changes),
       "update.state": () => (updater ? updater.getState() : { status: "disabled", version: null, percent: null, error: null }),
       "update.check": () => (updater ? updater.check() : null),

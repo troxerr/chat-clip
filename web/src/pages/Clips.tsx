@@ -83,16 +83,18 @@ export default function Clips() {
         </select>
         </label>
       </div>
-      <div className="quick-filters" role="group" aria-label="Time range">
-        {quickRanges.map(([range, label]) => (
-          <button key={range} type="button" className="btn btn-ghost" aria-pressed={filters.range === range}
-            onClick={() => set('range', range)}>{label}</button>
-        ))}
-        {active && <button type="button" className="linklike" onClick={() => update(defaultFilters)}>Clear filters</button>}
+      <div className="clip-discovery-summary">
+        <div className="quick-filters" role="group" aria-label="Time range">
+          {quickRanges.map(([range, label]) => (
+            <button key={range} type="button" className="btn btn-ghost" aria-pressed={filters.range === range}
+              onClick={() => set('range', range)}>{label}</button>
+          ))}
+          {active && <button type="button" className="linklike" onClick={() => update(defaultFilters)}>Clear filters</button>}
+        </div>
+        <p className="meta clip-results" role="status" aria-live="polite">
+          {loading ? 'Loading highlights…' : `${shown.length} highlight${shown.length === 1 ? '' : 's'}`}
+        </p>
       </div>
-      <p className="meta clip-results" role="status" aria-live="polite">
-        {loading ? 'Loading highlights…' : `${shown.length} highlight${shown.length === 1 ? '' : 's'}`}
-      </p>
       {loading ? (
         <SkeletonGrid />
       ) : shown.length ? (

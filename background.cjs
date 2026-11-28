@@ -14,10 +14,11 @@ const feedback = require("./lib/feedback.js");
 const { startMonitor } = require("./lib/monitor.js");
 const monitorPolicy = require("./lib/monitor-policy.js");
 const { parseChatLine, isPrivileged, isClipCommand, roomId } = require("./dist/irc.js");
-const { settingsFor } = require("./dist/config.js");
+const { settingsFor, pickSettings } = require("./dist/config.js");
 const platform = require("./lib/platform.js");
 const { drainClips } = require("./lib/clip-drain.js");
 const health = require("./lib/recorder-health.js");
+const { reconnectDelay, overlapsClip } = require("./lib/capture-policy.js");
 const { resolveEncoder } = require("./lib/encoder.js");
 const { parseSource } = require("./lib/stream-source.js");
 const { relaySettings, connectKickChat } = require("./lib/kick-chat.js");
@@ -29,6 +30,9 @@ const { createJobStore } = require("./lib/jobstore.js");
 const { writeCrashReport } = require("./lib/crashlog.js");
 const { exportClip, writeSidecar, killAll: killExports } = require("./lib/exporter.js");
 const { reframeClip, killAll: killReframes } = require("./lib/reframe.js");
+const { clipPayload } = require("./lib/clip-webhook.js");
+const { createWebhookDelivery } = require("./lib/webhook-delivery.js");
+const webhook = createWebhookDelivery({});
 const freeTier = require("./lib/freetier.js");
 
 const VERSION = "3.0.0";
@@ -95,6 +99,12 @@ let lastFrameAt = 0;
 let recordFailures = 0;
 let stallHandledToken = 0;
 let recordToken = 0;
+let lastClipWindow = null;
+let twitchRetry = null;
+let twitchHandshake = null;
+let twitchAttempts = 0;
+let twitchJoinedAt = 0;
+const twitchMessageIds = new Set();
 let pending = null;
 let exporting = null;
 let exportingFiles = new Set();
@@ -194,6 +204,8 @@ function shutdown(code = 0) {
   try { clearInterval(ticker); } catch {}
   try { clearInterval(emoteTimer); } catch {}
   try { clearInterval(queueTimer); } catch {}
+  clearTimeout(twitchRetry);
+  clearTimeout(twitchHandshake);
   try { chat && chat.close(); } catch {}
 
   const children = [source, encoder].filter((child) => child && child.exitCode === null && child.signalCode === null);
@@ -202,10 +214,10 @@ function shutdown(code = 0) {
   const finish = () => {
     if (finished) return;
     finished = true;
-    try { killExports(); } catch {}
-    try { killReframes(); } catch {}
-    try { fs.rmSync(temp, { recursive: true, force: true }); } catch {}
-    Promise.resolve(monitor?.close()).finally(() => setTimeout(() => process.exit(code), 100));
+    Promise.allSettled([killExports(), killReframes()]).then(() => {
+      try { fs.rmSync(temp, { recursive: true, force: true }); } catch {}
+      return monitor?.close();
+    }).finally(() => setTimeout(() => process.exit(code), 100));
   };
 
   // A highlight that is waiting or exporting is finished before the temp
@@ -461,11 +473,14 @@ function requestClip({ reason, trigger = "manual", bypassCooldown = false, allow
   const now = Date.now();
   if (trigger === "command" && !bypassCooldown && now - lastCommand < settings.commandCooldownMs) return false;
   if ((trigger === "auto" || trigger === "raid") && !bypassCooldown && now - lastAuto < settings.autoCooldownMs) return false;
+  const start = Math.max(0, mediaTime - settings.preRollSec);
+  const end = mediaTime + settings.postRollSec;
+  const clipWindow = { start, end, recordToken };
+  if ((trigger === "auto" || trigger === "raid") && overlapsClip(lastClipWindow, clipWindow)) return false;
+  lastClipWindow = clipWindow;
   if (trigger === "command") lastCommand = now;
   if (trigger === "auto" || trigger === "raid") { lastAuto = now; lastAutoTrigger = trigger; }
 
-  const start = Math.max(0, mediaTime - settings.preRollSec);
-  const end = mediaTime + settings.postRollSec;
   pending = {
     id: randomUUID(),
     windowId: meta.windowId || null,
@@ -565,6 +580,7 @@ function finishClip({ localPath, provider, remotePath, webLink, deletedLocal, re
       }
     });
   }
+  void webhook.deliver(clipPayload(status === "uploaded" ? "clip.uploaded" : "clip.saved", metadata, { localPath, cloudUrl: webLink })).catch((error) => emit("error", { message: error.message }));
   emit("clip-saved", {
     path: localPath || null,
     provider: resolvedProvider,
@@ -688,7 +704,7 @@ async function processQueue() {
     });
 
     const attempted = [...new Set([item.rawPath, item.verticalPath, primary].filter(Boolean))];
-    const keepLocal = item.keepLocalCopy || !item.deleteAfterUpload;
+    const keepLocal = item.keepLocalCopy || !item.deleteAfterUpload || upload.verified !== true;
     const deleted = [];
     let remaining = primary;
     if (keepLocal) {
@@ -735,6 +751,7 @@ async function processQueue() {
       updatedAt: new Date().toISOString()
     });
     jobStore.remove(item.id);
+    void webhook.deliver(clipPayload("clip.uploaded", metadata, { localPath: remaining, cloudUrl: upload.webLink })).catch((error) => emit("error", { message: error.message }));
     emitQueue();
     emitHistory();
   } catch (error) {
@@ -843,7 +860,8 @@ async function runPipeline(job, plan, rawTarget) {
     metadata.vertical = {
       file: path.basename(verticalTarget),
       width: reframeConfig.width,
-      height: reframeConfig.height
+      height: reframeConfig.height,
+      layout: reframe.layout
     };
     metadata.file = path.basename(verticalTarget);
     sidecar = writeJobSidecar(rawTarget, metadata);
@@ -966,7 +984,7 @@ async function runPipeline(job, plan, rawTarget) {
     localPath: primary
   });
 
-  const keepLocal = storageConfig.keepLocalCopy || !storageConfig.deleteAfterUpload;
+  const keepLocal = storageConfig.keepLocalCopy || !storageConfig.deleteAfterUpload || upload.verified !== true;
   if (keepLocal) {
     const deletedFiles = cleanupRaw();
     metadata.deletedFiles = deletedFiles;
@@ -1202,6 +1220,10 @@ function handleChatLine(raw) {
   if (!raw || stopping) return;
   const event = parseChatLine(raw);
 
+  if (event.command === "RECONNECT") {
+    chat.close();
+    return;
+  }
   if (event.type === "ping") {
     sendChat("PONG :tmi.twitch.tv");
     return;
@@ -1211,7 +1233,7 @@ function handleChatLine(raw) {
     return;
   }
   if (event.type === "joined" || event.type === "join") {
-    if (!event.channel || event.channel === channel) joined = true;
+    if (!event.channel || event.channel === channel) markTwitchJoined();
     return;
   }
 
@@ -1221,7 +1243,20 @@ function handleChatLine(raw) {
     getEmotes(id).catch((error) => emit("error", { message: `7TV: ${error.message}` }));
   }
 
+  if (event.channel === channel && event.type === "chat") markTwitchJoined();
+  const idTag = event.tags.id;
+  if (idTag && (event.type === "chat" || event.type === "usernotice")) {
+    if (twitchMessageIds.has(idTag)) return;
+    twitchMessageIds.add(idTag);
+    if (twitchMessageIds.size > 4096) twitchMessageIds.delete(twitchMessageIds.values().next().value);
+  }
   handleChatEvent(event);
+}
+
+function markTwitchJoined() {
+  clearTimeout(twitchHandshake);
+  if (!joined) twitchJoinedAt = Date.now();
+  joined = true;
 }
 
 function handleChatEvent(event) {
@@ -1279,24 +1314,31 @@ function connect() {
     });
     return;
   }
-  chat = new WebSocket("wss://irc-ws.chat.twitch.tv");
-  chat.onopen = () => {
+  const socket = new WebSocket("wss://irc-ws.chat.twitch.tv");
+  chat = socket;
+  twitchJoinedAt = 0;
+  twitchHandshake = setTimeout(() => socket.close(), 15000);
+  socket.onopen = () => {
     sendChat("CAP REQ :twitch.tv/tags twitch.tv/commands");
     sendChat("PASS SCHMOOPIIE");
     sendChat("NICK justinfan" + Math.floor(100000 + Math.random() * 900000));
   };
-  chat.onmessage = ({ data }) => {
+  socket.onmessage = ({ data }) => {
+    if (chat !== socket || socket.readyState !== WebSocket.OPEN) return;
     for (const line of String(data).split("\r\n")) handleChatLine(line);
   };
-  chat.onerror = () => {};
-  chat.onclose = () => {
+  socket.onerror = () => {};
+  socket.onclose = () => {
+    if (chat !== socket) return;
+    clearTimeout(twitchHandshake);
+    if (twitchJoinedAt && Date.now() - twitchJoinedAt >= 30000) twitchAttempts = 0;
     joined = false;
     paceHistory = [];
     viewers.clear();
     reactors.clear();
     emoteCounts.clear();
     messageCount = 0;
-    if (!stopping) setTimeout(connect, 5000);
+    if (!stopping) twitchRetry = setTimeout(connect, reconnectDelay(twitchAttempts++));
   };
 }
 
@@ -1307,6 +1349,7 @@ function start() {
     Object.assign(settings, profile.settings);
     profileVersion = profile.version;
   } catch (error) { emit("error", { message: `Using default detection: ${error.message}` }); }
+  Object.assign(settings, pickSettings({ sensitivity: configResult.config.app?.sensitivity }));
   feedbackSession = feedback.startSession({ mode: "live", channel, extra: { platform: streamSource.platform } });
   monitor = startMonitor({ dir: jobStore.stateDir, channel, sessionId: feedbackSession.sessionId, settings,
     onStatus: message => emit(message.type, message) });

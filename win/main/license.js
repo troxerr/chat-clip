@@ -80,7 +80,8 @@ function createLicenseManager({
     const keyUnreadable = !key && Boolean(instance) && typeof store.has === "function" && store.has(KEY);
     const hasKey = Boolean((key || keyUnreadable) && instance);
     const lastOk = parse(s.lastValidatedAt);
-    const fresh = lastOk !== null && now().getTime() - lastOk <= GRACE_DAYS * DAY_MS;
+    const age = lastOk === null ? Infinity : now().getTime() - lastOk;
+    const fresh = age >= -300000 && age <= GRACE_DAYS * DAY_MS;
     let valid, mode, message;
     if (hasKey) {
       valid = fresh || left > 0;
@@ -95,16 +96,20 @@ function createLicenseManager({
       message = left > 0 ? `Trial: ${left} day${left === 1 ? "" : "s"} left.` : "The trial has ended. Enter a license key to keep capturing.";
     }
     return { required: true, valid, mode, trialDays, daysLeft: left, hasKey, keyUnreadable, stale: hasKey && !fresh,
-      message, email: s.email || "", productName: s.productName || "", checkoutUrl: build.checkoutUrl || "",
+      message: hasKey && validationMessage && !keyUnreadable ? validationMessage : message, email: s.email || "", productName: s.productName || "", checkoutUrl: build.checkoutUrl || "",
       priceLabel: String(build.priceLabel || "").trim() };
   }
 
-  let activationPending = false;
+  let licensePending = false;
+  let validationMessage = "";
+  function beginLicenseAction() {
+    if (licensePending) throw new Error("A license action is already in progress. Try again shortly.");
+    licensePending = true;
+  }
   async function activate(rawKey) {
     const licenseKey = String(rawKey || "").trim();
     if (!licenseKey) throw new Error("Enter your license key.");
-    if (activationPending) throw new Error("License activation is already in progress.");
-    activationPending = true;
+    beginLicenseAction();
     try {
       const previousKey = store.get(KEY);
       const previousInstance = section().instance;
@@ -129,9 +134,10 @@ function createLicenseManager({
         }
         throw error;
       }
+      validationMessage = "";
       return state();
     } finally {
-      activationPending = false;
+      licensePending = false;
     }
   }
 
@@ -139,30 +145,50 @@ function createLicenseManager({
   // trouble (the grace period covers it); a license the service says is bad
   // stops counting as validated.
   async function validate() {
-    const key = store.get(KEY);
-    const instance = section().instance;
-    if (!key || !instance) return state();
+    beginLicenseAction();
     try {
-      const result = await request("validate", { licenseKey: key, instanceId: instance, productId: build.productId || "", ...providerOptions });
-      if (result && result.valid) save({ lastValidatedAt: now().toISOString() });
-      else save({ lastValidatedAt: undefined });
-    } catch (error) {
-      if (!looksOffline(error)) save({ lastValidatedAt: undefined });
+      const key = store.get(KEY);
+      const instance = section().instance;
+      if (!key || !instance) return state();
+      let result;
+      try {
+        result = await request("validate", { licenseKey: key, instanceId: instance, productId: build.productId || "", ...providerOptions });
+      } catch (error) {
+        if (looksOffline(error)) {
+          validationMessage = "Could not reach the license service. Try checking again when connected.";
+          return state();
+        }
+        validationMessage = error.message || "The license service rejected this activation.";
+      }
+      if (result?.valid) {
+        save({ lastValidatedAt: now().toISOString() });
+        validationMessage = "";
+      } else {
+        save({ lastValidatedAt: undefined });
+        if (result) validationMessage = result.status === "expired" ? "This license has expired." : "This license is not active.";
+      }
+      return state();
+    } finally {
+      licensePending = false;
     }
-    return state();
   }
 
   async function deactivate() {
-    const key = store.get(KEY);
-    const instance = section().instance;
-    // Never forget the local record of an activation that could not be released remotely.
-    if (!key && instance && typeof store.has === "function" && store.has(KEY)) {
-      throw new Error("The saved license key could not be read, so this activation cannot be released yet. Try again in a moment.");
+    beginLicenseAction();
+    try {
+      const key = store.get(KEY);
+      const instance = section().instance;
+      if (!key && instance && typeof store.has === "function" && store.has(KEY)) {
+        throw new Error("The saved license key could not be read, so this activation cannot be released yet. Try again in a moment.");
+      }
+      if (key && instance) await request("deactivate", { licenseKey: key, instanceId: instance, productId: build.productId || "", ...providerOptions });
+      store.delete(KEY);
+      save({ instance: undefined, email: undefined, productName: undefined, lastValidatedAt: undefined });
+      validationMessage = "";
+      return state();
+    } finally {
+      licensePending = false;
     }
-    if (key && instance) await request("deactivate", { licenseKey: key, instanceId: instance, productId: build.productId || "", ...providerOptions });
-    store.delete(KEY);
-    save({ instance: undefined, email: undefined, productName: undefined, lastValidatedAt: undefined });
-    return state();
   }
 
   return { state, activate, validate, deactivate, ensureTrialStarted, GRACE_DAYS };

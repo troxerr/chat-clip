@@ -14,6 +14,8 @@ describe('site/windows.html', () => {
   it('links the published 0.1.7 trial and the Polar checkout, and identifies the signed installer', () => {
     expect(html).toContain(setup)
     expect(html).toContain(portable)
+    expect(html).toContain('Download Windows setup')
+    expect(html).toContain('href="https://github.com/troxerr/chat-clip/releases/tag/win-v0.1.7"')
     expect(html).toContain(publicOffer.checkoutUrl)
     expect(html.indexOf(setup)).toBeLessThan(html.indexOf(publicOffer.checkoutUrl))
     expect(html).toContain(publicOffer.priceLabel)
@@ -37,7 +39,8 @@ describe('ClipSpike landing pages', () => {
   it('links the viewer and creator paths and puts the trial before checkout', () => {
     expect(home).toContain('href="/app/clips/"')
     expect(home).toContain('href="/capture.html"')
-    expect(home).toContain('class="btn primary" href="windows.html"')
+    expect(home).toContain('class="btn primary" href="windows.html">Download Windows trial')
+    expect(home).toContain('7 days free on Windows 10 or 11 (64-bit). $39 one-time license.')
     expect(home).toContain(`href="${publicOffer.checkoutUrl}" data-checkout="homepage"`)
     expect(home.indexOf('class="btn primary" href="windows.html"'))
       .toBeLessThan(home.indexOf(`href="${publicOffer.checkoutUrl}"`))
@@ -50,7 +53,7 @@ describe('ClipSpike landing pages', () => {
     expect(capture).toContain('href="media/sample-highlight.mp4" download')
     expect(capture).not.toContain(setup)
     expect(capture).not.toContain(portable)
-    expect(capture).toContain("The Windows installer is signed.")
+    expect(capture).toMatch(/The (?:Windows )?installer is signed\./)
     expect(capture).not.toContain('Mac release coming soon')
   })
 })

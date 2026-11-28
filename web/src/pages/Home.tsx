@@ -5,11 +5,9 @@ import { SkeletonGrid } from '../components/DataStatus'
 import { trendingClips } from '../lib/clips'
 import { useClipStore } from '../store/useClipStore'
 import { useFollowStore } from '../store/useFollowStore'
-import { useStreamerStore } from '../store/useStreamerStore'
 
 export default function Home() {
   const clips = useClipStore((s) => s.clips)
-  const primary = useStreamerStore((s) => s.primary)
   const loading = useClipStore((s) => s.loadState === 'loading')
   const follows = useFollowStore((s) => s.follows)
   const followed = useMemo(() => {
@@ -19,8 +17,6 @@ export default function Home() {
   }, [clips, follows])
   const top = [...clips].sort((a, b) => b.score - a.score).slice(0, 3)
   const trending = useMemo(() => trendingClips(clips, 3), [clips])
-  const featured = clips.filter((c) => c.streamer === primary).length
-  const avg = clips.length ? Math.round(clips.reduce((n, c) => n + c.score, 0) / clips.length) : 0
   return (
     <>
       <section className="hero">
@@ -28,14 +24,10 @@ export default function Home() {
         <p>
           Find clips by streamer, game, or date, and follow channels to keep their recent highlights together.
         </p>
-        <Link className="btn" to="/clips">
-          Browse highlights
-        </Link>
-      </section>
-      <section className="stats">
-        <div className="stat"><strong>{clips.length}</strong><span>highlights</span></div>
-        <div className="stat"><strong>{avg}</strong><span>avg score</span></div>
-        <div className="stat"><strong>{featured}</strong><span>from {primary}</span></div>
+        <div className="hero-actions">
+          <Link className="btn" to="/clips">Browse highlights</Link>
+          <Link className="btn btn-ghost" to="/pro">Get the desktop app</Link>
+        </div>
       </section>
       {follows.length > 0 && (
         <section aria-labelledby="following-heading">

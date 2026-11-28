@@ -3,6 +3,8 @@
 // The app's own non-secret settings, kept in the "app" section of the shared
 // config file, plus the one-time "I have permission to record" acknowledgement.
 
+const { pickSettings, settingsFor } = require("../../dist/config.js");
+
 const PERMISSION_VERSION = 1; // bump if the wording changes materially, to ask again
 
 function createSettings({ readConfig, writeConfig, now = () => new Date(), outputFolder }) {
@@ -19,6 +21,7 @@ function createSettings({ readConfig, writeConfig, now = () => new Date(), outpu
     const s = section();
     return {
       launchAtLogin: s.launchAtLogin === true,
+      sensitivity: pickSettings({ sensitivity: s.sensitivity }).sensitivity ?? settingsFor("desktop").sensitivity,
       permissionAcknowledged: s.permissionVersion === PERMISSION_VERSION && typeof s.permissionAt === "string",
       permissionAt: typeof s.permissionAt === "string" ? s.permissionAt : "",
       outputFolder
@@ -26,7 +29,7 @@ function createSettings({ readConfig, writeConfig, now = () => new Date(), outpu
   }
 
   function set(changes = {}) {
-    const next = {};
+    const next = pickSettings({ sensitivity: changes.sensitivity });
     if (typeof changes.launchAtLogin === "boolean") next.launchAtLogin = changes.launchAtLogin;
     if (Object.keys(next).length) save(next);
     return get();

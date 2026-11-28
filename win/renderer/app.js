@@ -11,6 +11,8 @@
   let upd = { status: "disabled" };
   let announcedUpdate = null;
   let licenseRetry = null;
+  let licenseAction = "";
+  let licenseDraft = "";
   let clipList = [];
   let clipQuery = "";
   const ui = {};
@@ -50,16 +52,69 @@
 
   // ---- pages -------------------------------------------------------------
 
+  function drawChatChart(samples) {
+    const canvas = ui.chatChart;
+    const width = canvas.clientWidth;
+    if (!width) return;
+    const height = canvas.clientHeight;
+    const scale = window.devicePixelRatio || 1;
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx || !samples.length) return;
+    ctx.scale(scale, scale);
+    const colors = getComputedStyle(canvas);
+    const top = Math.max(1, ...samples.map(({ participants, threshold }) => Math.max(participants, threshold)));
+    const x = (index) => samples.length === 1 ? width - 4 : 4 + index * (width - 8) / (samples.length - 1);
+    const y = (value) => height - 6 - value * (height - 12) / top;
+    const trace = (key, color, dash) => {
+      ctx.beginPath();
+      ctx.strokeStyle = colors.getPropertyValue(color).trim();
+      ctx.setLineDash(dash);
+      ctx.lineWidth = 2;
+      samples.forEach((sample, index) => {
+        if (index === 0) ctx.moveTo(x(index), y(sample[key]));
+        else ctx.lineTo(x(index), y(sample[key]));
+      });
+      ctx.stroke();
+    };
+    trace("threshold", "--muted", [4, 4]);
+    trace("participants", "--accent", []);
+    ctx.fillStyle = colors.getPropertyValue("--accent").trim();
+    samples.forEach((sample, index) => {
+      if (!sample.spike && samples.length > 1) return;
+      ctx.beginPath();
+      ctx.arc(x(index), y(sample.participants), 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
   function buildCapture() {
     const root = $("page-capture");
     ui.status = { badge: el("span", { class: "badge idle", id: "phase" }), msg: el("p", { id: "phase-msg", "aria-live": "polite" }), channel: el("dd"), buffered: el("dd", { id: "buffered-time" }), saved: el("dd") };
+    ui.renderStage = el("dd");
+    ui.uploadCount = el("dd");
+    ui.chatChart = el("canvas", { class: "chat-chart", "aria-hidden": "true" });
+    ui.chatReading = el("p", { class: "chat-reading", text: "Waiting for chat samples." });
+    ui.sensitivity = el("input", { type: "range", id: "spike-sensitivity", min: 0.25, max: 3, step: 0.05,
+      onchange: () => guarded(async () => { await hd.settings.set({ sensitivity: Number(ui.sensitivity.value) }); await refresh(); }) });
+    ui.sensitivityValue = el("output", { for: "spike-sensitivity" });
+    ui.sensitivity.addEventListener("input", () => { ui.sensitivityValue.textContent = Number(ui.sensitivity.value).toFixed(2); });
+    window.addEventListener("resize", () => drawChatChart(snap?.capture.chatSamples || []));
     const statusCard = el("div", { class: "card" },
       el("div", { class: "row" }, el("h2", { text: "Status" }), ui.status.badge),
       ui.status.msg,
       el("dl", { class: "stats" },
         el("div", {}, el("dt", { text: "Channel" }), ui.status.channel),
         el("div", {}, el("dt", { text: "Video buffered" }), ui.status.buffered),
-        el("div", {}, el("dt", { text: "Highlights this session" }), ui.status.saved)));
+        el("div", {}, el("dt", { text: "Highlights" }), ui.status.saved),
+        el("div", {}, el("dt", { text: "Export" }), ui.renderStage),
+        el("div", {}, el("dt", { text: "Pending uploads" }), ui.uploadCount)),
+      el("section", { class: "chat-monitor", "aria-labelledby": "chat-monitor-heading" },
+        el("h3", { id: "chat-monitor-heading", text: "Chat activity" }), ui.chatChart, ui.chatReading,
+        el("div", { class: "sensitivity-control" },
+          el("label", { for: "spike-sensitivity", text: "Spike sensitivity" }), ui.sensitivityValue, ui.sensitivity),
+        el("p", { class: "help", text: "Changes apply to the next capture." })));
 
     ui.channel = el("input", { type: "text", id: "channel", placeholder: "username or twitch.tv/username", autocomplete: "off", spellcheck: "false", "aria-describedby": "capture-intro" });
     ui.ack = el("input", { type: "checkbox", id: "ack" });
@@ -69,7 +124,7 @@
     ui.intro = el("p", { class: "help", id: "capture-intro" });
     ui.banner = el("div", { class: "notice info", id: "license-banner", hidden: true });
     ui.stopBtn = el("button", { class: "btn", type: "button", text: "Stop", onclick: () => guarded(async () => { snap = await hd.stop(); updateCapture(); }) });
-    ui.saveBtn = el("button", { class: "btn", type: "button", text: "Save highlight now", title: "Ctrl+S", onclick: () => guarded(() => hd.saveHighlight()) });
+    ui.saveBtn = el("button", { class: "btn", type: "button", text: "Save highlight now", title: "Ctrl+S", "aria-keyshortcuts": "Control+S", onclick: () => guarded(() => hd.saveHighlight()) });
     ui.missedBtn = el("button", { class: "btn", type: "button", text: "Mark missed moment", title: "Records this time for review. It does not save a clip.", onclick: () => guarded(async () => { await hd.markMissed(); notify("Marked this moment for review. It does not save a clip.", "info", 6000); }) });
     const form = el("form", { class: "card", novalidate: true, onsubmit: (event) => { event.preventDefault(); onStart(); } },
       el("label", { for: "channel", text: "Twitch channel" }),
@@ -113,6 +168,15 @@
     ui.status.channel.textContent = c.channel || "—";
     ui.status.buffered.textContent = c.phase === "idle" ? "—" : clock(c.mediaTime);
     ui.status.saved.textContent = String(c.clipsSaved);
+    ui.renderStage.textContent = c.renderStage || "Ready";
+    ui.renderStage.className = `badge ${c.renderStage === "Failed" ? "error" : c.phase === "exporting" ? "exporting" : "idle"}`;
+    ui.uploadCount.textContent = String(c.queuedUploads ?? 0);
+    const samples = c.chatSamples || [];
+    const latest = samples.at(-1);
+    ui.chatReading.textContent = latest ? `${latest.participants} chatters / threshold ${Math.round(latest.threshold)}` : "Waiting for chat samples.";
+    drawChatChart(samples);
+    if (document.activeElement !== ui.sensitivity) ui.sensitivity.value = snap.settings.sensitivity ?? 1;
+    ui.sensitivityValue.textContent = Number(ui.sensitivity.value).toFixed(2);
     const running = !["idle", "error"].includes(c.phase);
     ui.channel.disabled = running;
     ui.startBtn.hidden = running;
@@ -239,6 +303,61 @@
     }
   }
 
+  function buildWebhookSettings() {
+    if (!hd.webhooks) return null;
+    const target = el("input", { id: "webhook-url", type: "url", placeholder: "https://…" });
+    const key = el("input", { id: "webhook-key", type: "password", autocomplete: "off" });
+    const enabled = el("input", { id: "webhook-enabled", type: "checkbox" });
+    const removeKey = el("input", { id: "webhook-remove-key", type: "checkbox" });
+    const status = el("p", { role: "status" });
+    const log = el("ul");
+    const updateLog = async () => {
+      const entries = await hd.webhooks.log();
+      log.replaceChildren(...entries.slice(0, 10).map((entry) => el("li", {
+        text: `${when(entry.at)} · ${entry.event} · ${entry.ok ? "Delivered" : entry.error}`
+      })));
+    };
+    void guarded(async () => {
+      const settings = await hd.webhooks.get();
+      target.value = settings.url;
+      enabled.checked = settings.enabled;
+      key.placeholder = settings.useKey ? "Key saved" : "Optional";
+      await updateLog();
+    });
+    const save = async () => {
+      const settings = await hd.webhooks.save({
+        url: target.value.trim(), enabled: enabled.checked, key: key.value.trim(), removeKey: removeKey.checked
+      });
+      target.value = settings.url;
+      key.value = "";
+      key.placeholder = settings.useKey ? "Key saved" : "Optional";
+      removeKey.checked = false;
+    };
+    const button = (label, operation) => el("button", { class: "btn", type: "button", text: label, onclick: (event) => {
+      const control = event.currentTarget;
+      control.disabled = true;
+      void guarded(async () => {
+        try { await operation(); } finally { control.disabled = false; }
+      });
+    } });
+    return el("div", { class: "card" }, el("h2", { text: "Clip webhooks" }),
+      el("label", { for: "webhook-url", text: "HTTPS endpoint" }), target,
+      el("label", { for: "webhook-key", text: "Bearer key" }), key,
+      el("label", { for: "webhook-enabled", class: "check" }, enabled, "Send clip events"),
+      el("label", { for: "webhook-remove-key", class: "check" }, removeKey, "Remove saved key"),
+      el("p", { class: "help", text: "Clip events can include a local file URL. Use an endpoint you control." }),
+      el("div", { class: "row" },
+        button("Save", async () => { await save(); status.textContent = "Webhook settings saved."; }),
+        button("Send test", async () => {
+          await save();
+          status.textContent = "Sending test…";
+          const entry = await hd.webhooks.test();
+          status.textContent = entry.ok ? "Test delivered." : entry.error;
+          await updateLog();
+        }),
+        button("Refresh log", updateLog)), status, log);
+  }
+
   function buildSettings() {
     ui.licenseCard = el("div", { class: "card", id: "license-card" });
     ui.launch = el("input", { type: "checkbox", id: "launch", onchange: () => guarded(async () => { await hd.settings.set({ launchAtLogin: ui.launch.checked }); await refresh(); }) });
@@ -265,6 +384,7 @@
       el("div", { class: "card" }, el("h2", { text: "Vertical export" }),
         el("label", { for: "export-layout", text: "Layout" }), ui.layout,
         el("p", { class: "help", text: "The gameplay and facecam preset uses your configured camera crop, or the lower-left corner by default. Layout changes apply to the next capture." })),
+      ...[buildWebhookSettings()].filter(Boolean),
       el("div", { class: "card", id: "update-card" }, el("h2", { text: "Updates" }), ui.updText, el("div", { class: "row", style: false }, ui.updBtn)),
       el("div", { class: "card" }, el("h2", { text: "About" }), ui.about));
   }
@@ -303,21 +423,37 @@
     ui.updBtn.textContent = status === "ready" ? "Restart to update" : status === "error" ? "Try again" : "Check for updates";
   }
 
+  async function runLicenseAction(label, action) {
+    if (licenseAction) return;
+    licenseAction = label;
+    updateSettings();
+    try {
+      await guarded(async () => {
+        await action();
+        await refresh();
+      });
+    } finally {
+      licenseAction = "";
+      updateSettings();
+    }
+  }
+
   function updateSettings() {
     const lic = snap.license;
-    const keyInput = el("input", { type: "text", id: "license-key", placeholder: "Paste your license key", autocomplete: "off", spellcheck: "false", "aria-label": "License key" });
+    const keyInput = el("input", { type: "password", id: "license-key", disabled: Boolean(licenseAction), oninput: (event) => { licenseDraft = event.target.value; }, placeholder: "Paste your license key", autocomplete: "off", spellcheck: "false", "aria-label": "License key" });
+    keyInput.value = licenseDraft;
     const badge = el("span", { class: `badge ${lic.mode === "expired" ? "expired" : lic.valid ? "ok" : "error"}`, text: { development: "Development build", trial: "Trial", licensed: "Licensed", "licensed-unverified": "Licensed", expired: "Expired" }[lic.mode] || lic.mode });
-    const rows = [el("div", { class: "row" }, el("h2", { text: "License" }), badge), el("p", { text: lic.message })];
+    const rows = [el("div", { class: "row" }, el("h2", { text: "License" }), badge), el("p", { role: "status", text: licenseAction || lic.message })];
     if (lic.required) {
       if (lic.hasKey) {
         rows.push(el("div", { class: "row" },
-          el("button", { class: "btn", type: "button", text: "Check now", onclick: () => guarded(async () => { await hd.license.validate(); await refresh(); }) }),
-          el("button", { class: "btn danger", type: "button", text: "Remove from this PC", onclick: () => { if (!window.confirm("Remove the license from this PC? You can activate it again later with your key.")) return; guarded(async () => { await hd.license.deactivate(); await refresh(); }); } })));
+          el("button", { class: "btn", type: "button", text: "Check now", disabled: Boolean(licenseAction), onclick: () => runLicenseAction("Checking license…", () => hd.license.validate()) }),
+          el("button", { class: "btn danger", type: "button", text: "Remove from this PC", disabled: Boolean(licenseAction), onclick: () => { if (!window.confirm("Remove the license from this PC? You can activate it again later with your key.")) return; runLicenseAction("Removing activation…", () => hd.license.deactivate()); } })));
       } else {
         rows.push(el("label", { for: "license-key", text: "License key" }), keyInput,
           el("p", { class: "muted", text: "The license key arrives by email. Paste it here." }),
           el("div", { class: "row", style: false },
-            el("button", { class: "btn primary", type: "button", text: "Activate", onclick: () => guarded(async () => { await hd.license.activate(keyInput.value); keyInput.value = ""; await refresh(); }) }),
+            el("button", { class: "btn primary", type: "button", text: "Activate", disabled: Boolean(licenseAction), onclick: () => runLicenseAction("Activating license…", async () => { await hd.license.activate(licenseDraft); licenseDraft = ""; }) }),
             lic.checkoutUrl && el("button", { class: "btn", type: "button", text: StartGuide.buyLabel(lic), onclick: () => guarded(() => hd.license.buy()) })));
       }
     }

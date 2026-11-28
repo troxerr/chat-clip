@@ -31,6 +31,7 @@ extern const NSTimeInterval HDLicenseGraceInterval;
 
 - (void)recordActivationWithKey:(NSString *)key instanceId:(NSString *)instanceId;
 - (void)recordValidation;
+- (void)invalidateValidation;
 // Deletes all three Keychain items (deactivation, refund, revocation).
 - (void)clear;
 

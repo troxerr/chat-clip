@@ -275,3 +275,12 @@ footer nav a { color: inherit; }
 .home-highlights .capture-link { align-self: start; }
 @media (max-width: 860px) { .home-highlights { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 380px) { .demo-output { padding-inline: 12px; gap: 10px; } .demo-controls .btn { padding-inline: 8px; } }
+
+.home-page .hero h1, .capture-page .hero h1 { max-width: 17ch; }
+.home-page .hero-copy .lede, .capture-page .hero-copy .lede { max-width: 43ch; }
+.hero-copy .fine { max-width: 46ch; }
+@media (max-width: 420px) {
+  .hero-copy .cta-row { width: 100%; }
+  .hero-copy .cta-row .primary { width: 100%; }
+  .hero-copy .btn { min-height: 44px; }
+}

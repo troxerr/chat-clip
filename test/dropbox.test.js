@@ -94,6 +94,7 @@ test("refreshes a token, creates folders, and uploads a size-confirmed file", as
   assert.equal(result.ok, true);
   assert.equal(result.path, "/ClipSpike/chan/clip.mp4");
   assert.equal(result.fileId, "id-1");
+  assert.equal(result.verified, true);
   assert.equal(result.size, file.size);
   assert.equal(calls.token, 1);
   assert.deepEqual(calls.folders, ["/ClipSpike", "/ClipSpike/chan"]);

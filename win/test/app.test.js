@@ -12,12 +12,12 @@ function fakeEngine() {
   e.markMissed = () => { e.sent.push("missed"); return true; };
   return e;
 }
-function build({ licenseState = { valid: true, message: "ok", checkoutUrl: "https://shop.example/buy" }, acknowledged = false } = {}) {
+function build({ licenseState = { valid: true, message: "ok", checkoutUrl: "https://shop.example/buy" }, acknowledged = false, webhooks } = {}) {
   const engine = fakeEngine();
   const calls = { ack: 0, external: [], folder: [] };
   let ack = acknowledged;
   const app = createApp({
-    engine,
+    engine, webhooks,
     license: { state: () => licenseState, activate: async (k) => ({ activated: k }), validate: async () => licenseState, deactivate: async () => ({ valid: false }) },
     settings: { get: () => ({ permissionAcknowledged: ack, launchAtLogin: false }), set: (c) => ({ ...c }), acknowledgePermission: () => { ack = true; calls.ack += 1; } },
     clips: { list: () => [], open: async () => true, reveal: () => true, rate: () => "" },
@@ -134,4 +134,11 @@ test("the clip folder opens from the app's own setting, not a path the window se
   const { app, calls } = build();
   app.openClipFolder();
   assert.deepEqual(calls.folder, ["C:\\Videos\\ClipSpike"]);
+});
+
+test("exposes webhook controls through the desktop app", async () => {
+  const webhooks = { test: async () => ({ ok: true }), log: () => [{ ok: true }] };
+  const { app } = build({ webhooks });
+  assert.deepEqual(await app.webhooks.test(), { ok: true });
+  assert.deepEqual(app.webhooks.log(), [{ ok: true }]);
 });

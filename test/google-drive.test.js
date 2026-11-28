@@ -169,29 +169,37 @@ test("surfaces quota errors without retrying", async () => {
   fs.rmSync(file.dir, { recursive: true, force: true });
 });
 
-test("refreshes after a 401 response", async () => {
+test("refreshes after a 401 in folder lookup and again in resumable upload", async () => {
   const file = tempFile();
   let tokenCalls = 0;
+  let uploadCalls = 0;
   let listCalls = 0;
   const fetchImpl = async (url, options = {}) => {
     if (url === "https://oauth2.googleapis.com/token") {
       tokenCalls += 1;
-      return response({ access_token: tokenCalls === 1 ? "old" : "new", expires_in: 3600 });
+      return response({ access_token: `token-${tokenCalls}`, expires_in: 3600 });
     }
     if (url.startsWith("https://www.googleapis.com/drive/v3/files?q=")) {
-      listCalls += 1;
-      if (listCalls === 1) return response({ error: { message: "Invalid credentials" } }, 401);
-      assert.equal(options.headers.Authorization, "Bearer new");
+      if (++listCalls === 1) return response({ error: { message: "Invalid credentials" } }, 401);
+      assert.equal(options.headers.Authorization, "Bearer token-2");
       return response({ files: [] });
     }
     if (url.startsWith("https://www.googleapis.com/drive/v3/files?fields=")) return response({ id: "folder" });
-    if (url.includes("uploadType=resumable")) return response({}, 200, { location: "https://upload.example/session/4" });
-    if (url === "https://upload.example/session/4") return response({ id: "file-4", size: file.size });
+    if (url.includes("uploadType=resumable")) {
+      assert.equal(options.headers.Authorization, uploadCalls ? "Bearer token-3" : "Bearer token-2");
+      return response({}, 200, { location: "https://upload.example/session/4" });
+    }
+    if (url === "https://upload.example/session/4") {
+      uploadCalls++;
+      return uploadCalls === 1 ? response({}, 401) : response({ id: "file-4", size: file.size });
+    }
     throw new Error(`unexpected URL ${url}`);
   };
   const client = createGoogleDriveClient(SETTINGS, { fetchImpl, sleep: async () => {} });
   const result = await client.uploadClip(file.file, { folder: "/ClipSpike", channel: "chan" });
   assert.equal(result.ok, true);
-  assert.equal(tokenCalls, 2);
+  assert.equal(result.verified, true);
+  assert.equal(uploadCalls, 2);
+  assert.equal(tokenCalls, 3);
   fs.rmSync(file.dir, { recursive: true, force: true });
 });

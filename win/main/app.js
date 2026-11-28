@@ -9,7 +9,7 @@ const { INITIAL, reduce, started, stopped } = require("./status.js");
 
 const HTTPS_ONLY = /^https:\/\//i;
 
-function createApp({ engine, license, settings, clips, openExternal, openFolder, version = "0.0.0", outputFolder = "", versions = {} }) {
+function createApp({ engine, license, settings, clips, webhooks, openExternal, openFolder, version = "0.0.0", outputFolder = "", versions = {} }) {
   const bus = new EventEmitter();
   let capture = INITIAL;
   const setCapture = (next) => { if (next !== capture) { capture = next; bus.emit("capture", capture); } };
@@ -83,6 +83,7 @@ function createApp({ engine, license, settings, clips, openExternal, openFolder,
       deactivate: async () => { if (engine.running) throw new Error("Stop the capture before removing the license."); return license.deactivate(); },
       buy: () => { const url = license.state().checkoutUrl; if (!url) throw new Error("No purchase page is set up for this build."); return openLink(url); }
     },
+    webhooks,
     settings: { get: () => settings.get(), set: (changes) => settings.set(changes) },
     openClipFolder: () => openFolder(outputFolder),
     openLink,

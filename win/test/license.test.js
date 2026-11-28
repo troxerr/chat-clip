@@ -283,3 +283,22 @@ test("validating while the key is unreadable changes nothing and does not call t
   assert.equal(h.db.config.license.lastValidatedAt, validatedAt);
   assert.equal(s.keyUnreadable, true);
 });
+
+test("an in-flight validation prevents activation changes and preserves a rejected seat for removal", async () => {
+  let completeValidation;
+  const h = harness({ request: (action) => action === "validate"
+    ? new Promise((resolve) => { completeValidation = resolve; })
+    : { valid: true, instanceId: "inst-1" } });
+  await h.manager.activate("old-key");
+  h.advance(8 * DAY);
+  const checking = h.manager.validate();
+  await assert.rejects(h.manager.activate("new-key"), /already in progress/);
+  await assert.rejects(h.manager.deactivate(), /already in progress/);
+  completeValidation({ valid: false, status: "expired" });
+  const state = await checking;
+  assert.equal(state.valid, false);
+  assert.equal(state.message, "This license has expired.");
+  assert.equal(h.db.config.license.instance, "inst-1");
+  await h.manager.deactivate();
+  assert.equal(h.db.config.license.instance, undefined);
+});
